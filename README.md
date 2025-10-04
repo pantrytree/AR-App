@@ -1,4 +1,4 @@
-# roomanties
+# roomantics
 
 A new Flutter project.
 
