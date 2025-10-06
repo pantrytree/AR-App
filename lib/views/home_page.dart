@@ -3,6 +3,7 @@ import 'side_menu.dart';
 import 'bottom_nav_bar.dart';
 import '/utils/colors.dart';
 import '/utils/text_components.dart';
+import '/viewmodels/home_viewmodel.dart';
 
 class HomePage extends StatefulWidget {
   final String? userName;
@@ -17,7 +18,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
+  final HomeViewModel _viewModel = HomeViewModel();
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel.addListener(_onViewModelChanged);
+  }
+
+  void _onViewModelChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
+    super.dispose();
+  }
 
   Widget _buildPlaceholderPage(String title) {
     return Scaffold(
@@ -38,24 +53,18 @@ class _HomePageState extends State<HomePage> {
     _buildPlaceholderPage(TextComponents.profilePageTitle),
   ];
 
-  void _onTabSelected(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(TextComponents.appTitle),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryPurple,
         foregroundColor: Colors.white,
       ),
       drawer: SideMenu(userName: widget.userName),
-      body: _pages[_selectedIndex],
+      body: _pages[_viewModel.selectedIndex],
       bottomNavigationBar: BottomNavBar(
-        onTabSelected: _onTabSelected,
+        onTabSelected: _viewModel.onTabSelected,
       ),
     );
   }
@@ -126,6 +135,8 @@ class RecentlyUsedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final HomeViewModel viewModel = HomeViewModel();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -144,11 +155,9 @@ class RecentlyUsedSection extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildRecentlyUsedItem(TextComponents.recentItemBeigeCouch, context),
-                const SizedBox(width: 12),
-                _buildRecentlyUsedItem(TextComponents.recentItemPinkBed, context),
-                const SizedBox(width: 12),
-                _buildRecentlyUsedItem(TextComponents.recentItemSilver, context),
+                ...viewModel.recentlyUsedItems.map((item) =>
+                    _buildRecentlyUsedItem(item["title"]!, item["id"]!, context, viewModel)
+                ),
               ],
             ),
           ),
@@ -157,22 +166,20 @@ class RecentlyUsedSection extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentlyUsedItem(String titleId, BuildContext context) {
+  Widget _buildRecentlyUsedItem(String title, String itemId, BuildContext context, HomeViewModel viewModel) {
     return GestureDetector(
-      onTap: () {
-        // Navigate to catalogue item page
-        Navigator.pushNamed(context, '/catalogue_item');
-      },
+      onTap: () => viewModel.navigateToCatalogueItem(context),
       child: Container(
         width: 120,
         height: 120,
+        margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primaryPurple.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Text(
-            titleId,
+            title,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontWeight: FontWeight.w500,
@@ -190,6 +197,8 @@ class AllRoomsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final HomeViewModel viewModel = HomeViewModel();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -209,7 +218,7 @@ class AllRoomsSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.1),
+              color: AppColors.primaryDarkBlue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
@@ -230,10 +239,9 @@ class AllRoomsSection extends StatelessWidget {
             mainAxisSpacing: 12,
             childAspectRatio: 1.5,
             children: [
-              _buildRoomCategory(TextComponents.roomCategoryLiving, context),
-              _buildRoomCategory(TextComponents.roomCategoryBedroom, context),
-              _buildRoomCategory(TextComponents.roomCategoryKitchen, context),
-              _buildRoomCategory(TextComponents.roomCategoryOffice, context),
+              ...viewModel.roomCategories.map((category) =>
+                  _buildRoomCategory(category["title"]!, category["id"]!, context, viewModel)
+              ),
             ],
           ),
         ],
@@ -241,20 +249,17 @@ class AllRoomsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildRoomCategory(String categoryId, BuildContext context) {
+  Widget _buildRoomCategory(String category, String categoryId, BuildContext context, HomeViewModel viewModel) {
     return GestureDetector(
-      onTap: () {
-        // Navigate to catalogue page
-        Navigator.pushNamed(context, '/catalogue');
-      },
+      onTap: () => viewModel.navigateToCatalogue(context),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primaryPurple.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Text(
-            categoryId,
+            category,
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: AppColors.textDark,

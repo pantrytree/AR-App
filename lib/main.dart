@@ -18,10 +18,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: TextComponents.appTitle,
       theme: ThemeData(
-        primaryColor: AppColors.primary,
+        primaryColor: AppColors.primaryPurple,
         scaffoldBackgroundColor: AppColors.background,
         appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.primary,
+          backgroundColor: AppColors.primaryPurple,
           foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: true,
@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryPurple,
         foregroundColor: Colors.white,
       ),
       body: Center(

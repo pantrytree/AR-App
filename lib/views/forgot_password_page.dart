@@ -1,16 +1,30 @@
 import 'package:flutter/material.dart';
 import '/utils/colors.dart';
 import '/utils/text_components.dart';
+import '/viewmodels/forgot_password_viewmodel.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
+class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
+
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final ForgotPasswordViewModel _viewModel = ForgotPasswordViewModel();
+
+  @override
+  void dispose() {
+    _viewModel.disposeControllers();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(TextComponents.forgotPasswordTitle),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryPurple,
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
@@ -34,12 +48,14 @@ class ForgotPasswordPage extends StatelessWidget {
 
               // Email Field
               TextFormField(
+                controller: _viewModel.emailController,
                 decoration: InputDecoration(
                   labelText: TextComponents.emailFieldLabel,
                   hintText: TextComponents.emailFieldHint,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  errorText: _viewModel.errorMessage,
                 ),
               ),
 
@@ -50,10 +66,11 @@ class ForgotPasswordPage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Backend will handle password reset
+                    _viewModel.sendResetLink();
+                    setState(() {}); // Refresh UI to show errors
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: AppColors.primaryPurple,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

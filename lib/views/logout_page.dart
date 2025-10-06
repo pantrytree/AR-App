@@ -35,13 +35,13 @@ class LogoutPage extends StatelessWidget {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primaryPurple.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.logout,
                     size: 40,
-                    color: AppColors.primary,
+                    color: AppColors.primaryPurple,
                   ),
                 ),
 
@@ -106,7 +106,7 @@ class LogoutPage extends StatelessWidget {
                             Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: AppColors.primaryPurple,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(

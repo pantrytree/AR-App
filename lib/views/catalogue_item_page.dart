@@ -16,7 +16,7 @@ class CatalogueItemPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(TextComponents.cataloguePageTitle),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryPurple,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -54,7 +54,7 @@ class CatalogueItemPage extends StatelessWidget {
               child: Icon(
                 Icons.photo,
                 size: 60,
-                color: AppColors.primary,
+                color: AppColors.primaryPurple,
               ),
             ),
             const SizedBox(height: 20),
@@ -79,7 +79,7 @@ class CatalogueItemPage extends StatelessWidget {
                       // Backend: Add to cart functionality
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.primaryPurple,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -137,7 +137,7 @@ class CatalogueItemPage extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primaryPurple.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -147,12 +147,12 @@ class CatalogueItemPage extends StatelessWidget {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primaryPurple.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 Icons.chair,
-                color: AppColors.primary,
+                color: AppColors.primaryPurple,
               ),
             ),
             const SizedBox(width: 16),

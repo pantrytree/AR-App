@@ -31,7 +31,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primaryPurple,
       selectedItemColor: Colors.white,
       unselectedItemColor: Colors.white.withOpacity(0.60),
       selectedFontSize: 14,
