@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   late final List<Widget> _pages = [
-    const HomeScreen(),
+    HomeScreen(viewModel: _viewModel),
     _buildPlaceholderPage(TextComponents.arViewTitle),
     _buildPlaceholderPage(TextComponents.cartPageTitle),
     _buildPlaceholderPage(TextComponents.favoritesTitle),
@@ -71,7 +71,9 @@ class _HomePageState extends State<HomePage> {
 }
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final HomeViewModel viewModel;
+
+  const HomeScreen({super.key, required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
@@ -85,9 +87,9 @@ class HomeScreen extends StatelessWidget {
               // Header with greeting
               const HomeHeader(),
               // Recently Used Section
-              const RecentlyUsedSection(),
+              RecentlyUsedSection(viewModel: viewModel),
               // All Rooms Section
-              const AllRoomsSection(),
+              AllRoomsSection(viewModel: viewModel),
               const SizedBox(height: 20),
             ],
           ),
@@ -131,12 +133,12 @@ class HomeHeader extends StatelessWidget {
 }
 
 class RecentlyUsedSection extends StatelessWidget {
-  const RecentlyUsedSection({super.key});
+  final HomeViewModel viewModel;
+
+  const RecentlyUsedSection({super.key, required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
-    final HomeViewModel viewModel = HomeViewModel();
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -156,7 +158,7 @@ class RecentlyUsedSection extends StatelessWidget {
             child: Row(
               children: [
                 ...viewModel.recentlyUsedItems.map((item) =>
-                    _buildRecentlyUsedItem(item["title"]!, item["id"]!, context, viewModel)
+                    _buildRecentlyUsedItem(item["title"]!, item["id"]!, context)
                 ),
               ],
             ),
@@ -166,7 +168,7 @@ class RecentlyUsedSection extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentlyUsedItem(String title, String itemId, BuildContext context, HomeViewModel viewModel) {
+  Widget _buildRecentlyUsedItem(String title, String itemId, BuildContext context) {
     return GestureDetector(
       onTap: () => viewModel.navigateToCatalogueItem(context),
       child: Container(
@@ -193,12 +195,12 @@ class RecentlyUsedSection extends StatelessWidget {
 }
 
 class AllRoomsSection extends StatelessWidget {
-  const AllRoomsSection({super.key});
+  final HomeViewModel viewModel;
+
+  const AllRoomsSection({super.key, required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
-    final HomeViewModel viewModel = HomeViewModel();
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -218,7 +220,7 @@ class AllRoomsSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.primaryDarkBlue.withOpacity(0.1),
+              color: AppColors.textFieldBackground,
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
@@ -240,7 +242,7 @@ class AllRoomsSection extends StatelessWidget {
             childAspectRatio: 1.5,
             children: [
               ...viewModel.roomCategories.map((category) =>
-                  _buildRoomCategory(category["title"]!, category["id"]!, context, viewModel)
+                  _buildRoomCategory(category["title"]!, category["id"]!, context)
               ),
             ],
           ),
@@ -249,7 +251,7 @@ class AllRoomsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildRoomCategory(String category, String categoryId, BuildContext context, HomeViewModel viewModel) {
+  Widget _buildRoomCategory(String category, String categoryId, BuildContext context) {
     return GestureDetector(
       onTap: () => viewModel.navigateToCatalogue(context),
       child: Container(

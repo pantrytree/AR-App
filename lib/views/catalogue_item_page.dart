@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '/utils/colors.dart';
 import '/utils/text_components.dart';
+import '/viewmodels/catalogue_item_viewmodel.dart';
 
-class CatalogueItemPage extends StatelessWidget {
+class CatalogueItemPage extends StatefulWidget {
   final String? productId;
 
   const CatalogueItemPage({
@@ -11,8 +12,29 @@ class CatalogueItemPage extends StatelessWidget {
   });
 
   @override
+  State<CatalogueItemPage> createState() => _CatalogueItemPageState();
+}
+
+class _CatalogueItemPageState extends State<CatalogueItemPage> {
+  late final CatalogueItemViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = CatalogueItemViewModel(productId: widget.productId);
+    _viewModel.addListener(_onViewModelChanged);
+  }
+
+  void _onViewModelChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // needs backend
     return Scaffold(
       appBar: AppBar(
         title: Text(TextComponents.cataloguePageTitle),
@@ -26,7 +48,7 @@ class CatalogueItemPage extends StatelessWidget {
           children: [
             // Product Title and Dimensions
             Text(
-              "Queen Bed",
+              _viewModel.productTitle,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -35,7 +57,7 @@ class CatalogueItemPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "80×80 cm",
+              _viewModel.productDimensions,
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.textLight,
@@ -48,7 +70,7 @@ class CatalogueItemPage extends StatelessWidget {
               height: 250,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primaryPurple.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -61,7 +83,7 @@ class CatalogueItemPage extends StatelessWidget {
 
             // Product Description
             Text(
-              "Custom-made, handcrafted furniture designed to fit your unique style and space.",
+              _viewModel.productDescription,
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.textDark,
@@ -75,9 +97,7 @@ class CatalogueItemPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Backend: Add to cart functionality
-                    },
+                    onPressed: _viewModel.addToCart,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryPurple,
                       foregroundColor: Colors.white,
@@ -88,12 +108,14 @@ class CatalogueItemPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 IconButton(
-                  onPressed: () {
-                    // Backend: Add to favorites functionality
-                  },
-                  icon: Icon(Icons.favorite_border, size: 30),
+                  onPressed: _viewModel.toggleFavorite,
+                  icon: Icon(
+                    _viewModel.isFavorite ? Icons.favorite : Icons.favorite_border,
+                    size: 30,
+                    color: _viewModel.isFavorite ? Colors.red : AppColors.primaryPurple,
+                  ),
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundColor: AppColors.primaryPurple.withOpacity(0.1),
                   ),
                 ),
               ],
@@ -102,7 +124,7 @@ class CatalogueItemPage extends StatelessWidget {
 
             // Related Items Section
             Text(
-              "More to explore",
+              TextComponents.moreToExploreTitle,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -112,29 +134,25 @@ class CatalogueItemPage extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Related Items
-            _buildRelatedItem("Bedside Table", "30×60 cm", context),
-            const SizedBox(height: 12),
-            _buildRelatedItem("Wardrobe", "120×200 cm", context),
-            const SizedBox(height: 12),
-            _buildRelatedItem("Dresser", "40×80 cm", context),
+            ..._viewModel.relatedItems.map((item) =>
+                _buildRelatedItem(
+                    item["title"]!,
+                    item["dimensions"]!,
+                    item["id"]!,
+                    context
+                )
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRelatedItem(String title, String dimensions, BuildContext context) {
+  Widget _buildRelatedItem(String title, String dimensions, String productId, BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // Navigate to another product detail page
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CatalogueItemPage(productId: "related_item_id"),
-          ),
-        );
-      },
+      onTap: () => _viewModel.navigateToRelatedItem(context, productId),
       child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.primaryPurple.withOpacity(0.1),

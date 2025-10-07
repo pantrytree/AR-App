@@ -1,88 +1,88 @@
 class TextComponents {
   // App Titles
-  static const String appTitle = "app_title";
+  static const String appTitle = "Roomantic";
 
   // Side Menu Labels
-  static const String menuHome = "menu_home";
-  static const String menuCatalogue = "menu_catalogue";
-  static const String menuLikes = "menu_likes";
-  static const String menuProjects = "menu_projects";
-  static const String menuSettings = "menu_settings";
-  static const String menuHelp = "menu_help";
-  static const String menuForgotPassword = "menu_forgot_password";
-  static const String menuEditProfile = "menu_edit_profile";
-  static const String menuLogout = "menu_logout";
+  static const String menuHome = "Home";
+  static const String menuCatalogue = "Catalogue";
+  static const String menuLikes = "My Likes";
+  static const String menuProjects = "My Projects";
+  static const String menuSettings = "Settings";
+  static const String menuHelp = "Help & Support";
+  static const String menuForgotPassword = "Forgot Password";
+  static const String menuEditProfile = "Edit Profile";
+  static const String menuLogout = "Logout";
 
   // User related
-  static const String userGreeting = "user_greeting";
+  static const String userGreeting = "Hello!";
 
   // Bottom Nav Labels
-  static const String navHome = "nav_home";
-  static const String navArView = "nav_ar_view";
-  static const String navCart = "nav_cart";
-  static const String navFavorites = "nav_favorites";
-  static const String navProfile = "nav_profile";
+  static const String navHome = "Home";
+  static const String navArView = "AR View";
+  static const String navCart = "Cart";
+  static const String navFavorites = "Favorites";
+  static const String navProfile = "Profile";
 
   // Page Headings
-  static const String homePageTitle = "home_page_title";
-  static const String arViewTitle = "ar_view_title";
-  static const String cartPageTitle = "cart_page_title";
-  static const String profilePageTitle = "profile_page_title";
-  static const String cataloguePageTitle = "catalogue_page_title";
-  static const String forgotPasswordTitle = "forgot_password_title";
-  static const String resetPasswordTitle = "reset_password_title";
-  static const String logoutTitle = "logout_title";
-  static const String favoritesTitle = "favorites_title";
+  static const String homePageTitle = "Home";
+  static const String arViewTitle = "AR View";
+  static const String cartPageTitle = "Shopping Cart";
+  static const String profilePageTitle = "My Profile";
+  static const String cataloguePageTitle = "Product Details";
+  static const String forgotPasswordTitle = "Reset Password";
+  static const String resetPasswordTitle = "Reset Password";
+  static const String logoutTitle = "Logout";
+  static const String favoritesTitle = "My Favorites";
 
   // Home Screen
-  static const String homeGreeting = "home_greeting";
-  static const String homeWelcome = "home_welcome";
-  static const String searchPlaceholder = "search_placeholder";
-  static const String recentlyUsedTitle = "recently_used_title";
-  static const String recentlyUsedSubtitle = "recently_used_subtitle";
-  static const String allRoomsTitle = "all_rooms_title";
+  static const String homeGreeting = "Welcome back!";
+  static const String homeWelcome = "Let's design your dream space";
+  static const String searchPlaceholder = "Search furniture...";
+  static const String recentlyUsedTitle = "Recently Used";
+  static const String recentlyUsedSubtitle = "Your recent items";
+  static const String allRoomsTitle = "All Rooms";
 
   // Recently Used Items
-  static const String recentItemBeigeCouch = "recent_item_beige_couch";
-  static const String recentItemPinkBed = "recent_item_pink_bed";
-  static const String recentItemSilver = "recent_item_silver";
+  static const String recentItemBeigeCouch = "Beige Couch";
+  static const String recentItemPinkBed = "Pink Bed";
+  static const String recentItemSilver = "Silver Lamp";
 
   // Room Categories
-  static const String roomCategoryLiving = "room_category_living";
-  static const String roomCategoryBedroom = "room_category_bedroom";
-  static const String roomCategoryKitchen = "room_category_kitchen";
-  static const String roomCategoryOffice = "room_category_office";
+  static const String roomCategoryLiving = "Living Room";
+  static const String roomCategoryBedroom = "Bedroom";
+  static const String roomCategoryKitchen = "Kitchen";
+  static const String roomCategoryOffice = "Office";
 
   // Forgot Password Page
-  static const String forgotPasswordDescription = "forgot_password_description";
-  static const String emailFieldLabel = "email_field_label";
-  static const String emailFieldHint = "email_field_hint";
-  static const String sendResetLinkButton = "send_reset_link_button";
-  static const String noAccountText = "no_account_text";
-  static const String signUpButton = "sign_up_button";
+  static const String forgotPasswordDescription = "Enter your email address and we'll send you a link to reset your password.";
+  static const String emailFieldLabel = "Email Address";
+  static const String emailFieldHint = "your@email.com";
+  static const String sendResetLinkButton = "Send Reset Link";
+  static const String noAccountText = "Don't have an account?";
+  static const String signUpButton = "Sign Up";
 
   // Logout Page
-  static const String logoutConfirmationQuestion = "logout_confirmation_question";
-  static const String logoutDescription = "logout_description";
-  static const String cancelButton = "cancel_button";
-  static const String logoutButton = "logout_button";
+  static const String logoutConfirmationQuestion = "Are you sure you want to logout?";
+  static const String logoutDescription = "You will need to log in again to access your projects and favorites.";
+  static const String cancelButton = "Cancel";
+  static const String logoutButton = "Logout";
 
   // AR View Page
-  static const String arViewPlaceholder = "ar_view_placeholder";
+  static const String arViewPlaceholder = "AR View - Place your furniture in real world";
 
   // Product Details
-  static const String productQueenBedTitle = "product_queen_bed_title";
-  static const String productQueenBedDimensions = "product_queen_bed_dimensions";
-  static const String productQueenBedDescription = "product_queen_bed_description";
+  static const String productQueenBedTitle = "Queen Bed";
+  static const String productQueenBedDimensions = "80×80 cm";
+  static const String productQueenBedDescription = "Custom-made, handcrafted furniture designed to fit your unique style and space.";
 
-  static const String productBedsideTableTitle = "product_bedside_table_title";
-  static const String productBedsideTableDimensions = "product_bedside_table_dimensions";
+  static const String productBedsideTableTitle = "Bedside Table";
+  static const String productBedsideTableDimensions = "30×60 cm";
 
-  static const String productWardrobeTitle = "product_wardrobe_title";
-  static const String productWardrobeDimensions = "product_wardrobe_dimensions";
+  static const String productWardrobeTitle = "Wardrobe";
+  static const String productWardrobeDimensions = "120×200 cm";
 
-  static const String productDresserTitle = "product_dresser_title";
-  static const String productDresserDimensions = "product_dresser_dimensions";
+  static const String productDresserTitle = "Dresser";
+  static const String productDresserDimensions = "40×80 cm";
 
-  static const String moreToExploreTitle = "more_to_explore_title";
+  static const String moreToExploreTitle = "More to explore";
 }
