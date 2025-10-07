@@ -112,7 +112,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                   icon: Icon(
                     _viewModel.isFavorite ? Icons.favorite : Icons.favorite_border,
                     size: 30,
-                    color: _viewModel.isFavorite ? Colors.red : AppColors.primaryPurple,
+                    color: _viewModel.isFavorite ? Colors.pink : AppColors.textLight,
                   ),
                   style: IconButton.styleFrom(
                     backgroundColor: AppColors.primaryPurple.withOpacity(0.1),

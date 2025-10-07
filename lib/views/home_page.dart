@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _viewModel.addListener(_onViewModelChanged);
+    _viewModel.loadInitialData(); // Load data when page opens
   }
 
   void _onViewModelChanged() => setState(() {});
@@ -62,9 +63,34 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
       ),
       drawer: SideMenu(userName: widget.userName),
-      body: _pages[_viewModel.selectedIndex],
+      body: _viewModel.isLoading
+          ? _buildLoadingScreen()
+          : _pages[_viewModel.selectedIndex],
       bottomNavigationBar: BottomNavBar(
         onTabSelected: _viewModel.onTabSelected,
+      ),
+    );
+  }
+
+  Widget _buildLoadingScreen() {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryPurple),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Loading your space...",
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textLight,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -85,7 +111,7 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header with greeting
-              const HomeHeader(),
+              HomeHeader(viewModel: viewModel),
               // Recently Used Section
               RecentlyUsedSection(viewModel: viewModel),
               // All Rooms Section
@@ -100,7 +126,9 @@ class HomeScreen extends StatelessWidget {
 }
 
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key});
+  final HomeViewModel viewModel;
+
+  const HomeHeader({super.key, required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +138,9 @@ class HomeHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            TextComponents.homeGreeting,
+            viewModel.isLoading
+                ? "Hello!"
+                : "Hello, ${viewModel.userName}", // Dynamic from service
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -139,6 +169,10 @@ class RecentlyUsedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (viewModel.recentlyUsedItems.isEmpty && !viewModel.isLoading) {
+      return _buildEmptyState("No recent items", "Your recently used furniture will appear here");
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -180,15 +214,56 @@ class RecentlyUsedSection extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
-          child: Text(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.chair,
+                size: 32,
+                color: AppColors.primaryPurple,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textDark,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 24),
+          Text(
             title,
-            textAlign: TextAlign.center,
             style: TextStyle(
-              fontWeight: FontWeight.w500,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
               color: AppColors.textDark,
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textLight,
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
@@ -201,6 +276,10 @@ class AllRoomsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (viewModel.roomCategories.isEmpty && !viewModel.isLoading) {
+      return _buildEmptyState("No room categories", "Room categories will appear here");
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -260,15 +339,71 @@ class AllRoomsSection extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
-          child: Text(
-            category,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textDark,
-              fontSize: 16,
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _getRoomIcon(category),
+                size: 32,
+                color: AppColors.primaryPurple,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                category,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  IconData _getRoomIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'living room':
+        return Icons.living_rounded;
+      case 'bedroom':
+        return Icons.bed_rounded;
+      case 'kitchen':
+        return Icons.kitchen_rounded;
+      case 'office':
+        return Icons.work_rounded;
+      default:
+        return Icons.room_rounded;
+    }
+  }
+
+  Widget _buildEmptyState(String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textLight,
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
