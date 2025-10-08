@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
 import '../services/furniture_service.dart';
-import '/utils/text_components.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final UserService _userService = UserService();
   final FurnitureService _furnitureService = FurnitureService();
 
   int _selectedIndex = 0;
-  String _userName = "Guest"; // Default fallback
+  String _userName = "Guest"; // Placeholder data
   bool _isLoading = true;
   List<Map<String, String>> _recentlyUsedItems = [];
   List<Map<String, String>> _roomCategories = [];
@@ -32,36 +31,23 @@ class HomeViewModel extends ChangeNotifier {
       final categories = await _furnitureService.getRoomCategories();
 
       _userName = userName;
-
-      // FIX: Convert Map<String, dynamic> to Map<String, String>
-      _recentlyUsedItems = recentItems.map((item) =>
-      {
-        "title": item["title"]?.toString() ?? "Unknown Item",
-        "id": item["id"]?.toString() ?? "0"
-      }
-      ).toList();
-
-      _roomCategories = categories.map((category) =>
-      {
-        "title": category["title"]?.toString() ?? "Unknown Category",
-        "id": category["id"]?.toString() ?? "0"
-      }
-      ).toList();
+      _recentlyUsedItems = recentItems.cast<Map<String, String>>();
+      _roomCategories = categories.cast<Map<String, String>>();
 
     } catch (e) {
-      // Graceful failure - use fallback data
+      // 'breaking gracefully' - use fallback data
       print("Failed to load data: $e - Using fallback data");
       _userName = "Guest";
       _recentlyUsedItems = [
-        {"title": TextComponents.recentItemBeigeCouch, "id": "1"},
-        {"title": TextComponents.recentItemPinkBed, "id": "2"},
-        {"title": TextComponents.recentItemSilver, "id": "3"},
+        {"title": "Beige Couch", "id": "1"}, // Placeholder data
+        {"title": "Pink Bed", "id": "2"}, // Placeholder data
+        {"title": "Silver Lamp", "id": "3"}, // Placeholder data
       ];
       _roomCategories = [
-        {"title": TextComponents.roomCategoryLiving, "id": "living"},
-        {"title": TextComponents.roomCategoryBedroom, "id": "bedroom"},
-        {"title": TextComponents.roomCategoryKitchen, "id": "kitchen"},
-        {"title": TextComponents.roomCategoryOffice, "id": "office"},
+        {"title": "Living Room", "id": "living"}, // Placeholder data
+        {"title": "Bedroom", "id": "bedroom"}, // Placeholder data
+        {"title": "Kitchen", "id": "kitchen"}, // Placeholder data
+        {"title": "Office", "id": "office"}, // Placeholder data
       ];
     } finally {
       _isLoading = false;
