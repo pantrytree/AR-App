@@ -1,9 +1,26 @@
+// AppColors - Comprehensive Color System for Roomanties
+//
+// PURPOSE: Centralized color management for consistent UI/UX
+//
+// COLOR SYSTEM:
+// - Brand Colors: Primary purple (#963CF1) and dark blue (#14213D)
+// - Semantic Colors: Success, Error, Warning, Info states
+// - Dynamic Methods: Theme-aware color getters for dark/light mode
+//
+// USAGE:
+// - Static colors: AppColors.primaryPurple
+// - Dynamic colors: AppColors.getBackgroundColor(context)
+// - Gradients: AppColors.primaryGradient
+//
+// DESIGN TOKENS: All colors follow design system specifications
+
+
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
 
 class AppColors {
-  AppColors._();
+  AppColors._(); // Private constructor - static usage only
 
   // Main brand purple - used for buttons, highlights, important elements
   static const Color primaryPurple = Color(0xFF963CF1);

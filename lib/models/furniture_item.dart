@@ -1,3 +1,21 @@
+// FurnitureItem Data Model
+//
+// PURPOSE: Represents a furniture product in the Roomanties catalog
+//
+// API DATA MAPPING (Future Integration):
+// - id: Unique identifier from backend database
+// - name: Product display name
+// - description: Product details and features
+// - price: Retail price in local currency
+// - category: Room classification (Bedroom, Living Room, Kitchen)
+// - modelUrl: 3D model file URL for AR placement
+// - imageUrl: Product image URL from CDN
+// - tags: Searchable keywords and attributes
+// - dimensions: Physical size information
+// - scale: AR placement scale factor
+//
+// USAGE: Used across Catalogue, AR Camera, and Favorites features
+
 class FurnitureItem {
   final String id;
   final String name;
@@ -24,6 +42,14 @@ class FurnitureItem {
     required this.dimensions,
     this.scale = 1.0,
   });
+
+  // Creates a copy of FurnitureItem with updated favorite status
+  //
+  // @param isFavorite: New favorite status
+  // @return: New FurnitureItem instance with updated favorite state
+  //
+  // USAGE: For toggling favorites without mutating original object
+
 
   FurnitureItem copyWith({
     bool? isFavorite,

@@ -1,3 +1,20 @@
+// FurnitureService - Mock Data Service for Development
+//
+// PURPOSE: Provides furniture data during development phase
+//
+// CURRENT: Mock data with simulated API delays
+// FUTURE: Will be replaced with real backend API integration
+//
+// API ENDPOINTS TO IMPLEMENT:
+// - GET /api/furniture -> getAllFurniture()
+// - GET /api/furniture/{id} -> getItemById(id)
+// - GET /api/furniture?category={category} -> getItemsByCategory(category)
+// - GET /api/furniture/search?q={query} -> searchFurniture(query)
+// - GET /api/favorites -> getFavorites()
+//
+// DATA SOURCE: Currently uses hardcoded mock data with Picsum images
+
+
 // ignore_for_file: avoid_print
 
 import '../models/furniture_item.dart';
@@ -5,11 +22,18 @@ import '../models/furniture_item.dart';
 class FurnitureService {
   List<FurnitureItem> _cachedItems = [];
 
+  // Retrieves all furniture items
+  //
+  // CURRENT: Returns mock data with caching
+  // FUTURE: Will make API call to /api/furniture
+  //
+  // @return: List of FurnitureItem objects
+
   List<FurnitureItem> getAllFurniture() {
     if (_cachedItems.isNotEmpty) return _cachedItems;
 
     print('🔄 Loading furniture items...');
-
+  // TO DO: Replace with API call to /api/furniture
     _cachedItems = [
       FurnitureItem(
         id: '1',
@@ -92,7 +116,12 @@ class FurnitureService {
 
     return _cachedItems;
   }
-
+  // Finds furniture item by ID
+  //
+  // FUTURE: Will call /api/furniture/{id} endpoint
+  //
+  // @param id: Item identifier
+  // @return: FurnitureItem or null if not found
   FurnitureItem? getItemById(String id) {
     final items = getAllFurniture();
     try {

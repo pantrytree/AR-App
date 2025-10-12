@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/furniture_item.dart';
 import '../services/furniture_service.dart';
 
-/// CatalogueViewModel
-/// - Holds product list (mocked via FurnitureService)
-/// - Provides search & category filtering for the catalogue page.
+// CatalogueViewModel
+// - Holds product list (mocked via FurnitureService)
+// - Provides search & category filtering for the catalogue page.
 class CatalogueViewModel extends ChangeNotifier {
   final FurnitureService _service = FurnitureService();
 
@@ -22,13 +22,13 @@ class CatalogueViewModel extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String get selectedCategory => _selectedCategory;
 
-  /// categories used in wireframe + "All"
+  // categories used in wireframe + "All"
   List<String> get categories => ['All', 'Bedroom', 'Living Room', 'Kitchen'];
 
-  /// All items (from service)
+  // All items (from service)
   List<FurnitureItem> get allItems => _service.getAllFurniture();
 
-  /// Filtered items based on search + category
+  // Filtered items based on search + category
   List<FurnitureItem> get filteredItems {
     List<FurnitureItem> filtered = allItems;
 
@@ -47,7 +47,7 @@ class CatalogueViewModel extends ChangeNotifier {
     return filtered;
   }
 
-  /// A banner image URL to use in header — default to first product image if available
+  // A banner image URL to use in header — default to first product image if available
   String? get headerImageUrl {
     final items = filteredItems;
     if (items.isNotEmpty) return items.first.imageUrl;

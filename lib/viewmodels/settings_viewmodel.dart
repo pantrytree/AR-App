@@ -1,3 +1,17 @@
+// SettingsViewModel - User Preferences and Navigation
+//
+// PURPOSE: Manages app settings and navigation to preference pages
+//
+// FEATURES:
+// - Theme mode management (dark/light)
+// - Navigation routing for settings sections
+// - Placeholder for user profile management
+//
+// BACKEND INTEGRATION:
+// - TO DO: Sync theme preference via PUT /api/user/preferences
+// - TO DO: User profile management via /api/user/profile
+// - TO DO: Language and notification preferences
+
 import 'package:flutter/foundation.dart';
 
 class SettingsViewModel extends ChangeNotifier {
