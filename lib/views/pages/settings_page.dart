@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/settings_viewmodel.dart';
-import '../../utils/theme.dart'; // ✅ ADD THIS
+import '../../utils/theme.dart';
 import '../../utils/colors.dart';
 import '../../utils/text_components.dart';
 
@@ -12,9 +12,11 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeManager>( // ✅ USE THEME MANAGER FOR THEME
+    print('🎨 SettingsPage building...');
+    return Consumer<ThemeManager>(
       builder: (context, themeManager, child) {
-        return Consumer<SettingsViewModel>( // ✅ USE SETTINGS VIEWMODEL FOR NAVIGATION
+        print('🎨 ThemeManager state: ${themeManager.isDarkMode ? 'DARK' : 'LIGHT'}');
+        return Consumer<SettingsViewModel>(
           builder: (context, settingsViewModel, child) {
             return Scaffold(
               backgroundColor: AppColors.getBackgroundColor(context),
@@ -79,7 +81,7 @@ class SettingsPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadowColor,
+              color: AppColors.getSecondaryTextColor(context).withOpacity(0.1),
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
@@ -144,7 +146,7 @@ class SettingsPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadowColor,
+            color: AppColors.getSecondaryTextColor(context).withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -207,7 +209,7 @@ class SettingsPage extends StatelessWidget {
             subtitle: themeManager.isDarkMode ? 'Enabled' : 'Disabled',
             value: themeManager.isDarkMode,
             onChanged: (value) {
-              themeManager.toggleTheme(value); // ✅ USE THEME MANAGER
+              themeManager.toggleTheme(value);
             },
           ),
         ],
@@ -224,7 +226,7 @@ class SettingsPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadowColor,
+            color: AppColors.getSecondaryTextColor(context).withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -257,6 +259,21 @@ class SettingsPage extends StatelessWidget {
 
           _buildSoftDivider(context),
 
+          // DELETE ACCOUNT OPTION
+          _buildSoftItem(
+            context,
+            icon: Icons.delete_forever,
+            title: 'Delete Account',
+            subtitle: 'Permanently remove your account',
+            onTap: () {
+              _showDeleteAccountDialog(context);
+            },
+            isDeleteAccount: true,
+            showTrailing: false,
+          ),
+
+          _buildSoftDivider(context),
+
           _buildSoftItem(
             context,
             icon: Icons.logout,
@@ -281,11 +298,23 @@ class SettingsPage extends StatelessWidget {
         required VoidCallback onTap,
         bool showTrailing = true,
         bool isLogout = false,
+        bool isDeleteAccount = false,
       }) {
+    Color iconColor = AppColors.getPrimaryColor(context);
+    Color textColor = AppColors.getTextColor(context);
+
+    if (isLogout) {
+      iconColor = AppColors.error;
+      textColor = AppColors.error;
+    } else if (isDeleteAccount) {
+      iconColor = AppColors.warning;
+      textColor = AppColors.warning;
+    }
+
     return ListTile(
       leading: Icon(
         icon,
-        color: isLogout ? AppColors.error : AppColors.getPrimaryColor(context),
+        color: iconColor,
         size: 20,
       ),
       title: Text(
@@ -293,7 +322,7 @@ class SettingsPage extends StatelessWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: isLogout ? AppColors.error : AppColors.getTextColor(context),
+          color: textColor,
         ),
       ),
       subtitle: Text(
@@ -457,6 +486,133 @@ class SettingsPage extends StatelessWidget {
             },
             child: Text(
               'Logout',
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.getCardBackground(context),
+        title: Text(
+          'Delete Account',
+          style: TextStyle(
+            color: AppColors.getTextColor(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This action cannot be undone. This will permanently:',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '• Delete your account and all personal data',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+                fontSize: 13,
+              ),
+            ),
+            Text(
+              '• Remove all your saved projects and favorites',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+                fontSize: 13,
+              ),
+            ),
+            Text(
+              '• Cancel any active subscriptions',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showFinalDeleteConfirmation(context);
+            },
+            child: Text(
+              'Continue',
+              style: TextStyle(
+                color: AppColors.warning,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFinalDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.getCardBackground(context),
+        title: Text(
+          'Final Confirmation',
+          style: TextStyle(
+            color: AppColors.getTextColor(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Type "DELETE" to confirm account deletion:',
+          style: TextStyle(
+            color: AppColors.getSecondaryTextColor(context),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Account deletion requested'),
+                  backgroundColor: AppColors.warning,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+              // TODO: Implement actual account deletion API call
+            },
+            child: Text(
+              'Delete Account',
               style: TextStyle(
                 color: AppColors.error,
                 fontWeight: FontWeight.bold,

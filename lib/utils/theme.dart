@@ -32,7 +32,9 @@ class ThemeManager extends ChangeNotifier {
   // @notify: Updates all listening widgets automatically
   // Theme method - ONLY ONE VERSION
   void toggleTheme(bool value) {
+    print('🎨 ThemeManager: Toggling theme to ${value ? 'DARK' : 'LIGHT'}');
     _isDarkMode = value;
     notifyListeners();
+    print('🎨 ThemeManager: Notified ${_isDarkMode ? 'DARK' : 'LIGHT'}');
   }
 }

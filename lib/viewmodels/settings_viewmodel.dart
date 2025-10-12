@@ -58,6 +58,12 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ADD THIS: Delete account navigation
+  void navigateToDeleteAccount() {
+    _navigateToRoute = '/delete-account';
+    notifyListeners();
+  }
+
   void clearNavigation() {
     _navigateToRoute = null;
     _navigationArguments = null;

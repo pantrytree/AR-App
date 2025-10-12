@@ -45,6 +45,7 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, _) {
+          print('🎨 Theme changed: ${themeManager.isDarkMode ? 'Dark' : 'Light'}');
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
