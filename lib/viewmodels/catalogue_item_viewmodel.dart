@@ -34,34 +34,67 @@ class CatalogueItemViewModel extends ChangeNotifier {
   String? get navigateToRoute => _navigateToRoute;
   Map<String, dynamic>? get navigationArguments => _navigationArguments;
 
-  // Load product data
+  // ======================
+  // BACKEND INTEGRATION POINTS
+  // ======================
+
+  // TODO: Backend - Implement loadProductData()
+  // Description: Loads product details from products table
+  // Expected: Populates product data fields
   void _loadProductData() {
     debugPrint("Loading product data for ID: $productId");
-    // TODO: Backend - Implement product data loading
+    // Backend team to implement:
+    // - Query products table by productId
+    // - Populate _productTitle, _productDimensions, _productDescription
+    // - Load actual product image URLs
   }
 
-  // Add to cart functionality
+  // TODO: Backend - Implement addToCart()
+  // Description: Adds item to user's cart in cart_items table
+  // Expected: Returns success status
+  Future<void> _addToCartInBackend() async {
+    // Backend team to implement:
+    // - Insert record into cart_items table
+    // - Associate with current user
+    // - Return success status
+    debugPrint("Adding $productTitle to cart - BACKEND NEEDED");
+  }
+
+  // TODO: Backend - Implement toggleFavorite()
+  // Description: Toggles favorite status in user_favorites table
+  // Expected: Returns updated favorite status
+  Future<void> _toggleFavoriteInBackend() async {
+    // Backend team to implement:
+    // - Insert/delete record in user_favorites table
+    // - Associate with current user and product
+    // - Return updated favorite status
+    debugPrint("Toggling favorite for $productTitle - BACKEND NEEDED");
+  }
+
+  // ======================
+  // PUBLIC METHODS
+  // ======================
+
   void addToCart() {
     debugPrint("Adding $productTitle to cart");
-    // TODO: Backend - Implement CartService.addToCart()
+    // Backend team: This function needs implementation
+    _addToCartInBackend();
   }
 
-  // Toggle favorite status
   void toggleFavorite() {
     _isFavorite = !_isFavorite;
     notifyListeners();
     debugPrint("${_isFavorite ? 'Added' : 'Removed'} $productTitle from favorites");
-    // TODO: Backend - Implement FavoritesService.toggleFavorite()
+    // Backend team: This function needs implementation
+    _toggleFavoriteInBackend();
   }
 
-  // Navigate to related item using flags
   void navigateToRelatedItem(String relatedProductId) {
     _navigateToRoute = '/catalogue_item';
     _navigationArguments = {'productId': relatedProductId};
     notifyListeners();
   }
 
-  // Clear navigation flags
   void clearNavigation() {
     _navigateToRoute = null;
     _navigationArguments = null;

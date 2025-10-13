@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'views/pages/home_page.dart';
 import 'views/pages/forgot_password_page.dart';
 import 'views/pages/logout_page.dart';
@@ -11,7 +13,11 @@ import 'views/pages/help_page.dart';
 import 'views/pages/edit_profile_page.dart';
 import 'views/pages/login_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 

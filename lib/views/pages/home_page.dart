@@ -1,3 +1,4 @@
+// lib/views/pages/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/views/widgets/side_menu.dart';
@@ -14,7 +15,9 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(
+          create: (_) => HomeViewModel(),
+        ),
         ChangeNotifierProvider(create: (_) => SideMenuViewModel(userName: "Bulelwa")),
       ],
       child: Consumer<HomeViewModel>(
@@ -126,9 +129,10 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Dynamic Greeting
+            // Dynamic Greeting - FIXED: Use .displayName instead of ['displayName']
             Text(
-              TextComponents.homeGreeting(homeViewModel.currentUser?['displayName']),
+              // Dynamic Greeting - FIXED: Use ['displayName'] for Map access
+              TextComponents.homeGreeting(homeViewModel.currentUser?['displayName'] ?? 'User'),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -397,15 +401,5 @@ class HomePage extends StatelessWidget {
       default:
         return Icons.room;
     }
-  }
-}
-
-// Helper extension for string formatting
-extension StringCasingExtension on String {
-  String toTitleCase() {
-    return split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
   }
 }

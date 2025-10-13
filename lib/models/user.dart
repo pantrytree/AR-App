@@ -1,55 +1,96 @@
+// user.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class User {
   final String id;
   final String email;
-  final String? passwordHash;
-  final String? firebaseUid;
-  final String? displayName;
-  final String? profileImageUrl;
-  final bool isActive;
-  final DateTime? lastLogin;
+  final String displayName;
+  final String photoUrl;
+  final List<String> projectIds;
+  final List<String> favoriteIds;
+  final List<String> collaborationIds;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   User({
     required this.id,
     required this.email,
-    this.passwordHash,
-    this.firebaseUid,
-    this.displayName,
-    this.profileImageUrl,
-    this.isActive = true,
-    this.lastLogin,
+    required this.displayName,
+    this.photoUrl = '',
+    this.projectIds = const [],
+    this.favoriteIds = const [],
+    this.collaborationIds = const [],
     required this.createdAt,
     required this.updatedAt,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
+  factory User.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
+    if (data == null) {
+      throw Exception('Document data is null');
+    }
+
     return User(
-      id: json['id'].toString(),
-      email: json['email'] as String,
-      firebaseUid: json['firebase_uid'] as String?,
-      displayName: json['display_name'] as String?,
-      profileImageUrl: json['profile_image_url'] as String?,
-      isActive: json['is_active'] as bool? ?? true,
-      lastLogin: json['last_login'] != null
-          ? DateTime.parse(json['last_login'] as String)
-          : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      id: doc.id,
+      email: data['email'] ?? '',
+      displayName: data['displayName'] ?? '',
+      photoUrl: data['photoUrl'] ?? '',
+      projectIds: List<String>.from(data['projectIds'] ?? []),
+      favoriteIds: List<String>.from(data['favoriteIds'] ?? []),
+      collaborationIds: List<String>.from(data['collaborationIds'] ?? []),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toFirestore() {
     return {
-      'id': id,
       'email': email,
-      'firebase_uid': firebaseUid,
-      'display_name': displayName,
-      'profile_image_url': profileImageUrl,
-      'is_active': isActive,
-      'last_login': lastLogin?.toIso8601String(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'displayName': displayName,
+      'photoUrl': photoUrl,
+      'projectIds': projectIds,
+      'favoriteIds': favoriteIds,
+      'collaborationIds': collaborationIds,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
+
+  User copyWith({
+    String? id,
+    String? email,
+    String? displayName,
+    String? photoUrl,
+    List<String>? projectIds,
+    List<String>? favoriteIds,
+    List<String>? collaborationIds,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      photoUrl: photoUrl ?? this.photoUrl,
+      projectIds: projectIds ?? this.projectIds,
+      favoriteIds: favoriteIds ?? this.favoriteIds,
+      collaborationIds: collaborationIds ?? this.collaborationIds,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'User(id: $id, email: $email, displayName: $displayName)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is User && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

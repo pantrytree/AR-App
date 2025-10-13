@@ -1,75 +1,107 @@
+// furniture_item.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class FurnitureItem {
   final String id;
   final String name;
-  final String? description;
-  final String categoryId;
-  final Map<String, dynamic> dimensions; // {width, height, depth}
+  final String description;
+  final String category;
+  final List<String> imageUrls;
+  final String? thumbnailUrl;
+  final Map<String, dynamic> dimensions; // {width, height, depth, unit}
   final List<String> colors;
-  final String? imageUrl;
-  final String? modelUrl;
-  final String? arModelUrl;
-  final List<String> galleryImages;
-  final double rating;
-  final int reviewCount;
-  final List<String> tags;
+  final String? modelUrl; // 3D model URL for AR
+  final Map<String, dynamic>? arMetadata;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<String> tags;
 
   FurnitureItem({
     required this.id,
     required this.name,
-    this.description,
-    required this.categoryId,
-    this.dimensions = const {},
+    required this.description,
+    required this.category,
+    required this.imageUrls,
+    this.thumbnailUrl,
+    required this.dimensions,
     this.colors = const [],
-    this.imageUrl,
     this.modelUrl,
-    this.arModelUrl,
-    this.galleryImages = const [],
-    this.rating = 0.0,
-    this.reviewCount = 0,
-    this.tags = const [],
+    this.arMetadata,
     required this.createdAt,
     required this.updatedAt,
+    this.tags = const [],
   });
 
-  factory FurnitureItem.fromJson(Map<String, dynamic> json) {
+  factory FurnitureItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
     return FurnitureItem(
-      id: json['id'].toString(),
-      name: json['name'] as String,
-      description: json['description'] as String?,
-      categoryId: json['category_id'].toString(),
-      dimensions: json['dimensions'] as Map<String, dynamic>? ?? {},
-      colors: (json['colors'] as List?)?.cast<String>() ?? [],
-      imageUrl: json['image_url'] as String?,
-      modelUrl: json['model_url'] as String?,
-      arModelUrl: json['ar_model_url'] as String?,
-      galleryImages: (json['gallery_images'] as List?)?.cast<String>() ?? [],
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      reviewCount: json['review_count'] as int? ?? 0,
-      tags: (json['tags'] as List?)?.cast<String>() ?? [],
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      id: doc.id,
+      name: data['name'] as String,
+      description: data['description'] as String,
+      category: data['category'] as String,
+      imageUrls: (data['imageUrls'] as List<dynamic>).cast<String>(),
+      thumbnailUrl: data['thumbnailUrl'] as String?,
+      dimensions: Map<String, dynamic>.from(data['dimensions'] as Map),
+      colors: (data['colors'] as List<dynamic>?)?.cast<String>() ?? [],
+      modelUrl: data['modelUrl'] as String?,
+      arMetadata: data['arMetadata'] != null
+          ? Map<String, dynamic>.from(data['arMetadata'] as Map)
+          : null,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      tags: (data['tags'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toFirestore() {
     return {
-      'id': id,
       'name': name,
       'description': description,
-      'category_id': categoryId,
+      'category': category,
+      'imageUrls': imageUrls,
+      'thumbnailUrl': thumbnailUrl,
       'dimensions': dimensions,
       'colors': colors,
-      'image_url': imageUrl,
-      'model_url': modelUrl,
-      'ar_model_url': arModelUrl,
-      'gallery_images': galleryImages,
-      'rating': rating,
-      'review_count': reviewCount,
+      'modelUrl': modelUrl,
+      'arMetadata': arMetadata,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
       'tags': tags,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
     };
   }
+
+  FurnitureItem copyWith({
+    String? id,
+    String? name,
+    String? description,
+    String? category,
+    List<String>? imageUrls,
+    String? thumbnailUrl,
+    Map<String, dynamic>? dimensions,
+    List<String>? colors,
+    String? modelUrl,
+    Map<String, dynamic>? arMetadata,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<String>? tags,
+  }) {
+    return FurnitureItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      imageUrls: imageUrls ?? this.imageUrls,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      dimensions: dimensions ?? this.dimensions,
+      colors: colors ?? this.colors,
+      modelUrl: modelUrl ?? this.modelUrl,
+      arMetadata: arMetadata ?? this.arMetadata,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      tags: tags ?? this.tags,
+    );
+  }
+
+  // Helper to check if this item supports AR
+  bool get supportsAr => modelUrl != null && modelUrl!.isNotEmpty;
 }

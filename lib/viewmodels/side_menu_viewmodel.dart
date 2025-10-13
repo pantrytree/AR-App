@@ -1,18 +1,79 @@
 import 'package:flutter/material.dart';
 
 class SideMenuViewModel extends ChangeNotifier {
-  final String? userName;
-
+  String? _userName;
   String? _navigateToRoute;
   dynamic _navigationArguments;
 
-  SideMenuViewModel({this.userName});
+  SideMenuViewModel({String? userName}) {
+    _userName = userName;
+    _fetchUserProfile(); // Load user data on initialization
+  }
+
+  // ======================
+  // BACKEND INTEGRATION POINTS
+  // ======================
+
+  // TODO: Backend - Implement fetchUserProfile()
+  // Description: Pulls user data (name, email, profile picture) from users table
+  // Expected: Returns user profile data including name, email, profile picture URL
+  Future<void> _fetchUserProfile() async {
+    // Backend team to implement:
+    // - Query users table for current user
+    // - Return user data including display name, email, profile picture
+    // - Update _userName with actual data from database
+
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
+
+    // Mock implementation - replace with actual backend call
+    if (_userName == null) {
+      // Backend team: Replace this with actual user data fetch
+      _userName = 'Bulelwa'; // This should come from users table
+    }
+
+    notifyListeners();
+  }
+
+  // TODO: Backend - Implement updateProfilePicture()
+  // Description: Updates profile picture field in users table
+  // Expected: Returns success status and new picture URL
+  Future<void> updateProfilePicture(String imagePath) async {
+    // Backend team to implement:
+    // - Upload image to storage
+    // - Update profile_picture field in users table
+    // - Return new image URL
+
+    debugPrint("Updating profile picture - BACKEND NEEDED");
+    // Backend team: Implement image upload and database update
+
+    notifyListeners();
+  }
+
+  // TODO: Backend - Implement logoutUser()
+  // Description: Logs out the current user and clears session
+  // Expected: Returns success status
+  Future<void> logoutUser() async {
+    // Backend team to implement:
+    // - Clear authentication tokens/session
+    // - Navigate to login page
+    // - Clear any user-specific cached data
+
+    debugPrint("Logging out user - BACKEND NEEDED");
+
+    // After backend logout, navigate to login
+    _navigateToRoute = '/login';
+    notifyListeners();
+  }
+
+  // ======================
+  //PUBLIC METHODS & GETTERS
+  // ======================
 
   // Getters
   String? get navigateToRoute => _navigateToRoute;
   dynamic get navigationArguments => _navigationArguments;
 
-  String get userNameDisplay => userName ?? 'User';
+  String get userNameDisplay => _userName ?? 'User';
 
   // Menu items configuration
   List<Map<String, dynamic>> get menuItems => [
@@ -22,29 +83,19 @@ class SideMenuViewModel extends ChangeNotifier {
       'route': '/home',
     },
     {
-      'text': 'My Rooms',
-      'icon': Icons.room,
-      'route': '/rooms',
+      'text': 'Catalogue',
+      'icon': Icons.shopping_bag,
+      'route': '/catalogue',
     },
     {
-      'text': 'Furniture Catalog',
-      'icon': Icons.chair,
-      'route': '/catalog',
-    },
-    {
-      'text': 'Favorites',
+      'text': 'My Likes',
       'icon': Icons.favorite,
-      'route': '/favorites',
+      'route': '/likes',
     },
     {
-      'text': 'Shopping Cart',
-      'icon': Icons.shopping_cart,
-      'route': '/cart',
-    },
-    {
-      'text': 'Order History',
-      'icon': Icons.history,
-      'route': '/orders',
+      'text': 'My Projects',
+      'icon': Icons.work,
+      'route': '/projects',
     },
     {
       'text': 'Settings',
@@ -56,6 +107,11 @@ class SideMenuViewModel extends ChangeNotifier {
       'icon': Icons.help,
       'route': '/help',
     },
+    {
+      'text': 'Forgot Password',
+      'icon': Icons.lock_reset,
+      'route': '/forgot_password',
+    },
   ];
 
   // Navigation methods
@@ -66,7 +122,7 @@ class SideMenuViewModel extends ChangeNotifier {
   }
 
   void onEditProfileTapped() {
-    _navigateToRoute = '/profile';
+    _navigateToRoute = '/edit_profile';
     _navigationArguments = {'editMode': true};
     notifyListeners();
   }
@@ -74,6 +130,12 @@ class SideMenuViewModel extends ChangeNotifier {
   void clearNavigation() {
     _navigateToRoute = null;
     _navigationArguments = null;
+    notifyListeners();
+  }
+
+  // Update user name (for when backend provides real data)
+  void updateUserName(String newName) {
+    _userName = newName;
     notifyListeners();
   }
 

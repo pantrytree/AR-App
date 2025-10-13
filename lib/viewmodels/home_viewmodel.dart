@@ -9,6 +9,11 @@ class HomeViewModel extends ChangeNotifier {
   String? _errorMessage;
   int _selectedIndex = 0;
 
+  // Real data properties - will be populated by backend
+  String? _userName;
+  List<dynamic> _recentlyUsedItems = [];
+  List<dynamic> _userRooms = [];
+
   // Getters
   String? get navigateToRoute => _navigateToRoute;
   dynamic get navigationArguments => _navigationArguments;
@@ -17,22 +22,91 @@ class HomeViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   int get selectedIndex => _selectedIndex;
 
-  // Mock data - replace with actual data from your backend
-  List<dynamic> get recentlyUsedItems => [
+  // Backend data getters
+  String? get userName => _userName;
+  List<dynamic> get recentlyUsedItems => _recentlyUsedItems.isNotEmpty ? _recentlyUsedItems : _recentlyUsedItemsMock;
+  List<dynamic> get userRooms => _userRooms.isNotEmpty ? _userRooms : _userRoomsMock;
+
+  // Mock data - fallback until backend is implemented
+  List<dynamic> get _recentlyUsedItemsMock => [
     {'id': '1', 'name': 'Pink Bed', 'imageUrl': null},
     {'id': '2', 'name': 'Silver Lamp', 'imageUrl': null},
     {'id': '3', 'name': 'Wooden Desk', 'imageUrl': null},
     {'id': '4', 'name': 'Grey Couch', 'imageUrl': null},
   ];
 
-  List<dynamic> get userRooms => [
+  List<dynamic> get _userRoomsMock => [
     {'id': '1', 'roomName': 'Living Room', 'roomType': 'living_room'},
     {'id': '2', 'roomName': 'Dining Room', 'roomType': 'dining_room'},
     {'id': '3', 'roomName': 'Office', 'roomType': 'office'},
     {'id': '4', 'roomName': 'Kitchen', 'roomType': 'kitchen'},
   ];
 
-  dynamic get currentUser => {'displayName': 'Bulelwa'};
+  dynamic get currentUser => {'displayName': _userName ?? 'Bulelwa'};
+
+  // ======================
+  // BACKEND INTEGRATION POINTS
+  // ======================
+
+  // TODO: Backend - Implement fetchUserName()
+  // Description: Gets the current user's name from the users table
+  // Expected: Returns String (user name)
+  Future<String?> _fetchUserName() async {
+    // Backend team to implement:
+    // - Query users table for current user
+    // - Return user's display name
+    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+    return 'Bulelwa'; // Mock response
+  }
+
+  // TODO: Backend - Implement fetchRecentlyUsedItems()
+  // Description: Retrieves items from recently_used_items table
+  // Expected: Returns List<Map> with item data
+  Future<List<dynamic>> _fetchRecentlyUsedItems() async {
+    // Backend team to implement:
+    // - Query recently_used_items table for current user
+    // - Return list of recently used furniture items
+    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+    return _recentlyUsedItemsMock; // Mock response
+  }
+
+  // TODO: Backend - Implement fetchRoomCategories()
+  // Description: Loads data from room_categories table
+  // Expected: Returns List<Map> with room categories
+  Future<List<dynamic>> _fetchRoomCategories() async {
+    // Backend team to implement:
+    // - Query room_categories table
+    // - Return list of available room categories
+    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+    return _userRoomsMock; // Mock response
+  }
+
+  // ======================
+  // PUBLIC METHODS
+  // ======================
+
+  // Refresh home page data - calls all backend functions
+  Future<void> refreshHomePage() async {
+    _isLoading = true;
+    _hasError = false;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Backend team: These functions need implementation
+      _userName = await _fetchUserName();
+      _recentlyUsedItems = await _fetchRecentlyUsedItems();
+      _userRooms = await _fetchRoomCategories();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _hasError = true;
+      _errorMessage = 'Failed to load data: ${e.toString()}';
+      notifyListeners();
+    }
+  }
 
   // Bottom navigation method
   void onTabSelected(int index) {
@@ -40,28 +114,28 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     switch (index) {
-      case 0: // Home (house icon) - stay on home page
+      case 0: // Home
         break;
-      case 1: // Favorites (heart icon) - goes to Likes page
+      case 1: // Favorites
         _navigateToRoute = '/likes';
         notifyListeners();
         break;
-      case 2: // Camera (camera icon) - goes to AR View page
+      case 2: // AR View
         _navigateToRoute = '/ar_view';
         notifyListeners();
         break;
-      case 3: // Shopping Bag (shopping bag icon) - goes to Cart page
+      case 3: // Cart
         _navigateToRoute = '/cart';
         notifyListeners();
         break;
-      case 4: // Profile (person icon) - goes to Edit Profile page
+      case 4: // Profile
         _navigateToRoute = '/edit_profile';
         notifyListeners();
         break;
     }
   }
 
-  // Existing navigation methods
+  // Navigation methods
   void onSearchTapped() {
     _navigateToRoute = '/search';
     notifyListeners();
@@ -83,19 +157,6 @@ class HomeViewModel extends ChangeNotifier {
     _navigateToRoute = null;
     _navigationArguments = null;
     notifyListeners();
-  }
-
-  // Existing methods
-  void refreshHomePage() {
-    _isLoading = true;
-    _hasError = false;
-    notifyListeners();
-
-    // Simulate loading
-    Future.delayed(const Duration(seconds: 2), () {
-      _isLoading = false;
-      notifyListeners();
-    });
   }
 
   @override

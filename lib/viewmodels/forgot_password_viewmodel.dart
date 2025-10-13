@@ -30,7 +30,50 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     _clearErrors();
   }
 
-  //sends reset email
+  // ======================
+  // BACKEND INTEGRATION POINTS
+  // ======================
+
+  // TODO: Backend - Implement sendPasswordResetEmail()
+  // Description: Creates a record in password_resets table and sends email
+  // Expected: Returns success message
+  Future<void> _sendPasswordResetEmailToBackend() async {
+    // Backend team to implement:
+    // - Create record in password_resets table
+    // - Send actual reset email to user
+    // - Return success status
+    await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+    return; // Backend should return success response
+  }
+
+  // TODO: Backend - Implement validateResetCode()
+  // Description: Checks reset code against password_resets table
+  // Expected: Returns boolean (valid/invalid)
+  Future<bool> _validateResetCodeWithBackend(String resetCode) async {
+    // Backend team to implement:
+    // - Query password_resets table for valid reset code
+    // - Check expiration time
+    // - Return validation result
+    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+    return true; // Backend should return validation result
+  }
+
+  // TODO: Backend - Implement updateNewPassword()
+  // Description: Updates user password in users table
+  // Expected: Returns success message
+  Future<void> _updateNewPasswordInBackend(String newPassword) async {
+    // Backend team to implement:
+    // - Update password field in users table
+    // - Invalidate used reset codes
+    // - Return success status
+    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+    return; // Backend should return success response
+  }
+
+  // ======================
+  // PUBLIC METHODS
+  // ======================
+
   Future<void> sendPasswordResetEmail() async {
     if (!_validateForm()) {
       return;
@@ -43,22 +86,12 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // TODO: Backend - Implement AuthService.sendPasswordResetEmail()
-      // This should call: POST /api/auth/forgot-password
-      // Request body: {"email": _email}
-      // Response format: { "message": "Reset link sent successfully" }
+      // Backend team: This function needs implementation
+      await _sendPasswordResetEmailToBackend();
 
-      // Mock implementation for now
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
-
-      // Simulate successful response
       _successMessage = "Password reset link sent to $_email";
       _isLoading = false;
       notifyListeners();
-
-      // Optionally navigate back to login after success
-      // _navigateToRoute = '/login';
-      // notifyListeners();
 
     } catch (e) {
       _isLoading = false;
@@ -68,22 +101,21 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     }
   }
 
-  //checks reset code (for future use)
   Future<void> validateResetCode(String resetCode) async {
-    // TODO: Backend - Implement AuthService.validateResetCode()
-    // This should call: POST /api/auth/validate-reset-code
-    // Request body: {"email": _email, "reset_code": resetCode}
-
-    // For now, this is a placeholder for future implementation
+    // Backend team: This function needs implementation
+    final isValid = await _validateResetCodeWithBackend(resetCode);
+    if (!isValid) {
+      throw Exception('Invalid reset code');
+    }
   }
 
-  //updates password after reset (for future use)
   Future<void> updateNewPassword(String newPassword, String confirmPassword) async {
-    // TODO: Backend - Implement AuthService.updatePassword()
-    // This should call: POST /api/auth/reset-password
-    // Request body: {"email": _email, "new_password": newPassword, "reset_token": "token"}
+    if (newPassword != confirmPassword) {
+      throw Exception('Passwords do not match');
+    }
 
-    // For now, this is a placeholder for future implementation
+    // Backend team: This function needs implementation
+    await _updateNewPasswordInBackend(newPassword);
   }
 
   // Navigation methods
@@ -99,7 +131,6 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Clear navigation flags
   void clearNavigation() {
     _navigateToRoute = null;
     _navigationArguments = null;
@@ -136,7 +167,6 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     }
   }
 
-  // Reset form
   void resetForm() {
     _email = '';
     _hasError = false;
