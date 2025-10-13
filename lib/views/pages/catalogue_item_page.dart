@@ -1,148 +1,239 @@
-// ignore_for_file: unused_import, deprecated_member_use
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../models/furniture_item.dart';
-import '../../viewmodels/catalogue_item_viewmodel.dart';
-import '../../utils/colors.dart';
-import '../../utils/text_components.dart';
-import '../../utils/theme.dart';
+import '/utils/colors.dart';
+import '/utils/text_components.dart';
+import '/viewmodels/catalogue_item_viewmodel.dart';
 
-class CatalogueItemPage extends StatelessWidget {
-  final String itemId;
+class CatalogueItemPage extends StatefulWidget {
+  final String? productId;
 
-  const CatalogueItemPage({super.key, required this.itemId});
+  const CatalogueItemPage({
+    super.key,
+    this.productId,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<ThemeManager>(
-      builder: (context, themeManager, child) {
-        return ChangeNotifierProvider(
-          create: (_) => CatalogueItemViewModel()..loadItem(itemId),
-          child: const _CatalogueItemBody(),
-        );
-      },
-    );
-  }
+  State<CatalogueItemPage> createState() => _CatalogueItemPageState();
 }
 
-class _CatalogueItemBody extends StatelessWidget {
-  const _CatalogueItemBody();
+class _CatalogueItemPageState extends State<CatalogueItemPage> {
+  late final CatalogueItemViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = CatalogueItemViewModel(productId: widget.productId);
+    _viewModel.addListener(_onViewModelChanged);
+  }
+
+  void _onViewModelChanged() {
+    if (_viewModel.navigateToRoute != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushNamed(
+          context,
+          _viewModel.navigateToRoute!,
+          arguments: _viewModel.navigationArguments,
+        ).then((_) => _viewModel.clearNavigation());
+      });
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<CatalogueItemViewModel>();
-    final item = viewModel.selectedItem;
-
-    if (item == null) {
-      return Scaffold(
-        backgroundColor: AppColors.getBackgroundColor(context),
-        body: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.getPrimaryColor(context)),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: AppColors.getBackgroundColor(context),
+      backgroundColor: AppColors.secondaryBackground,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: AppColors.getAppBarBackground(context),
-        iconTheme: IconThemeData(
-          color: AppColors.getAppBarForeground(context),
-        ),
         title: Text(
-          item.name,
+          TextComponents.cataloguePageTitle,
           style: TextStyle(
-            color: AppColors.getAppBarForeground(context),
+            color: AppColors.primaryDarkBlue,
             fontWeight: FontWeight.bold,
           ),
         ),
-        centerTitle: true,
+        backgroundColor: AppColors.secondaryBackground,
+        foregroundColor: AppColors.primaryDarkBlue,
+        elevation: 0,
+        iconTheme: IconThemeData(color: AppColors.primaryDarkBlue),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 280,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: AppColors.shadowColor, blurRadius: 8, offset: const Offset(0, 4))],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.network(
-                  item.imageUrl,
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: AppColors.lightGrey,
-                    child: Icon(Icons.image_not_supported, size: 50, color: AppColors.getSecondaryTextColor(context)),
-                  ),
-                ),
+            // Product Title and Dimensions
+            Text(
+              _viewModel.productTitle,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDarkBlue,
               ),
             ),
-            const SizedBox(height: 25),
-            Text(item.name, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.getTextColor(context))),
             const SizedBox(height: 8),
-            Text(item.category, style: TextStyle(fontSize: 16, color: AppColors.getSecondaryTextColor(context))),
-            const SizedBox(height: 16),
-            Text(item.description, style: TextStyle(fontSize: 15, height: 1.4, color: AppColors.getSecondaryTextColor(context))),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Icon(Icons.straighten, size: 22, color: AppColors.getPrimaryColor(context)),
-                const SizedBox(width: 8),
-                Text("Dimensions: ${item.dimensions}", style: TextStyle(fontSize: 15, color: AppColors.getTextColor(context), fontWeight: FontWeight.w500)),
-              ],
+            Text(
+              _viewModel.productDimensions,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.mediumGrey,
+              ),
             ),
             const SizedBox(height: 20),
-            Text("R${item.price.toStringAsFixed(2)}", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.getPrimaryColor(context))),
+
+            // Product Image
+            Container(
+              height: 250,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadowColor,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.photo,
+                size: 60,
+                color: AppColors.primaryPurple,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Product Description
+            Text(
+              _viewModel.productDescription,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.primaryDarkBlue,
+                height: 1.5,
+              ),
+            ),
             const SizedBox(height: 30),
+
+            // Action Buttons (Add to Cart, Add to Favorites)
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Added to Favorites"))),
+                  child: ElevatedButton(
+                    onPressed: _viewModel.addToCart,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.getPrimaryColor(context),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: AppColors.primaryPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    icon: const Icon(Icons.favorite_border, color: AppColors.white),
-                    label: const Text("Add to Favorites", style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold)),
+                    child: const Text("Add to Cart"),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("AR View Coming Soon"))),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.getPrimaryColor(context), width: 2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    icon: Icon(Icons.view_in_ar, color: AppColors.getPrimaryColor(context)),
-                    label: Text("View in AR", style: TextStyle(color: AppColors.getPrimaryColor(context), fontWeight: FontWeight.bold)),
+                IconButton(
+                  onPressed: _viewModel.toggleFavorite,
+                  icon: Icon(
+                    _viewModel.isFavorite ? Icons.favorite : Icons.favorite_border,
+                    size: 30,
+                    color: _viewModel.isFavorite ? Colors.pink : AppColors.primaryPurple,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.white,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 30),
-            Wrap(
-              spacing: 8,
-              children: item.tags.map((tag) => Chip(
-                backgroundColor: AppColors.getCategoryTabSelected(context),
-                label: Text(tag, style: TextStyle(color: AppColors.getTextColor(context), fontWeight: FontWeight.w500)),
-              )).toList(),
+
+            // Related Items Section
+            Text(
+              TextComponents.moreToExploreTitle,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDarkBlue,
+              ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 16),
+
+            // Related Items
+            ..._viewModel.relatedItems.map((item) =>
+                _buildRelatedItem(
+                    item["title"]!,
+                    item["dimensions"]!,
+                    item["id"]!
+                )
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRelatedItem(String title, String dimensions, String productId) {
+    return GestureDetector(
+      onTap: () => _viewModel.navigateToRelatedItem(productId),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowColor,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Item icon
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppColors.primaryLightPurple,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.chair,
+                color: AppColors.primaryPurple,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryDarkBlue,
+                    ),
+                  ),
+                  Text(
+                    dimensions,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.mediumGrey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppColors.grey,
+            ),
           ],
         ),
       ),

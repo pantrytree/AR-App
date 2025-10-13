@@ -14,7 +14,6 @@
 //
 // DESIGN TOKENS: All colors follow design system specifications
 
-
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -35,7 +34,7 @@ class AppColors {
   static const Color secondaryBackground = Color(0xFFF2F4FC);
 
   // Light purple for tabs and selections
-  static const Color secondaryLightPurple = Color(0xFFDADDf2);
+  static const Color secondaryLightPurple = Color(0xFFDADDF2);
 
   // Lighter purple for tabs
   static const Color secondaryLighterPurple = Color(0xFFC1C8F5);
@@ -80,13 +79,13 @@ class AppColors {
   static const Color folderPurple = Color(0xFF963CF1);
 
   // Purple for heart icons in MyLikes
-  static const Color likesHeart = Color(0xFFDADDf2);
+  static const Color likesHeart = Color(0xFFDADDF2);
 
   // Shadow color for subtle shadows
   static const Color shadowColor = Color(0x1A000000); // 10% opacity black
 
   // Color for selected bottom navigation items
-  static const Color bottomNavSelected = Color(0xFFDADDf2);
+  static const Color bottomNavSelected = Color(0xFFDADDF2);
 
   // Color for unselected bottom navigation items
   static const Color bottomNavUnselected = Color(0xFF000000);
@@ -108,6 +107,14 @@ class AppColors {
 
   // Color for info states
   static const Color info = Color(0xFF2196F3);
+
+  // ======================
+  // 🎨 SIDE MENU COLORS
+  // ======================
+  static const Color sideMenuBackground = Color(0xFFF2F4FC);
+  static const Color sideMenuDivider = Color(0xFFDADDF2);
+  static const Color sideMenuIcon = Color(0xFF14213D);
+  static const Color sideMenuItemText = Color(0xFF14213D);
 
   // ======================
   // 🎨 GRADIENT COLORS
@@ -133,7 +140,7 @@ class AppColors {
   static const Color projectCreatorDot = Color(0xFF963CF1);
 
   // MyLikes specific colors
-  static const Color likesEmptyStateHeart = Color(0xFFDADDf2);
+  static const Color likesEmptyStateHeart = Color(0xFFDADDF2);
   static const Color likesTabBorder = Color(0xFFC1C8F5);
   static const Color likesTabUnselected = Color(0xFFC1C8F5);
 
@@ -142,6 +149,29 @@ class AppColors {
   static const Color helpSearchIcon = Color(0xFF9E9E9E);
   static const Color helpCardShadow = Color(0x14000000);
   static const Color helpArrowIcon = Color(0xFF9E9E9E);
+
+  // ======================
+  // 🎨 BACKEND TEAM COLORS (Your colors)
+  // ======================
+  static const Color splashScreenBackground = Color(0xFFB1B9E8);
+  static const Color splashScreenText = Color(0xFFE3E4F6);
+  static const Color lightBlueOpaque = Color(0x4DB1B9E8);
+  static const Color lightBlue = Color(0xFFF4F4FF);
+  static const Color greyBlue = Color(0xFF464A80);
+  static const Color blackOpaque = Color(0x7D111111);
+  static const Color greyLavender = Color(0xFFC29EC8);
+  static const Color greyLavenderOpaque = Color(0x7DC29EC8);
+  static const Color pastelGreyBlue = Color(0xFF99A0D1);
+  static const Color pastelGreyBlueOpaque = Color(0x9699A0D1);
+  static const Color purplePink = Color(0xFFCB6CE6);
+
+  // ======================
+  // 🎨 CONSISTENCY COLORS - Bulelwa's Assigned Pages Colors
+  // ======================
+  static const Color background = Color(0xFFF2F4FC);
+  static const Color textDark = Color(0xFF14213D);
+  static const Color textLight = Color(0xFF666666);
+  static const Color divider = Color(0xFFDADDF2);
 
   // ======================
   // 🎨 DYNAMIC THEME METHODS
@@ -215,5 +245,33 @@ class AppColors {
     return Theme.of(context).brightness == Brightness.dark
         ? white.withOpacity(0.2)
         : primaryPurple.withOpacity(0.2);
+  }
+
+  // ======================
+  // 🎨 SIDE MENU DYNAMIC METHODS
+  // ======================
+
+  static Color getSideMenuBackground(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? primaryDarkBlue
+        : sideMenuBackground;
+  }
+
+  static Color getSideMenuDivider(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? white.withOpacity(0.2)
+        : sideMenuDivider;
+  }
+
+  static Color getSideMenuIcon(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? white
+        : sideMenuIcon;
+  }
+
+  static Color getSideMenuItemText(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? white
+        : sideMenuItemText;
   }
 }
