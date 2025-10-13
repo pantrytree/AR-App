@@ -357,4 +357,19 @@ class TextComponents {
     userName = "Guest";
     userEmail = "guest@example.com";
   }
+
+  // Catalogue Page
+
+  static const String catalogueHeaderTitle = 'Find Your Style';
+
+  static const String catalogueHeaderSubtitle = 'Discover perfect furniture for your space';
+
+  static const String searchHint = 'Search furniture...';
+
+  static const String noItemsFound = 'No items found';
+
+// Settings Page
+
+  static const String settingsPageTitle = 'Settings';
+
 }

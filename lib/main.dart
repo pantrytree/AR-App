@@ -1,4 +1,18 @@
 import 'package:flutter/material.dart';
+import 'views/pages/help_page.dart';
+import 'views/pages/my_likes_page.dart';
+import 'views/pages/my_projects_page.dart';
+import 'views/pages/edit_profile_page.dart';
+import 'views/pages/camera_page.dart';
+import 'views/pages/catalogue_page.dart';
+import 'views/pages/settings_page.dart';
+import 'views/pages/splash_screen_page.dart';
+import 'views/pages/splash_screen_2_page.dart';
+import 'views/pages/login_page.dart';
+import 'views/pages/sign_up_page.dart';
+import 'views/pages/forgot_password_page.dart';
+import 'views/pages/home_page.dart';
+import 'views/pages/logout_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,10 +56,10 @@ class MyApp extends StatelessWidget {
           '/forgot-password': (context) => ForgotPasswordPage(),
           '/help-page': (context) => HelpPage(),
           '/home-page': (context) => HomePage(),
-          '/logout-page': (context) => ProfilePage(),
+          '/logout-page': (context) => LogoutPage(),
           '/my-likes-page': (context) => MyLikesPage(),
           '/my-projects-page': (context) => MyProjectsPage(),
-          '/settings': (context) => Settings(),
+          '/settings': (context) => SettingsPage(),
         },
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );

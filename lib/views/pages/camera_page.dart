@@ -7,6 +7,7 @@ import '../../viewmodels/camera_viewmodel.dart';
 import '../../utils/colors.dart';
 import '../../utils/text_components.dart';
 import '../../utils/theme.dart';
+import '../../views/widgets/bottom_nav_bar.dart';
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});

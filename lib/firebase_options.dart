@@ -74,4 +74,5 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://roomantics-8eafd-default-rtdb.firebaseio.com',
     storageBucket: 'roomantics-8eafd.firebasestorage.app',
   );
+
 }

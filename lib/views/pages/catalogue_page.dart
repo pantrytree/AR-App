@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/furniture_item.dart';
 import '../../viewmodels/catalogue_viewmodel.dart';
+import '../../views/widgets/bottom_nav_bar.dart';
 import '../../utils/colors.dart';
 import '../../utils/text_components.dart';
 import '../../utils/theme.dart';
 import 'catalogue_item_page.dart';
+
 
 class CataloguePage extends StatelessWidget {
   const CataloguePage({super.key});
@@ -46,7 +48,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CatalogueItemPage(itemId: item.id),
+        builder: (_) => CatalogueItemPage(productId: item.id),
       ),
     );
   }
@@ -303,8 +305,8 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    item.dimensions,
-                    style: TextStyle(
+                      "${item.dimensions['width']} x ${item.dimensions['height']} ${item.dimensions['unit']}",
+                      style: TextStyle(
                       fontSize: 12,
                       color: AppColors.getSecondaryTextColor(context),
                     ),
