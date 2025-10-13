@@ -1,20 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../viewmodels/my_likes_page_viewmodel.dart';
-import '../../utils/colors.dart';
 
-class MyLikesPage extends StatelessWidget {
+import '../../../viewmodels/my_likes_page_viewmodel.dart';
+import '../../../utils/colors.dart';
+import '../../../utils/text_components.dart';
+import '../../views/widgets/bottom_nav_bar.dart';
+
+
+/// TODO (Backend Integration Notes):
+/// - Connect category tabs and liked item data with real backend responses from `/likes`.
+/// - Replace placeholder icons and images with actual product thumbnails.
+/// - Connect navigation buttons (bottom bar and "Explore" button) to real pages once ready.
+class MyLikesPage extends StatefulWidget {
   const MyLikesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final viewModel = Provider.of<MyLikesViewModel>(context, listen: false);
+  State<MyLikesPage> createState() => _MyLikesPageState();
+}
 
+class _MyLikesPageState extends State<MyLikesPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Animation setup for pulsing "Explore" buttons
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    // Load placeholder liked items once the UI has been built
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      viewModel.loadLikedItems();
+      Provider.of<MyLikesViewModel>(context, listen: false).loadLikedItems();
     });
+  }
 
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.secondaryBackground,
       appBar: AppBar(
@@ -25,7 +62,7 @@ class MyLikesPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'My Likes',
+          TextComponents.myLikesTitle(),
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -34,6 +71,8 @@ class MyLikesPage extends StatelessWidget {
         ),
         centerTitle: true,
       ),
+
+      // Consumer listens to ViewModel updates and rebuilds UI accordingly
       body: Consumer<MyLikesViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
@@ -41,27 +80,61 @@ class MyLikesPage extends StatelessWidget {
           }
 
           if (viewModel.errorMessage != null) {
-            return Center(child: Text('Error: ${viewModel.errorMessage}'));
+            // Show error message if data loading fails
+            return Center(
+              child: Text(
+                  TextComponents.errorLoadingLikes(viewModel.errorMessage!)),
+            );
           }
 
+          // Show either empty state or liked items grid
           return Column(
             children: [
               _buildCategoryTabs(viewModel),
-
               Expanded(
-                child: viewModel.getFilteredItems().isEmpty
+                child: viewModel.likedItems.isEmpty
                     ? _buildEmptyState()
-                    : _buildProductGrid(viewModel),
+                    : Column(
+                  children: [
+                    Expanded(child: _buildProductGrid(viewModel)),
+                    _buildExploreMoreButton(),
+                  ],
+                ),
               ),
             ],
           );
         },
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+
+      // Bottom navigation bar
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 1, // Likes page is index 1 in navigation bar
+        onTap: (index) {
+          // TODO (Navigation): Replace placeholder routes with actual named routes once pages are ready
+          switch (index) {
+            case 0:
+              Navigator.pushNamed(context, '/home');
+              break;
+            case 1:
+              Navigator.pushNamed(context, '/likes');
+              break;
+            case 2:
+              Navigator.pushNamed(context, '/camera');
+              break;
+            case 3:
+              Navigator.pushNamed(context, '/shopping');
+              break;
+            case 4:
+              Navigator.pushNamed(context, '/profile');
+              break;
+          }
+        },
+      ),
     );
   }
 
-
+  /// Builds the category tabs for filtering liked items.
+  /// Each tab updates the selected category in the ViewModel.
   Widget _buildCategoryTabs(MyLikesViewModel viewModel) {
     return Container(
       color: AppColors.secondaryBackground,
@@ -78,7 +151,8 @@ class MyLikesPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryTab(String category, bool isSelected, MyLikesViewModel viewModel) {
+  Widget _buildCategoryTab(
+      String category, bool isSelected, MyLikesViewModel viewModel) {
     return GestureDetector(
       onTap: () => viewModel.setSelectedCategory(category),
       child: Container(
@@ -106,20 +180,16 @@ class MyLikesPage extends StatelessWidget {
     );
   }
 
-  // 📭 Empty State
+  /// Builds the empty state UI shown when the user has no liked items.
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.favorite_border,
-            size: 64,
-            color: AppColors.likesHeart,
-          ),
+          const Icon(Icons.favorite_border, size: 64, color: AppColors.likesHeart),
           const SizedBox(height: 16),
           Text(
-            'No liked items yet',
+            TextComponents.noLikedItemsYet(),
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -128,17 +198,22 @@ class MyLikesPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Items you like will appear here',
+            TextComponents.likedItemsDescription(),
             style: GoogleFonts.inter(
               fontSize: 14,
               color: AppColors.mediumGrey,
             ),
           ),
+          const SizedBox(height: 20),
+          // TODO (Navigation): Connect this button to the real Explore page
+          _buildPulsingExploreButton(TextComponents.exploreProducts()),
         ],
       ),
     );
   }
 
+  /// Builds the grid layout for displaying liked items.
+  /// Each card shows product name, dimensions, and a heart icon for unliking.
   Widget _buildProductGrid(MyLikesViewModel viewModel) {
     final filteredItems = viewModel.getFilteredItems();
 
@@ -151,11 +226,14 @@ class MyLikesPage extends StatelessWidget {
         childAspectRatio: 0.7,
       ),
       itemCount: filteredItems.length,
-      itemBuilder: (context, index) => _buildProductCard(filteredItems[index], viewModel),
+      itemBuilder: (context, index) =>
+          _buildProductCard(filteredItems[index], viewModel),
     );
   }
 
-  Widget _buildProductCard(Map<String, dynamic> item, MyLikesViewModel viewModel) {
+  /// Builds each liked product card.
+  /// TODO (Backend): Replace placeholder icon with product image from backend.
+  Widget _buildProductCard(dynamic item, MyLikesViewModel viewModel) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -173,6 +251,7 @@ class MyLikesPage extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Placeholder product image area
               Container(
                 height: 120,
                 decoration: BoxDecoration(
@@ -186,15 +265,13 @@ class MyLikesPage extends StatelessWidget {
                   child: Icon(Icons.chair, size: 40, color: AppColors.primaryPurple),
                 ),
               ),
-
-              // 📝 Product Info
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['name'],
+                      item['name'] ?? 'Item Name',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -203,7 +280,7 @@ class MyLikesPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      item['dimensions'],
+                      item['dimensions'] ?? '',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.mediumGrey,
@@ -215,6 +292,7 @@ class MyLikesPage extends StatelessWidget {
             ],
           ),
 
+          // Heart icon for removing from likes
           Positioned(
             top: 8,
             right: 8,
@@ -223,7 +301,7 @@ class MyLikesPage extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.white, // ✅
+                  color: AppColors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -232,11 +310,7 @@ class MyLikesPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.favorite,
-                  color: AppColors.likesHeart,
-                  size: 20,
-                ),
+                child: const Icon(Icons.favorite, color: AppColors.likesHeart, size: 20),
               ),
             ),
           ),
@@ -245,37 +319,35 @@ class MyLikesPage extends StatelessWidget {
     );
   }
 
+  /// Adds a pulsing "Explore More Products" button below the grid.
+  /// TODO (Navigation): Connect this button to Explore page once available.
+  Widget _buildExploreMoreButton() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: _buildPulsingExploreButton(TextComponents.exploreMoreProducts()),
+    );
+  }
 
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: 1,
-      backgroundColor: AppColors.white,
-      elevation: 8,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home, color: AppColors.black),
-          label: '',
+  /// Shared button animation for both "Explore" buttons.
+  Widget _buildPulsingExploreButton(String text) {
+    return ScaleTransition(
+      scale: _pulseAnimation,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryPurple,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          elevation: 4,
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.favorite, color: AppColors.likesHeart),
-          label: '',
+        onPressed: () => Navigator.pushNamed(context, '/explore'), // TODO: Replace with real route
+        child: Text(
+          text,
+          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.camera_alt, color: AppColors.black),
-          label: '',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_bag, color: AppColors.black),
-          label: '',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person, color: AppColors.black),
-          label: '',
-        ),
-      ],
-      selectedItemColor: AppColors.likesHeart,
-      unselectedItemColor: AppColors.black,
+      ),
     );
   }
 }
