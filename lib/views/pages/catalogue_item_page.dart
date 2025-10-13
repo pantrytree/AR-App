@@ -25,7 +25,18 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     _viewModel.addListener(_onViewModelChanged);
   }
 
-  void _onViewModelChanged() => setState(() {});
+  void _onViewModelChanged() {
+    if (_viewModel.navigateToRoute != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushNamed(
+          context,
+          _viewModel.navigateToRoute!,
+          arguments: _viewModel.navigationArguments,
+        ).then((_) => _viewModel.clearNavigation());
+      });
+    }
+    setState(() {});
+  }
 
   @override
   void dispose() {
@@ -36,10 +47,19 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.secondaryBackground,
       appBar: AppBar(
-        title: Text(TextComponents.cataloguePageTitle),
-        backgroundColor: AppColors.primaryPurple,
-        foregroundColor: Colors.white,
+        title: Text(
+          TextComponents.cataloguePageTitle,
+          style: TextStyle(
+            color: AppColors.primaryDarkBlue,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: AppColors.secondaryBackground,
+        foregroundColor: AppColors.primaryDarkBlue,
+        elevation: 0,
+        iconTheme: IconThemeData(color: AppColors.primaryDarkBlue),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -52,7 +72,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
+                color: AppColors.primaryDarkBlue,
               ),
             ),
             const SizedBox(height: 8),
@@ -60,7 +80,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
               _viewModel.productDimensions,
               style: TextStyle(
                 fontSize: 16,
-                color: AppColors.textLight,
+                color: AppColors.mediumGrey,
               ),
             ),
             const SizedBox(height: 20),
@@ -70,8 +90,15 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
               height: 250,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: AppColors.primaryPurple.withOpacity(0.1),
+                color: AppColors.white,
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadowColor,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Icon(
                 Icons.photo,
@@ -86,7 +113,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
               _viewModel.productDescription,
               style: TextStyle(
                 fontSize: 16,
-                color: AppColors.textDark,
+                color: AppColors.primaryDarkBlue,
                 height: 1.5,
               ),
             ),
@@ -112,10 +139,10 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                   icon: Icon(
                     _viewModel.isFavorite ? Icons.favorite : Icons.favorite_border,
                     size: 30,
-                    color: _viewModel.isFavorite ? Colors.pink : AppColors.textLight,
+                    color: _viewModel.isFavorite ? Colors.pink : AppColors.primaryPurple,
                   ),
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.primaryPurple.withOpacity(0.1),
+                    backgroundColor: AppColors.white,
                   ),
                 ),
               ],
@@ -128,7 +155,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
+                color: AppColors.primaryDarkBlue,
               ),
             ),
             const SizedBox(height: 16),
@@ -138,8 +165,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 _buildRelatedItem(
                     item["title"]!,
                     item["dimensions"]!,
-                    item["id"]!,
-                    context
+                    item["id"]!
                 )
             ),
           ],
@@ -148,15 +174,22 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
-  Widget _buildRelatedItem(String title, String dimensions, String productId, BuildContext context) {
+  Widget _buildRelatedItem(String title, String dimensions, String productId) {
     return GestureDetector(
-      onTap: () => _viewModel.navigateToRelatedItem(context, productId),
+      onTap: () => _viewModel.navigateToRelatedItem(productId),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.primaryPurple.withOpacity(0.1),
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowColor,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -165,7 +198,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: AppColors.primaryPurple.withOpacity(0.2),
+                color: AppColors.primaryLightPurple,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -183,14 +216,14 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textDark,
+                      color: AppColors.primaryDarkBlue,
                     ),
                   ),
                   Text(
                     dimensions,
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textLight,
+                      color: AppColors.mediumGrey,
                     ),
                   ),
                 ],
@@ -199,7 +232,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
             Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: AppColors.textLight,
+              color: AppColors.grey,
             ),
           ],
         ),

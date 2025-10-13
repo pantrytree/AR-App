@@ -1,72 +1,105 @@
 import 'package:flutter/material.dart';
-import '../services/user_service.dart';
-import '../services/furniture_service.dart';
 
 class HomeViewModel extends ChangeNotifier {
-  final UserService _userService = UserService();
-  final FurnitureService _furnitureService = FurnitureService();
-
+  // Navigation properties
+  String? _navigateToRoute;
+  dynamic _navigationArguments;
+  bool _isLoading = false;
+  bool _hasError = false;
+  String? _errorMessage;
   int _selectedIndex = 0;
-  String _userName = "Guest"; // Placeholder data
-  bool _isLoading = true;
-  List<Map<String, String>> _recentlyUsedItems = [];
-  List<Map<String, String>> _roomCategories = [];
 
   // Getters
-  int get selectedIndex => _selectedIndex;
-  String get userName => _userName;
+  String? get navigateToRoute => _navigateToRoute;
+  dynamic get navigationArguments => _navigationArguments;
   bool get isLoading => _isLoading;
-  List<Map<String, String>> get recentlyUsedItems => _recentlyUsedItems;
-  List<Map<String, String>> get roomCategories => _roomCategories;
+  bool get hasError => _hasError;
+  String? get errorMessage => _errorMessage;
+  int get selectedIndex => _selectedIndex;
 
-  // Load all data with graceful failure
-  Future<void> loadInitialData() async {
-    _isLoading = true;
-    notifyListeners();
+  // Mock data - replace with actual data from your backend
+  List<dynamic> get recentlyUsedItems => [
+    {'id': '1', 'name': 'Pink Bed', 'imageUrl': null},
+    {'id': '2', 'name': 'Silver Lamp', 'imageUrl': null},
+    {'id': '3', 'name': 'Wooden Desk', 'imageUrl': null},
+    {'id': '4', 'name': 'Grey Couch', 'imageUrl': null},
+  ];
 
-    try {
-      // Try to get real data from services
-      final userName = await _userService.getCurrentUserName();
-      final recentItems = await _furnitureService.getRecentlyUsedItems();
-      final categories = await _furnitureService.getRoomCategories();
+  List<dynamic> get userRooms => [
+    {'id': '1', 'roomName': 'Living Room', 'roomType': 'living_room'},
+    {'id': '2', 'roomName': 'Dining Room', 'roomType': 'dining_room'},
+    {'id': '3', 'roomName': 'Office', 'roomType': 'office'},
+    {'id': '4', 'roomName': 'Kitchen', 'roomType': 'kitchen'},
+  ];
 
-      _userName = userName;
-      _recentlyUsedItems = recentItems.cast<Map<String, String>>();
-      _roomCategories = categories.cast<Map<String, String>>();
+  dynamic get currentUser => {'displayName': 'Bulelwa'};
 
-    } catch (e) {
-      // 'breaking gracefully' - use fallback data
-      print("Failed to load data: $e - Using fallback data");
-      _userName = "Guest";
-      _recentlyUsedItems = [
-        {"title": "Beige Couch", "id": "1"}, // Placeholder data
-        {"title": "Pink Bed", "id": "2"}, // Placeholder data
-        {"title": "Silver Lamp", "id": "3"}, // Placeholder data
-      ];
-      _roomCategories = [
-        {"title": "Living Room", "id": "living"}, // Placeholder data
-        {"title": "Bedroom", "id": "bedroom"}, // Placeholder data
-        {"title": "Kitchen", "id": "kitchen"}, // Placeholder data
-        {"title": "Office", "id": "office"}, // Placeholder data
-      ];
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // Tab selection
+  // Bottom navigation method
   void onTabSelected(int index) {
     _selectedIndex = index;
     notifyListeners();
+
+    switch (index) {
+      case 0: // Home (house icon) - stay on home page
+        break;
+      case 1: // Favorites (heart icon) - goes to Likes page
+        _navigateToRoute = '/likes';
+        notifyListeners();
+        break;
+      case 2: // Camera (camera icon) - goes to AR View page
+        _navigateToRoute = '/ar_view';
+        notifyListeners();
+        break;
+      case 3: // Shopping Bag (shopping bag icon) - goes to Cart page
+        _navigateToRoute = '/cart';
+        notifyListeners();
+        break;
+      case 4: // Profile (person icon) - goes to Edit Profile page
+        _navigateToRoute = '/edit_profile';
+        notifyListeners();
+        break;
+    }
   }
 
-  // Navigation methods
-  void navigateToCatalogueItem(BuildContext context) {
-    Navigator.pushNamed(context, '/catalogue_item');
+  // Existing navigation methods
+  void onSearchTapped() {
+    _navigateToRoute = '/search';
+    notifyListeners();
   }
 
-  void navigateToCatalogue(BuildContext context) {
-    Navigator.pushNamed(context, '/catalogue');
+  void onFurnitureItemTapped(String id) {
+    _navigateToRoute = '/catalogue_item';
+    _navigationArguments = {'productId': id};
+    notifyListeners();
+  }
+
+  void onRoomTapped(String id) {
+    _navigateToRoute = '/catalogue';
+    _navigationArguments = {'roomId': id};
+    notifyListeners();
+  }
+
+  void clearNavigation() {
+    _navigateToRoute = null;
+    _navigationArguments = null;
+    notifyListeners();
+  }
+
+  // Existing methods
+  void refreshHomePage() {
+    _isLoading = true;
+    _hasError = false;
+    notifyListeners();
+
+    // Simulate loading
+    Future.delayed(const Duration(seconds: 2), () {
+      _isLoading = false;
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }

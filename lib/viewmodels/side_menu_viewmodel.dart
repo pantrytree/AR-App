@@ -1,29 +1,86 @@
 import 'package:flutter/material.dart';
-import '/utils/text_components.dart';
 
 class SideMenuViewModel extends ChangeNotifier {
-  final String? _userName;
+  final String? userName;
 
-  SideMenuViewModel({String? userName}) : _userName = userName;
+  String? _navigateToRoute;
+  dynamic _navigationArguments;
 
-  // Menu items data
-  final List<Map<String, dynamic>> _menuItems = [
-    {"text": TextComponents.menuCatalogue, "icon": Icons.shopping_bag_outlined, "route": "/catalogue"},
-    {"text": TextComponents.menuLikes, "icon": Icons.favorite_outline, "route": "/likes"},
-    {"text": TextComponents.menuProjects, "icon": Icons.work_outline, "route": "/projects"},
-    {"text": TextComponents.menuSettings, "icon": Icons.settings_outlined, "route": "/settings"},
-    {"text": TextComponents.menuHelp, "icon": Icons.help_outline, "route": "/help"},
-    {"text": TextComponents.menuForgotPassword, "icon": Icons.lock_reset, "route": "/forgot_password"},
-    {"text": TextComponents.menuLogout, "icon": Icons.logout, "route": "/logout"},
-  ];
+  SideMenuViewModel({this.userName});
 
   // Getters
-  List<Map<String, dynamic>> get menuItems => _menuItems;
-  String? get userName => _userName;
+  String? get navigateToRoute => _navigateToRoute;
+  dynamic get navigationArguments => _navigationArguments;
 
-  // Navigation method
-  void navigateToRoute(BuildContext context, String route) {
-    Navigator.pop(context); // Close drawer first
-    Navigator.pushNamed(context, route);
+  String get userNameDisplay => userName ?? 'User';
+
+  // Menu items configuration
+  List<Map<String, dynamic>> get menuItems => [
+    {
+      'text': 'Home',
+      'icon': Icons.home,
+      'route': '/home',
+    },
+    {
+      'text': 'My Rooms',
+      'icon': Icons.room,
+      'route': '/rooms',
+    },
+    {
+      'text': 'Furniture Catalog',
+      'icon': Icons.chair,
+      'route': '/catalog',
+    },
+    {
+      'text': 'Favorites',
+      'icon': Icons.favorite,
+      'route': '/favorites',
+    },
+    {
+      'text': 'Shopping Cart',
+      'icon': Icons.shopping_cart,
+      'route': '/cart',
+    },
+    {
+      'text': 'Order History',
+      'icon': Icons.history,
+      'route': '/orders',
+    },
+    {
+      'text': 'Settings',
+      'icon': Icons.settings,
+      'route': '/settings',
+    },
+    {
+      'text': 'Help & Support',
+      'icon': Icons.help,
+      'route': '/help',
+    },
+  ];
+
+  // Navigation methods
+  void onMenuItemTapped(String route) {
+    _navigateToRoute = route;
+    _navigationArguments = null;
+    notifyListeners();
+  }
+
+  void onEditProfileTapped() {
+    _navigateToRoute = '/profile';
+    _navigationArguments = {'editMode': true};
+    notifyListeners();
+  }
+
+  void clearNavigation() {
+    _navigateToRoute = null;
+    _navigationArguments = null;
+    notifyListeners();
+  }
+
+  // Dispose method
+  @override
+  void dispose() {
+    // Clean up any resources if needed
+    super.dispose();
   }
 }

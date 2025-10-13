@@ -8,19 +8,7 @@ class LogoutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        title: Text(
-          TextComponents.logoutTitle,
-          style: TextStyle(color: AppColors.textDark),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textDark),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.secondaryBackground,
       body: SafeArea(
         child: SizedBox(
           width: double.infinity,
@@ -28,9 +16,9 @@ class LogoutPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 80),
 
-                // Warning Icon
+                // Logout Icon
                 Container(
                   width: 80,
                   height: 80,
@@ -52,7 +40,7 @@ class LogoutPage extends StatelessWidget {
                   TextComponents.logoutConfirmationQuestion,
                   style: TextStyle(
                     color: AppColors.textDark,
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
@@ -60,15 +48,37 @@ class LogoutPage extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // Description Text
+                // Description Text - using TextComponents
                 Text(
-                  TextComponents.logoutDescription,
+                  TextComponents.logoutDetailedDescription,
                   style: TextStyle(
                     color: AppColors.textLight,
                     fontSize: 16,
                     height: 1.5,
                   ),
                   textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 24),
+
+                // Add Another Account Button - Navigates to Login
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primaryPurple,
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: Text(
+                    TextComponents.addAnotherAccount,
+                    style: TextStyle(
+                      color: AppColors.primaryPurple,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
 
                 const Spacer(),
@@ -78,6 +88,33 @@ class LogoutPage extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 40),
                   child: Row(
                     children: [
+                      // Logout Button - Navigates to Login
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.buttonPrimary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            TextComponents.logoutButton,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 16),
+
                       // Cancel Button
                       Expanded(
                         child: OutlinedButton(
@@ -85,35 +122,21 @@ class LogoutPage extends StatelessWidget {
                             Navigator.of(context).pop();
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textDark,
-                            side: BorderSide(color: AppColors.textLight),
+                            foregroundColor: AppColors.primaryDarkBlue,
+                            side: BorderSide(color: AppColors.primaryDarkBlue.withOpacity(0.3)),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            backgroundColor: AppColors.white,
                           ),
-                          child: Text(TextComponents.cancelButton),
-                        ),
-                      ),
-
-                      const SizedBox(width: 16),
-
-                      // Logout Button
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // Backend team will handle logout logic
-                            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryPurple,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          child: Text(
+                            TextComponents.cancelButton,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
                             ),
                           ),
-                          child: Text(TextComponents.logoutButton),
                         ),
                       ),
                     ],

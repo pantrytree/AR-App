@@ -1,21 +1,27 @@
 class FurnitureService {
-  //Backend team will implement real API call
-  Future<List<Map<String, dynamic>>> getRecentlyUsedItems() async {
-    await Future.delayed(Duration(seconds: 1)); // Simulate API delay
+  Future<List<Map<String, String>>> getRecentlyUsedItems() async {
+    // TODO: Backend - Implement actual furniture service
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
+
     return [
-      {"title": "Beige Couch", "id": "1"}, // Placeholder data
-      {"title": "Pink Bed", "id": "2"}, // Placeholder data
-      {"title": "Silver Lamp", "id": "3"}, // Placeholder data
+      {"title": "Beige Couch", "id": "1"},
+      {"title": "Pink Bed", "id": "2"},
+      {"title": "Silver Lamp", "id": "3"},
+      {"title": "Wooden Table", "id": "4"},
     ];
   }
 
-  //Backend team will implement real API call
-  Future<List<Map<String, dynamic>>> getRoomCategories() async {
+  Future<List<Map<String, String>>> getRoomCategories() async {
+    // TODO: Backend - Implement actual furniture service
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
+
     return [
-      {"title": "Living Room", "id": "living"}, // Placeholder data
-      {"title": "Bedroom", "id": "bedroom"}, // Placeholder data
-      {"title": "Kitchen", "id": "kitchen"}, // Placeholder data
-      {"title": "Office", "id": "office"}, // Placeholder data
+      {"title": "Living Room", "id": "living"},
+      {"title": "Bedroom", "id": "bedroom"},
+      {"title": "Kitchen", "id": "kitchen"},
+      {"title": "Office", "id": "office"},
+      {"title": "Dining Room", "id": "dining"},
+      {"title": "Bathroom", "id": "bathroom"},
     ];
   }
 }

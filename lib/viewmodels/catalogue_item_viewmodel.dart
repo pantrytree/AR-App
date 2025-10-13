@@ -1,6 +1,4 @@
-// catalogue_item_viewmodel.dart
 import 'package:flutter/material.dart';
-import '../views/catalogue_item_page.dart';
 import '/utils/text_components.dart';
 
 class CatalogueItemViewModel extends ChangeNotifier {
@@ -16,6 +14,10 @@ class CatalogueItemViewModel extends ChangeNotifier {
   String _productDescription = TextComponents.productQueenBedDescription;
   bool _isFavorite = false;
 
+  // Navigation flags
+  String? _navigateToRoute;
+  Map<String, dynamic>? _navigationArguments;
+
   // Related items data
   final List<Map<String, String>> _relatedItems = [
     {"title": TextComponents.productBedsideTableTitle, "dimensions": TextComponents.productBedsideTableDimensions, "id": "1"},
@@ -29,31 +31,39 @@ class CatalogueItemViewModel extends ChangeNotifier {
   String get productDescription => _productDescription;
   bool get isFavorite => _isFavorite;
   List<Map<String, String>> get relatedItems => _relatedItems;
+  String? get navigateToRoute => _navigateToRoute;
+  Map<String, dynamic>? get navigationArguments => _navigationArguments;
 
   // Load product data
   void _loadProductData() {
-    print("Loading product data for ID: $productId");
+    debugPrint("Loading product data for ID: $productId");
+    // TODO: Backend - Implement product data loading
   }
 
   // Add to cart functionality
   void addToCart() {
-    print("Adding $productTitle to cart");
+    debugPrint("Adding $productTitle to cart");
+    // TODO: Backend - Implement CartService.addToCart()
   }
 
   // Toggle favorite status
   void toggleFavorite() {
     _isFavorite = !_isFavorite;
     notifyListeners();
-    print("${_isFavorite ? 'Added' : 'Removed'} $productTitle from favorites");
+    debugPrint("${_isFavorite ? 'Added' : 'Removed'} $productTitle from favorites");
+    // TODO: Backend - Implement FavoritesService.toggleFavorite()
   }
 
-  // Navigate to related item
-  void navigateToRelatedItem(BuildContext context, String relatedProductId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CatalogueItemPage(productId: relatedProductId),
-      ),
-    );
+  // Navigate to related item using flags
+  void navigateToRelatedItem(String relatedProductId) {
+    _navigateToRoute = '/catalogue_item';
+    _navigationArguments = {'productId': relatedProductId};
+    notifyListeners();
+  }
+
+  // Clear navigation flags
+  void clearNavigation() {
+    _navigateToRoute = null;
+    _navigationArguments = null;
   }
 }
