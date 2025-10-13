@@ -7,7 +7,7 @@ import '../../../utils/colors.dart';
 import '../../../utils/text_components.dart';
 import '../../../views/widgets/bottom_nav_bar.dart';
 import '../../../views/pages/my_likes_page.dart';
-import '../../../views/pages/camera_page.dart';
+import '../../../views/pages/camera_page(demo-shae).dart';
 
 
 /// Displays the user's saved design projects.
