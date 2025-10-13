@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 /// - POST /projects          -> Create a new project
 /// - PUT /projects/{id}      -> Update an existing project (e.g., name)
 /// - DELETE /projects/{id}   -> Delete a project
-///
+
+
+
 /// When backend integration starts:
 /// - Replace all placeholder data with actual API calls.
 /// - Update methods to use real Project models instead of maps.
