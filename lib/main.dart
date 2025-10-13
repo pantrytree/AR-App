@@ -30,6 +30,23 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => SplashScreenPage(),
+          '/splash2': (context) => SplashScreen2Page(),
+          '/login': (context) => LoginPage(),
+          '/signup': (context) => SignUpPage(),
+          '/camera-page': (context) => CameraPage(),
+          '/catalogue-page': (context) => CataloguePage(),
+          '/edit-profile': (context) => EditProfilePage(),
+          '/forgot-password': (context) => ForgotPasswordPage(),
+          '/help-page': (context) => HelpPage(),
+          '/home-page': (context) => HomePage(),
+          '/logout-page': (context) => ProfilePage(),
+          '/my-likes-page': (context) => MyLikesPage(),
+          '/my-projects-page': (context) => MyProjectsPage(),
+          '/settings': (context) => Settings(),
+        },
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
