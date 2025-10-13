@@ -1,3 +1,5 @@
+// TODO: All API calls name 'fakeApiSignUp' to be replaced by real API calls
+
 import 'package:flutter/material.dart';
 
 // ViewModel for the Sign Up screen, extends ChangeNotifier to allow UI updates when state changes
@@ -22,23 +24,20 @@ class SignUpViewModel extends ChangeNotifier {
 
   // Setter for name; called by UI when user types in the name field
   void setName(String val) {
-    name = val; // Update the local state
-    notifyListeners(); // Notify UI to rebuild with new value
+    name = val;
+    notifyListeners();
   }
 
-  // Setter for email; called by UI when user types in the email field
   void setEmail(String val) {
     email = val;
     notifyListeners();
   }
 
-  // Setter for password; called by UI when user types in the password field
   void setPassword(String val) {
     password = val;
     notifyListeners();
   }
 
-  // Setter for confirmPassword; called by UI when user types in the confirm password field
   void setConfirmPassword(String val) {
     confirmPassword = val;
     notifyListeners();
@@ -50,64 +49,74 @@ class SignUpViewModel extends ChangeNotifier {
     // Validate the form using the formKey; if invalid, exit early
     if (!(formKey.currentState?.validate() ?? false)) return;
 
-    loading = true; // Set loading state to true
-    errorMessage = null; // Clear any previous error
-    notifyListeners(); // Notify UI to show loading indicator
+    loading = true;
+    errorMessage = null;
+    notifyListeners();
 
     try {
-      // Simulate a network call (e.g., to a backend API) with a 2-second delay
-      await Future.delayed(Duration(seconds: 2));// await _authservice function to import (create user/new user) + parameters (all fields) [for login as well]
+      // ===== Placeholder for real API/database call =====
+      // Replace this with your actual API method
+      final bool success = await fakeApiSignUp(name, email, password, confirmPassword);
+      // ================================================
 
-      // On success: set loading to false and set navigation route to '/home'
-      loading = false;
-      navigateToRoute = '/home';
-      notifyListeners(); // Notify UI to navigate
+      if (success) {
+        loading = false;
+        navigateToRoute = '/home'; // Navigate on success
+      } else {
+        loading = false;
+        errorMessage = 'Sign up failed. Please try again.';
+      }
+      notifyListeners();
     } catch (e) {
-      // On error: set loading to false and set an error message
       loading = false;
       errorMessage = 'Failed to sign up. Please try again.';
-      notifyListeners(); // Notify UI to show error
+      notifyListeners();
     }
   }
 
   // --- Validation Methods ---
 
-  // Validates the name field; returns error message if invalid, otherwise null
   String? nameValidator(String? v) =>
       (v == null || v.trim().isEmpty) ? 'Name required' : null;
 
-  // Validates the email field; checks for empty and valid email format
   String? emailValidator(String? v) {
     if (v == null || v.trim().isEmpty) return 'Email required';
     if (!RegExp(r'\S+@\S+\.\S+').hasMatch(v)) return 'Enter a valid email';
     return null;
   }
 
-  // Validates the password field; checks for minimum length
   String? passwordValidator(String? v) =>
       (v == null || v.length < 6) ? 'Password min 6 characters' : null;
 
-  // Validates the confirm password field; checks if it matches the password
   String? confirmPasswordValidator(String? v) =>
       (v != password) ? 'Passwords do not match' : null;
 
   // --- Navigation Methods ---
 
-  // Called when the user taps 'Sign In' instead; sets navigation route to '/login'
   void onSignInTapped() {
     navigateToRoute = '/login';
     notifyListeners();
   }
 
-  // Called when the user taps the back button; sets navigation route to root ('/')
   void onBackButtonTapped() {
     navigateToRoute = '/';
     notifyListeners();
   }
 
-  // Clears the navigation route after navigation is handled by the UI
   void clearNavigation() {
     navigateToRoute = null;
     notifyListeners();
+  }
+
+  /// --- Placeholder function simulating an API/database call ---
+  /// In production, replace with real HTTP/database call
+  Future<bool> fakeApiSignUp(String name, String email, String password, String confirmPassword) async {
+    await Future.delayed(Duration(seconds: 2)); // Simulate network latency
+
+    // DEMO: Only accept a sample hardcoded user
+    if (email == 'newuser@example.com' && password == 'password123' && password == confirmPassword) {
+      return true; // Simulate success
+    }
+    return false; // Simulate failure
   }
 }

@@ -1,99 +1,90 @@
+// TODO: All API calls name 'fakeApiLogin' to be replaced by real API calls
+
 import 'package:flutter/material.dart';
 
-// ViewModel for the Login screen, extends ChangeNotifier to manage and notify UI about state changes
 class LoginViewModel extends ChangeNotifier {
-  // --- State Variables ---
-
-  // Indicates if a login operation is in progress (used to show loading spinners)
+  // State variables
   bool _isLoading = false;
-
-  // Holds error messages to display in the UI if login fails or input is invalid
   String _errorMessage = '';
-
-  // Holds the route name to navigate to after certain actions (e.g., successful login)
   String? _navigateToRoute;
 
-  // --- Controllers for Text Fields ---
-
-  // Used by the UI to read and write the email input field directly
+  // Text controllers for input fields
   final emailController = TextEditingController();
-
-  // Used by the UI to read and write the password input field directly
   final passwordController = TextEditingController();
 
-  // --- Getters for State Variables ---
-
-  // Exposes the loading state to the UI
+  // Public getters
   bool get isLoading => _isLoading;
-
-  // Exposes the error message to the UI
   String get errorMessage => _errorMessage;
-
-  // Exposes the navigation route to the UI
   String? get navigateToRoute => _navigateToRoute;
 
-  // --- Login Logic ---
-
-  // Called when the user taps the login button
-  // Handles input validation, simulates a network request, and updates navigation or error state
-  void login() async {
-    // Get the current values from the text controllers
+  /// Main login method called by the UI
+  Future<void> login() async {
     final email = emailController.text.trim();
     final password = passwordController.text;
 
-    // Validate input fields; if empty, set error message and notify UI
+    // Simple input validation
     if (email.isEmpty || password.isEmpty) {
       _errorMessage = 'Please enter email and password';
-      notifyListeners(); // UI will show the error message
+      notifyListeners();
       return;
     }
 
-    // Set loading state to true and clear previous errors
     _isLoading = true;
     _errorMessage = '';
-    notifyListeners(); // UI will show loading indicator
+    notifyListeners();
 
     try {
-      // Simulate a network call (e.g., to a backend API) with a 2-second delay
-      await Future.delayed(Duration(seconds: 2));
+      // ===== Placeholder for real API/database call =====
+      // Replace this with your API method
+      final bool success = await fakeApiLogin(email, password);
+      // ================================================
 
-      // On success: set navigation route to '/home'
-      _navigateToRoute = '/home';
-      notifyListeners(); // UI will handle navigation
+      if (success) {
+        _navigateToRoute = '/home'; // Navigate on success
+      } else {
+        _errorMessage = 'Invalid email or password';
+      }
     } catch (e) {
-      // On error: set error message from exception
-      _errorMessage = e.toString();
-      notifyListeners(); // UI will show error message
+      _errorMessage = 'Login error: ${e.toString()}';
     } finally {
-      // Always set loading to false at the end of the process
       _isLoading = false;
-      notifyListeners(); // UI will hide loading indicator
+      notifyListeners();
     }
   }
 
-  // --- Navigation Methods ---
-
-  // Called when the user taps 'Sign Up'; sets navigation route to '/signup'
+  // Navigation handler methods
   void onSignUpTapped() {
     _navigateToRoute = '/signup';
-    notifyListeners(); // UI will handle navigation
+    notifyListeners();
   }
 
-  // Called when the user taps 'Forgot Password'; placeholder for password reset logic or navigation
-  void onForgotPasswordTapped() {
-    // Example: _navigateToRoute = '/forgot-password';
-    notifyListeners(); // UI can respond if implemented
-  }
-
-  // Called when the user taps the back button; sets navigation route to root ('/')
   void onBackButtonTapped() {
     _navigateToRoute = '/';
-    notifyListeners(); // UI will handle navigation
+    notifyListeners();
   }
 
-  // Clears the navigation route after navigation is handled by the UI
+  void onForgotPasswordTapped() {
+    // TODO: Add password reset logic or navigation
+    _navigateToRoute = null;
+    notifyListeners();
+  }
+
+
   void clearNavigation() {
     _navigateToRoute = null;
-    notifyListeners(); // UI will reset navigation state
+    notifyListeners();
+  }
+
+  /// --- Placeholder function simulating an API call ---
+  /// In production, replace with real HTTP/database call
+  Future<bool> fakeApiLogin(String email, String password) async {
+    await Future.delayed(Duration(seconds: 2)); // Simulate network latency
+
+    // DEMO: Only accept a sample hardcoded user
+    if (email == 'test@example.com' && password == 'password123') {
+      return true; // Simulate success
+    }
+    return false; // Simulate failure
   }
 }
+ 
