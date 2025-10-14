@@ -19,7 +19,7 @@ class LoginPage extends StatelessWidget {
           }
 
           return Scaffold(
-            backgroundColor: AppColors.primaryPurple,
+            backgroundColor: AppColors.splashBrackground,
             body: Stack(
               children: [
                 Padding(
@@ -32,7 +32,7 @@ class LoginPage extends StatelessWidget {
                       if (viewModel.errorMessage.isNotEmpty)
                         Text(
                           viewModel.errorMessage,
-                          style: TextStyle(color: Colors.red),
+                          style: TextStyle(color: AppColors.error),
                         ),
                       TextField(
                         controller: viewModel.emailController,
@@ -51,8 +51,8 @@ class LoginPage extends StatelessWidget {
                         onPressed: viewModel.login,
                         child: Text('Login'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple[900],
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.signupButtonBackground,
+                          foregroundColor: AppColors.signupButtonText,
                           minimumSize: Size(double.infinity, 50),
                         ),
                       ),
@@ -60,7 +60,7 @@ class LoginPage extends StatelessWidget {
                       TextButton(
                         onPressed: viewModel.onForgotPasswordTapped,
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.deepPurple[900],
+                          foregroundColor: AppColors.textDark,
                         ),
                         child: Text('Forgot your password?'),
                       ),

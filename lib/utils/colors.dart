@@ -274,4 +274,12 @@ class AppColors {
         ? white
         : sideMenuItemText;
   }
+
+  // Splash screens/Login/Signup specific colors
+  static const Color splashBrackground = Color(0xFFb1b9e9);
+  static const Color appNamecolor = Color(0xFFe2e4f7);
+  static const Color signupButtonBackground = Color(0xFFf5f4ff);
+  static const Color loginButtonBackground = Color(0xFF14213d);
+  static const Color signupButtonText = Color(0xFF474a81);
+  static const Color loginButtonText = Color(0xFFf0f1fa);
 }

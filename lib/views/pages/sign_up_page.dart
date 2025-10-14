@@ -27,8 +27,8 @@ class SignUpPage extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppColors.folderPurple,
-                        AppColors.buttonPrimary,
+                        AppColors.splashBrackground,
+                        AppColors.splashBrackground,
                       ],
                     ),
                   ),
@@ -43,14 +43,14 @@ class SignUpPage extends StatelessWidget {
                         children: [
                           Text(
                             'Personal details',
-                            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textDark),
                           ),
                           SizedBox(height: 32),
                           TextFormField(
                             style: TextStyle(color: AppColors.secondaryBackground),
                             decoration: InputDecoration(
                               labelText: 'Name',
-                              labelStyle: TextStyle(color: AppColors.secondaryBackground),
+                              labelStyle: TextStyle(color: AppColors.mediumGrey),
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: AppColors.secondaryBackground),
                               ),
@@ -66,7 +66,7 @@ class SignUpPage extends StatelessWidget {
                             style: TextStyle(color: AppColors.secondaryBackground),
                             decoration: InputDecoration(
                               labelText: 'Email',
-                              labelStyle: TextStyle(color: AppColors.secondaryBackground),
+                              labelStyle: TextStyle(color: AppColors.mediumGrey),
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: AppColors.secondaryBackground),
                               ),
@@ -82,7 +82,7 @@ class SignUpPage extends StatelessWidget {
                             style: TextStyle(color: AppColors.secondaryBackground),
                             decoration: InputDecoration(
                               labelText: 'Password',
-                              labelStyle: TextStyle(color: AppColors.secondaryBackground),
+                              labelStyle: TextStyle(color: AppColors.mediumGrey),
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: AppColors.secondaryBackground),
                               ),
@@ -99,7 +99,7 @@ class SignUpPage extends StatelessWidget {
                             style: TextStyle(color: AppColors.secondaryBackground),
                             decoration: InputDecoration(
                               labelText: 'Confirm password',
-                              labelStyle: TextStyle(color: AppColors.secondaryBackground),
+                              labelStyle: TextStyle(color: AppColors.mediumGrey),
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: AppColors.secondaryBackground),
                               ),
@@ -113,7 +113,7 @@ class SignUpPage extends StatelessWidget {
                           ),
                           SizedBox(height: 32),
                           if (model.errorMessage != null)
-                            Text(model.errorMessage!, style: TextStyle(color: Colors.red)),
+                            Text(model.errorMessage!, style: TextStyle(color: AppColors.error)),
                           SizedBox(height: 8),
                           SizedBox(
                             width: double.infinity,
@@ -125,8 +125,8 @@ class SignUpPage extends StatelessWidget {
                               )
                                   : Text('Sign Up'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.secondaryBackground,
-                                foregroundColor: AppColors.primaryPurple,
+                                backgroundColor: AppColors.signupButtonBackground,
+                                foregroundColor: AppColors.signupButtonText,
                                 minimumSize: Size(double.infinity, 50),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -140,13 +140,13 @@ class SignUpPage extends StatelessWidget {
                             children: [
                               Text(
                                 "Already have an account? ",
-                                style: TextStyle(color: AppColors.secondaryBackground),
+                                style: TextStyle(color: AppColors.textDark),
                               ),
                               GestureDetector(
                                 onTap: model.onSignInTapped,
                                 child: Text(
                                   'Sign In',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.secondaryBackground),
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark),
                                 ),
                               ),
                             ],

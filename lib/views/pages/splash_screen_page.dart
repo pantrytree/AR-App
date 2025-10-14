@@ -5,7 +5,7 @@ class SplashScreenPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryPurple,
+      backgroundColor: AppColors.splashBrackground,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -17,7 +17,7 @@ class SplashScreenPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primaryDarkBlue,
+                color: AppColors.appNamecolor,
                 letterSpacing: 2,
               ),
             ),
@@ -28,8 +28,8 @@ class SplashScreenPage extends StatelessWidget {
               },
               child: Text('Sign Up'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.buttonPrimary,
-                foregroundColor: AppColors.textFieldBackground,
+                backgroundColor: AppColors.signupButtonBackground,
+                foregroundColor: AppColors.signupButtonText,
                 minimumSize: Size(220, 50),
               ),
             ),
@@ -40,8 +40,8 @@ class SplashScreenPage extends StatelessWidget {
               },
               child: Text('Login'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.textFieldBackground,
-                foregroundColor: AppColors.buttonPrimary,
+                backgroundColor: AppColors.loginButtonBackground,
+                foregroundColor: AppColors.loginButtonText,
                 minimumSize: Size(220, 50),
               ),
             ),

@@ -5,7 +5,7 @@ class SplashScreen2Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryLightPurple,
+      backgroundColor: AppColors.splashBrackground,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -17,7 +17,7 @@ class SplashScreen2Page extends StatelessWidget {
               style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textFieldBackground,
+                color: AppColors.appNamecolor,
                 letterSpacing: 2,
               ),
             ),

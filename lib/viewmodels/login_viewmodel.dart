@@ -64,8 +64,7 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   void onForgotPasswordTapped() {
-    // TODO: Add password reset logic or navigation
-    _navigateToRoute = null;
+    _navigateToRoute = '/forgot-password';
     notifyListeners();
   }
 
