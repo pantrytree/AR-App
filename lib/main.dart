@@ -40,7 +40,7 @@ class RoomanticApp extends StatelessWidget {
         '/forgot-password': (context) => ForgotPasswordPage(),
         '/help-page': (context) => HelpPage(),
         '/home-page': (context) => HomePage(),
-        '/logout-page': (context) => LogoutPage(),
+       // '/logout-page': (context) => LogoutPage(),
         '/my-likes-page': (context) => MyLikesPage(),
         '/my-projects-page': (context) => MyProjectsPage(),
         '/settings': (context) => SettingsPage(),
