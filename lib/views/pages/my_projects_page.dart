@@ -12,7 +12,9 @@ import '../../../views/pages/camera_page(demo-shae).dart';
 
 /// Displays the user's saved design projects.
 /// Allows creation, editing, and deletion of projects, and navigation into the camera tool.
-///
+
+
+
 /// TODO (Backend Integration Notes):
 /// - Replace mock project data in `MyProjectsViewModel` with backend API calls.
 /// - Connect navigation destinations (e.g., camera page, explore page) once routes are finalized.
