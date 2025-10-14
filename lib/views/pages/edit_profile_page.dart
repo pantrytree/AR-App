@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/edit_profile_viewmodel.dart';
+import '../../viewmodels/home_viewmodel.dart'; // Global navigation viewmodel
 import '../../utils/colors.dart';
 import '../widgets/bottom_nav_bar.dart';
 
-/// EditProfilePage allows the user to update their profile information,
-/// including name, email, username, password, and profile image.
-///
-/// This page is a child page under the Profile tab. It does not have its
-/// own BottomNavBar index, but it displays the bar for visual consistency.
+/// EditProfilePage allows the user to update profile information:
+/// name, email, username, password, and profile image.
+/// This page is a child page under the Profile tab, but still displays
+/// the global BottomNavBar for consistent navigation across the app.
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
 
@@ -23,21 +23,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _usernameController;
   late TextEditingController _passwordController;
 
-  bool _isSaving = false;
+  bool _isSaving = false; // Tracks if profile save operation is in progress
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize ViewModel and controllers
+    // Initialize EditProfileViewModel
     final viewModel = EditProfileViewModel();
 
+    // Initialize text controllers with initial values from the ViewModel
     _nameController = TextEditingController(text: viewModel.name);
     _emailController = TextEditingController(text: viewModel.email);
     _usernameController = TextEditingController(text: viewModel.username);
     _passwordController = TextEditingController(text: viewModel.password);
 
-    // Load existing user data
+    // Load existing user profile after the first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await viewModel.loadUserProfile();
       _nameController.text = viewModel.name;
@@ -49,6 +50,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   void dispose() {
+    // Dispose controllers to free memory
     _nameController.dispose();
     _emailController.dispose();
     _usernameController.dispose();
@@ -58,10 +60,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => EditProfileViewModel(),
-      child: Consumer<EditProfileViewModel>(
-        builder: (context, viewModel, child) {
+    return MultiProvider(
+      // Provide both EditProfileViewModel and HomeViewModel to the widget tree
+      providers: [
+        ChangeNotifierProvider(create: (_) => EditProfileViewModel()),
+        ChangeNotifierProvider(create: (_) => HomeViewModel()), // Global bottom nav state
+      ],
+      child: Consumer2<EditProfileViewModel, HomeViewModel>(
+        // Listen to both viewmodels
+        builder: (context, viewModel, homeViewModel, child) {
           return Scaffold(
             backgroundColor: AppColors.secondaryBackground,
             appBar: AppBar(
@@ -79,7 +86,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: AppColors.primaryDarkBlue,
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context), // Return to previous page
               ),
             ),
             body: SingleChildScrollView(
@@ -88,7 +95,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildProfileAvatar(viewModel),
+                    _buildProfileAvatar(viewModel), // Profile image section
                     const SizedBox(height: 30),
                     _buildTextField(
                       label: 'Name',
@@ -119,32 +126,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                     const SizedBox(height: 40),
                     _isSaving
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(child: CircularProgressIndicator()) // Show loader while saving
                         : _buildSaveButton(viewModel),
                   ],
                 ),
               ),
             ),
-            // BottomNavBar stays consistent with main tabs
-            bottomNavigationBar: BottomNavBar(
-              currentIndex: 4, // Profile tab is active
-              onTap: (index) {
-                // Navigate to main tabs
-                // EditProfile is child, so no change needed here
-              },
-            ),
+            // Bottom navigation bar for consistent tab navigation
+            bottomNavigationBar: _buildBottomNavigationBar(context, homeViewModel),
           );
         },
       ),
     );
   }
 
-  /// Builds the profile avatar with a camera icon to change the photo
+  /// Builds the global bottom navigation bar.
+  /// Uses HomeViewModel to get the current tab index and handle tab selection.
+  Widget _buildBottomNavigationBar(BuildContext context, HomeViewModel homeViewModel) {
+    return BottomNavBar(
+      currentIndex: homeViewModel.selectedIndex, // Highlight current tab
+      onTap: (index) => homeViewModel.onTabSelected(index), // Handle tab navigation
+    );
+  }
+
+  /// Builds profile avatar with an overlay camera icon.
+  /// Clicking it should allow changing the profile image.
   Widget _buildProfileAvatar(EditProfileViewModel viewModel) {
     return Center(
       child: GestureDetector(
         onTap: () {
-          // TODO: Integrate image picker for profile photo
+          // Placeholder for image picker integration
           print('Change Photo clicked!');
         },
         child: Column(
@@ -156,10 +167,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               decoration: BoxDecoration(
                 color: AppColors.primaryLightPurple,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.white,
-                  width: 3,
-                ),
+                border: Border.all(color: AppColors.white, width: 3),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.shadowColor,
@@ -171,11 +179,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Icon(
-                    Icons.person,
-                    size: 50,
-                    color: AppColors.primaryPurple,
-                  ),
+                  const Icon(Icons.person, size: 50, color: AppColors.primaryPurple),
                   Positioned(
                     right: 8,
                     bottom: 8,
@@ -185,16 +189,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       decoration: BoxDecoration(
                         color: AppColors.primaryPurple,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.white,
-                          width: 2,
-                        ),
+                        border: Border.all(color: AppColors.white, width: 2),
                       ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: AppColors.white,
-                        size: 14,
-                      ),
+                      child: const Icon(Icons.camera_alt, color: AppColors.white, size: 14),
                     ),
                   ),
                 ],
@@ -215,7 +212,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds a general text field for name, email, or username
+  /// Builds a generic text field (name, email, username)
+  /// Supports required validation and keyboard type customization.
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
@@ -270,7 +268,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds the password input field with show/hide toggle
+  /// Builds the password field with show/hide functionality.
+  /// Uses ViewModel to track obscure text state.
   Widget _buildPasswordField({
     required TextEditingController controller,
     required void Function(String) onChanged,
@@ -330,17 +329,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds the save button and handles calling the ViewModel to save
+  /// Builds the save button and handles saving the profile via the ViewModel.
+  /// Displays a loading indicator while saving.
   Widget _buildSaveButton(EditProfileViewModel viewModel) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
         onPressed: () async {
-          setState(() => _isSaving = true);
-          await viewModel.saveProfile(); // Calls ViewModel API placeholder
-          setState(() => _isSaving = false);
+          setState(() => _isSaving = true); // Show loader
+          await viewModel.saveProfile(); // Call ViewModel API
+          setState(() => _isSaving = false); // Hide loader
 
+          // Show feedback message
           if (viewModel.errorMessage != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(viewModel.errorMessage!)),
@@ -361,10 +362,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         child: const Text(
           'Save',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
