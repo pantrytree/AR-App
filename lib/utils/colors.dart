@@ -4,7 +4,7 @@ class AppColors {
   AppColors._();
 
   // ======================
-  // 🎨 CORE BRAND COLORS
+  //  CORE BRAND COLORS
   // ======================
 
   // Primary Colors
@@ -18,7 +18,7 @@ class AppColors {
   static const Color secondaryLighterPurple = Color(0xFFC1C8F5);
 
   // ======================
-  // 🎨 NEUTRAL COLORS
+  //  NEUTRAL COLORS
   // ======================
   static const Color white = Color(0xFFFFFFFF);
   static const Color black = Color(0xFF000000);
@@ -29,7 +29,7 @@ class AppColors {
   static const Color veryLightGrey = Color(0xFFF5F5F5);
 
   // ======================
-  // 🎨 FUNCTIONAL COLORS
+  //  FUNCTIONAL COLORS
   // ======================
   static const Color error = Color(0xFFF44336);
   static const Color success = Color(0xFF4CAF50);
@@ -37,7 +37,7 @@ class AppColors {
   static const Color info = Color(0xFF2196F3);
 
   // ======================
-  // 🎨 COMPONENT-SPECIFIC COLORS
+  // COMPONENT-SPECIFIC COLORS
   // ======================
 
   // Side Menu
@@ -80,7 +80,7 @@ class AppColors {
   static const Color categoryTabUnselected = Color(0xFFC1C8F5);
 
   // ======================
-  // 🎨 GRADIENTS
+  //  GRADIENTS
   // ======================
   static const Gradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -101,7 +101,7 @@ class AppColors {
   );
 
   // ======================
-  // 🎨 BACKEND TEAM COLORS
+  //  BACKEND TEAM COLORS
   // ======================
   static const Color splashScreenBackground = Color(0xFFB1B9E8);
   static const Color splashScreenText = Color(0xFFe3e4f6);
@@ -116,7 +116,7 @@ class AppColors {
   static const Color purplePink = Color(0xFFcb6ce6);
 
   // ======================
-  // 🎨 CONSISTENCY COLORS
+  //  CONSISTENCY COLORS
   // ======================
   static const Color background = Color(0xFFF2F4FC);
   static const Color textDark = Color(0xFF14213D);
@@ -125,7 +125,7 @@ class AppColors {
   static const Color veryLightPurple = Color(0xFFE8E0FF);
 
   // ======================
-  // 🎨 ADDITIONAL COLORS FROM TEAMMATE'S FILE
+  //  ADDITIONAL COLORS
   // ======================
 
   // Light purple for selected tabs (MyLikes) - already exists as likesTabSelected
@@ -166,7 +166,7 @@ class AppColors {
   static const Color loginButtonText = Color(0xFFf0f1fa);
 
   // ======================
-  // 🎨 DYNAMIC THEME METHODS (From Teammate's File)
+  //  DYNAMIC THEME METHODS
   // ======================
 
   static Color getBackgroundColor(BuildContext context) {
@@ -240,7 +240,7 @@ class AppColors {
   }
 
   // ======================
-  // 🎨 SIDE MENU DYNAMIC METHODS
+  // SIDE MENU DYNAMIC METHODS
   // ======================
 
   static Color getSideMenuBackground(BuildContext context) {

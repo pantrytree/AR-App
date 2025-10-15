@@ -1,13 +1,20 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
-class SettingsViewModel extends ChangeNotifier {
+class SettingsViewModel with ChangeNotifier {
   String? _navigateToRoute;
-  Map<String, dynamic>? _navigationArguments;
 
   String? get navigateToRoute => _navigateToRoute;
-  Map<String, dynamic>? get navigationArguments => _navigationArguments;
 
-  // Navigation methods
+  void clearNavigation() {
+    _navigateToRoute = null;
+  }
+
+  // Existing methods
+  void navigateToProfile() {
+    _navigateToRoute = '/profile';
+    notifyListeners();
+  }
+
   void navigateToLanguage() {
     _navigateToRoute = '/language';
     notifyListeners();
@@ -24,23 +31,47 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   void navigateToHelp() {
-    _navigateToRoute = '/help'; // Connect to your help page
-    notifyListeners();
-  }
-
-  void navigateToProfile() {
-    _navigateToRoute = '/edit_profile';
+    _navigateToRoute = '/help';
     notifyListeners();
   }
 
   void navigateToLogout() {
-    _navigateToRoute = '/logout'; // Connect to your logout page
+    _navigateToRoute = '/logout';
     notifyListeners();
   }
 
-  void clearNavigation() {
-    _navigateToRoute = null;
-    _navigationArguments = null;
+  // New methods for the added settings options
+  void navigateToChangePassword() {
+    _navigateToRoute = '/change-password';
+    notifyListeners();
+  }
+
+  void navigateToTwoFactorAuth() {
+    _navigateToRoute = '/two-factor-auth';
+    notifyListeners();
+  }
+
+  void navigateToActiveSessions() {
+    _navigateToRoute = '/active-sessions';
+    notifyListeners();
+  }
+
+  void navigateToPrivacyPolicy() {
+    _navigateToRoute = '/privacy-policy';
+    notifyListeners();
+  }
+
+  void navigateToTermsOfService() {
+    _navigateToRoute = '/terms-of-service';
+    notifyListeners();
+  }
+
+  // Optional: Add delete account method if needed
+  void deleteAccount() {
+    // Implement delete account logic here
+    // This would typically show a confirmation dialog first
+    // then call an API to delete the account
+    _navigateToRoute = '/delete-account';
     notifyListeners();
   }
 }

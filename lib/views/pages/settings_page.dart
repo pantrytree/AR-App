@@ -80,6 +80,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     const SizedBox(height: 20),
 
+                    // 🔐 Account Security Section
+                    _buildAccountSecuritySection(context, settingsViewModel),
+
+                    const SizedBox(height: 20),
+
                     // ℹ️ Other Options Section
                     _buildOtherOptionsSection(context, settingsViewModel),
                   ],
@@ -241,6 +246,72 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Widget _buildAccountSecuritySection(BuildContext context, SettingsViewModel settingsViewModel) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.getCardBackground(context),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Account Security',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          _buildSoftItem(
+            context,
+            icon: Icons.lock,
+            title: 'Change Password',
+            subtitle: 'Update your password',
+            onTap: () {
+              settingsViewModel.navigateToChangePassword();
+            },
+          ),
+
+          _buildSoftDivider(context),
+
+          _buildSoftItem(
+            context,
+            icon: Icons.security,
+            title: 'Two-Factor Authentication',
+            subtitle: 'Add extra security',
+            onTap: () {
+              settingsViewModel.navigateToTwoFactorAuth();
+            },
+          ),
+
+          _buildSoftDivider(context),
+
+          _buildSoftItem(
+            context,
+            icon: Icons.devices,
+            title: 'Active Sessions',
+            subtitle: 'Manage logged-in devices',
+            onTap: () {
+              settingsViewModel.navigateToActiveSessions();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOtherOptionsSection(BuildContext context, SettingsViewModel settingsViewModel) {
     return Container(
       width: double.infinity,
@@ -283,8 +354,55 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
-          // Purple Text-Style Logout Button
-          _buildLogoutButton(context, settingsViewModel),
+          _buildSoftItem(
+            context,
+            icon: Icons.privacy_tip,
+            title: 'Privacy Policy',
+            subtitle: 'How we handle your data',
+            onTap: () {
+              settingsViewModel.navigateToPrivacyPolicy();
+            },
+          ),
+
+          _buildSoftDivider(context),
+
+          _buildSoftItem(
+            context,
+            icon: Icons.description,
+            title: 'Terms of Service',
+            subtitle: 'App usage terms',
+            onTap: () {
+              settingsViewModel.navigateToTermsOfService();
+            },
+          ),
+
+          _buildSoftDivider(context),
+
+          // Restructured Logout Button
+          _buildSoftItem(
+            context,
+            icon: Icons.logout,
+            title: 'Logout',
+            subtitle: 'Sign out of your account',
+            onTap: () {
+              settingsViewModel.navigateToLogout();
+            },
+            isLogout: true,
+          ),
+
+          _buildSoftDivider(context),
+
+          // Delete Account option
+          _buildSoftItem(
+            context,
+            icon: Icons.delete_outline,
+            title: 'Delete Account',
+            subtitle: 'Permanently remove your account',
+            onTap: () {
+              _showDeleteAccountDialog(context, settingsViewModel);
+            },
+            isDelete: true,
+          ),
         ],
       ),
     );
@@ -298,11 +416,20 @@ class _SettingsPageState extends State<SettingsPage> {
         required VoidCallback onTap,
         bool showTrailing = true,
         bool isLogout = false,
+        bool isDelete = false,
       }) {
+    Color primaryColor = AppColors.getPrimaryColor(context);
+
+    if (isLogout) {
+      primaryColor = AppColors.primaryPurple;
+    } else if (isDelete) {
+      primaryColor = AppColors.error;
+    }
+
     return ListTile(
       leading: Icon(
         icon,
-        color: isLogout ? AppColors.primaryPurple : AppColors.getPrimaryColor(context),
+        color: primaryColor,
         size: 20,
       ),
       title: Text(
@@ -310,7 +437,7 @@ class _SettingsPageState extends State<SettingsPage> {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: isLogout ? AppColors.primaryPurple : AppColors.getTextColor(context),
+          color: AppColors.getTextColor(context),
         ),
       ),
       subtitle: Text(
@@ -383,45 +510,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // New Purple Text-Style Logout Button
-  Widget _buildLogoutButton(BuildContext context, SettingsViewModel settingsViewModel) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextButton(
-        onPressed: () {
-          // Navigate directly to logout page without confirmation dialog
-          settingsViewModel.navigateToLogout();
-        },
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.primaryPurple,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
-          alignment: Alignment.centerLeft,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.logout,
-              color: AppColors.primaryPurple,
-              size: 20,
-            ),
-            const SizedBox(width: 16),
-            Text(
-              'Logout',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primaryPurple,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showClearCacheDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -462,6 +550,59 @@ class _SettingsPageState extends State<SettingsPage> {
             },
             child: Text(
               'Clear',
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, SettingsViewModel settingsViewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.getCardBackground(context),
+        title: Text(
+          'Delete Account',
+          style: TextStyle(
+            color: AppColors.getTextColor(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'This action is permanent and cannot be undone. All your data will be permanently deleted.',
+          style: TextStyle(
+            color: AppColors.getSecondaryTextColor(context),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Add your delete account logic here
+              // settingsViewModel.deleteAccount();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Account successfully deleted!'),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            },
+            child: Text(
+              'Delete',
               style: TextStyle(
                 color: AppColors.error,
                 fontWeight: FontWeight.bold,

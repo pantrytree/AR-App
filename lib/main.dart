@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:roomantics/views/pages/about_page.dart';
+import 'package:roomantics/views/pages/active_sessions_page.dart';
+import 'package:roomantics/views/pages/change_passwords_page.dart';
+import 'package:roomantics/views/pages/language_page.dart';
+import 'package:roomantics/views/pages/notifications_page.dart';
+import 'package:roomantics/views/pages/privacy_policy_page.dart';
+import 'package:roomantics/views/pages/terms_of_service_page.dart';
+import 'package:roomantics/views/pages/two_factor_auth_page.dart';
 import 'firebase_options.dart';
 
 // Import all pages
@@ -152,11 +160,21 @@ class MyApp extends StatelessWidget {
               ),
               '/catalogue_item': (context) => const CatalogueItemPage(),
               '/camera_page': (context) => const CameraPage(),
+              '/language': (context) => const LanguagePage(),
+              '/notifications': (context) => const NotificationsPage(),
+              '/about': (context) => const AboutPage(),
 
               // Settings navigation routes (for SettingsViewModel)
-              '/language': (context) => const PlaceholderWidget(title: 'Language Settings'),
-              '/notifications': (context) => const PlaceholderWidget(title: 'Notifications'),
-              '/about': (context) => const PlaceholderWidget(title: 'About App'),
+              '/language': (context) => LanguagePage(),
+              '/notifications': (context) => NotificationsPage(),
+              '/about': (context) => AboutPage(),
+              '/help': (context) => HelpPage(),
+              '/logout': (context) => LogoutPage(),
+              '/change-password': (context) => ChangePasswordPage(),
+              '/two-factor-auth': (context) => TwoFactorAuthPage(),
+              '/active-sessions': (context) => ActiveSessionsPage(),
+              '/privacy-policy': (context) => PrivacyPolicyPage(),
+              '/terms-of-service': (context) => TermsOfServicePage(),
             },
             onUnknownRoute: (settings) {
               return MaterialPageRoute(
