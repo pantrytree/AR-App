@@ -1,4 +1,3 @@
-// lib/views/pages/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/views/widgets/side_menu.dart';
@@ -6,6 +5,7 @@ import '/views/widgets/bottom_nav_bar.dart';
 import '/viewmodels/home_viewmodel.dart';
 import '/viewmodels/side_menu_viewmodel.dart';
 import '/utils/colors.dart';
+import '../../theme/theme.dart';
 import '/utils/text_components.dart';
 
 class HomePage extends StatelessWidget {
@@ -20,41 +20,48 @@ class HomePage extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => SideMenuViewModel(userName: "Bulelwa")),
       ],
-      child: Consumer<HomeViewModel>(
-        builder: (context, homeViewModel, child) {
-          // Handle HomeViewModel navigation
-          if (homeViewModel.navigateToRoute != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.pushNamed(
-                context,
-                homeViewModel.navigateToRoute!,
-                arguments: homeViewModel.navigationArguments,
-              ).then((_) => homeViewModel.clearNavigation());
-            });
-          }
+      child: Consumer<ThemeManager>(
+        builder: (context, themeManager, child) {
+          return Consumer<HomeViewModel>(
+            builder: (context, homeViewModel, child) {
+              // Handle HomeViewModel navigation
+              if (homeViewModel.navigateToRoute != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.pushNamed(
+                    context,
+                    homeViewModel.navigateToRoute!,
+                    arguments: homeViewModel.navigationArguments,
+                  ).then((_) => homeViewModel.clearNavigation());
+                });
+              }
 
-          return Scaffold(
-            backgroundColor: AppColors.secondaryBackground,
-            appBar: AppBar(
-              backgroundColor: AppColors.secondaryBackground,
-              title: Text(
-                TextComponents.homePageTitle,
-                style: TextStyle(
-                  color: AppColors.primaryDarkBlue,
-                  fontWeight: FontWeight.bold,
+              return Scaffold(
+                backgroundColor: AppColors.getBackgroundColor(context),
+                appBar: AppBar(
+                  backgroundColor: AppColors.getAppBarBackground(context),
+                  title: Text(
+                    TextComponents.homePageTitle,
+                    style: TextStyle(
+                      color: AppColors.getAppBarForeground(context),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  elevation: 0,
+                  actions: [
+                    IconButton(
+                      icon: Icon(
+                          Icons.search,
+                          color: AppColors.getAppBarForeground(context)
+                      ),
+                      onPressed: () => homeViewModel.onSearchTapped(),
+                    ),
+                  ],
                 ),
-              ),
-              elevation: 0,
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.search, color: AppColors.primaryDarkBlue),
-                  onPressed: () => homeViewModel.onSearchTapped(),
-                ),
-              ],
-            ),
-            drawer: const SideMenu(),
-            body: _buildBody(context, homeViewModel),
-            bottomNavigationBar: _buildBottomNavigationBar(context, homeViewModel),
+                drawer: const SideMenu(),
+                body: _buildBody(context, homeViewModel),
+                bottomNavigationBar: _buildBottomNavigationBar(context, homeViewModel),
+              );
+            },
           );
         },
       ),
@@ -63,7 +70,7 @@ class HomePage extends StatelessWidget {
 
   Widget _buildBody(BuildContext context, HomeViewModel homeViewModel) {
     if (homeViewModel.isLoading) {
-      return _buildLoadingState();
+      return _buildLoadingState(context);
     }
 
     if (homeViewModel.hasError) {
@@ -73,10 +80,10 @@ class HomePage extends StatelessWidget {
     return _buildContent(context, homeViewModel);
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(BuildContext context) {
     return Center(
       child: CircularProgressIndicator(
-        color: AppColors.primaryPurple,
+        color: AppColors.getPrimaryColor(context),
       ),
     );
   }
@@ -89,14 +96,14 @@ class HomePage extends StatelessWidget {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: AppColors.primaryPurple,
+            color: AppColors.getPrimaryColor(context),
           ),
           const SizedBox(height: 16),
           Text(
             TextComponents.loadingError,
             style: TextStyle(
               fontSize: 18,
-              color: AppColors.primaryDarkBlue,
+              color: AppColors.getTextColor(context),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -104,7 +111,7 @@ class HomePage extends StatelessWidget {
           Text(
             homeViewModel.errorMessage ?? TextComponents.unknownError,
             style: TextStyle(
-              color: AppColors.mediumGrey,
+              color: AppColors.getSecondaryTextColor(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -112,7 +119,7 @@ class HomePage extends StatelessWidget {
           ElevatedButton(
             onPressed: () => homeViewModel.refreshHomePage(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryPurple,
+              backgroundColor: AppColors.getPrimaryColor(context),
               foregroundColor: Colors.white,
             ),
             child: Text(TextComponents.retryButton),
@@ -129,14 +136,13 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Dynamic Greeting - FIXED: Use .displayName instead of ['displayName']
+            // Dynamic Greeting
             Text(
-              // Dynamic Greeting - FIXED: Use ['displayName'] for Map access
               TextComponents.homeGreeting(homeViewModel.currentUser?['displayName'] ?? 'User'),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primaryDarkBlue,
+                color: AppColors.getTextColor(context),
               ),
             ),
             const SizedBox(height: 8),
@@ -144,7 +150,7 @@ class HomePage extends StatelessWidget {
               TextComponents.homeWelcome,
               style: TextStyle(
                 fontSize: 16,
-                color: AppColors.mediumGrey,
+                color: AppColors.getSecondaryTextColor(context),
               ),
             ),
             const SizedBox(height: 24),
@@ -174,7 +180,7 @@ class HomePage extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.getCardBackground(context),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -186,12 +192,15 @@ class HomePage extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.search, color: AppColors.mediumGrey),
+            Icon(
+                Icons.search,
+                color: AppColors.getSecondaryTextColor(context)
+            ),
             const SizedBox(width: 12),
             Text(
               TextComponents.searchPlaceholder,
               style: TextStyle(
-                color: AppColors.mediumGrey,
+                color: AppColors.getSecondaryTextColor(context),
               ),
             ),
           ],
@@ -216,14 +225,14 @@ class HomePage extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppColors.primaryDarkBlue,
+            color: AppColors.getTextColor(context),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           TextComponents.recentlyUsedSubtitle,
           style: TextStyle(
-            color: AppColors.mediumGrey,
+            color: AppColors.getSecondaryTextColor(context),
           ),
         ),
         const SizedBox(height: 16),
@@ -255,21 +264,35 @@ class HomePage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          TextComponents.allRoomsTitle,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryDarkBlue,
+        // Make the title clickable
+        GestureDetector(
+          onTap: () => homeViewModel.onAllRoomsTitleTapped(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                TextComponents.allRoomsTitle,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.getTextColor(context),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppColors.getTextColor(context),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
 
         // Room Categories as grid - Fixed height to prevent overflow
         SizedBox(
-          height: 400, // Fixed height to contain the grid
+          height: 400,
           child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(), // Disable grid scrolling
+            physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 12,
@@ -300,7 +323,7 @@ class HomePage extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: AppColors.getCardBackground(context),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -310,14 +333,18 @@ class HomePage extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(Icons.chair, color: AppColors.primaryPurple, size: 30),
+              child: Icon(
+                  Icons.chair,
+                  color: AppColors.getPrimaryColor(context),
+                  size: 30
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               item['name']!,
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.primaryDarkBlue,
+                color: AppColors.getTextColor(context),
                 fontWeight: FontWeight.w500,
               ),
               maxLines: 2,
@@ -337,7 +364,7 @@ class HomePage extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.getCardBackground(context),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -353,7 +380,7 @@ class HomePage extends StatelessWidget {
             Icon(
               _getRoomIcon(room['type']!),
               size: 40,
-              color: AppColors.primaryPurple,
+              color: AppColors.getPrimaryColor(context),
             ),
             const SizedBox(height: 8),
             Text(
@@ -361,14 +388,14 @@ class HomePage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primaryDarkBlue,
+                color: AppColors.getTextColor(context),
               ),
             ),
             Text(
               'Catalogue Page',
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.mediumGrey,
+                color: AppColors.getSecondaryTextColor(context),
               ),
             ),
           ],

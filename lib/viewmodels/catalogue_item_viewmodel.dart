@@ -1,3 +1,4 @@
+// catalogue_item_viewmodel.dart
 import 'package:flutter/material.dart';
 import '/utils/text_components.dart';
 
@@ -49,17 +50,6 @@ class CatalogueItemViewModel extends ChangeNotifier {
     // - Load actual product image URLs
   }
 
-  // TODO: Backend - Implement addToCart()
-  // Description: Adds item to user's cart in cart_items table
-  // Expected: Returns success status
-  Future<void> _addToCartInBackend() async {
-    // Backend team to implement:
-    // - Insert record into cart_items table
-    // - Associate with current user
-    // - Return success status
-    debugPrint("Adding $productTitle to cart - BACKEND NEEDED");
-  }
-
   // TODO: Backend - Implement toggleFavorite()
   // Description: Toggles favorite status in user_favorites table
   // Expected: Returns updated favorite status
@@ -75,10 +65,11 @@ class CatalogueItemViewModel extends ChangeNotifier {
   // PUBLIC METHODS
   // ======================
 
-  void addToCart() {
-    debugPrint("Adding $productTitle to cart");
-    // Backend team: This function needs implementation
-    _addToCartInBackend();
+  void openInAR() {
+    debugPrint("Opening $productTitle in AR");
+    _navigateToRoute = '/camera_page';
+    _navigationArguments = {'productId': productId};
+    notifyListeners();
   }
 
   void toggleFavorite() {

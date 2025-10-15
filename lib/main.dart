@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+
+// Import all pages
 import 'views/pages/home_page.dart';
 import 'views/pages/forgot_password_page.dart';
 import 'views/pages/logout_page.dart';
@@ -12,87 +15,204 @@ import 'views/pages/settings_page.dart';
 import 'views/pages/help_page.dart';
 import 'views/pages/edit_profile_page.dart';
 import 'views/pages/login_page.dart';
+import 'views/pages/camera_page.dart';
+import 'views/pages/splash_screen_page.dart';
+import 'views/pages/splash_screen_2_page.dart';
+import 'views/pages/sign_up_page.dart';
+
+// Import all ViewModels
+import 'viewmodels/camera_viewmodel.dart';
+import 'viewmodels/home_viewmodel.dart';
+import 'viewmodels/side_menu_viewmodel.dart';
+import 'viewmodels/forgot_password_viewmodel.dart';
+import 'viewmodels/logout_viewmodel.dart';
+import 'viewmodels/my_likes_page_viewmodel.dart';
+import 'viewmodels/my_projects_viewmodel.dart';
+import 'viewmodels/help_page_viewmodel.dart';
+import 'viewmodels/edit_profile_viewmodel.dart';
+import 'viewmodels/settings_viewmodel.dart';
+import 'viewmodels/login_viewmodel.dart';
+import 'viewmodels/sign_up_viewmodel.dart';
+import 'theme/theme.dart';
+import 'utils/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase and ThemeManager
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+
+  // Initialize theme manager
+  final themeManager = ThemeManager();
+  await themeManager.initialize();
+
+  runApp(MyApp(themeManager: themeManager));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ThemeManager? themeManager;
+
+  const MyApp({super.key, this.themeManager});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Roomantic',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: const Color(0xFFF2F4FC),
-      ),
-      routes: {
-        '/': (context) => const HomePage(),
-        '/home': (context) => const HomePage(),
-        '/login': (context) => const LoginPage(),
-
-        // Side menu routes
-        '/catalogue': (context) => const CataloguePage(),
-        '/likes': (context) => const LikesPage(),
-        '/projects': (context) => const ProjectsPage(),
-        '/settings': (context) => const SettingsPage(),
-        '/help': (context) => const HelpPage(),
-        '/edit_profile': (context) => const EditProfilePage(),
-
-        // My assigned pages
-        '/forgot_password': (context) => const ForgotPasswordPage(),
-        '/logout': (context) => const LogoutPage(),
-        '/catalogue_item': (context) => const CatalogueItemPage(),
-
-        // Bottom navigation routes
-        '/ar_view': (context) => const PlaceholderWidget(title: 'AR View'),
-        '/cart': (context) => const PlaceholderWidget(title: 'Cart'),
-        '/favorites': (context) => const LikesPage(),
-        '/profile': (context) => const EditProfilePage(),
-      },
-      // Handle unknown routes gracefully
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(title: const Text('Page Not Found')),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Page not found',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'The page "${settings.name}" does not exist.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/home',
-                              (route) => false
-                      );
-                    },
-                    child: const Text('Go to Home'),
-                  ),
-                ],
+    return MultiProvider(
+      providers: [
+        // Add providers for all pages that use ViewModels
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => SideMenuViewModel(userName: "Bulelwa")),
+        ChangeNotifierProvider(create: (_) => CameraViewModel()),
+        ChangeNotifierProvider(create: (_) => MyLikesViewModel()),
+        ChangeNotifierProvider(create: (_) => MyProjectsViewModel()),
+        ChangeNotifierProvider(create: (_) => HelpPageViewModel()),
+        ChangeNotifierProvider(create: (_) => EditProfileViewModel()),
+        ChangeNotifierProvider(create: (_) => SettingsViewModel()),
+        // Use provided themeManager or create a new one
+        if (themeManager != null)
+          ChangeNotifierProvider.value(value: themeManager!)
+        else
+          ChangeNotifierProvider(create: (_) => ThemeManager()),
+        // Login and SignUp ViewModels are created within their pages
+      ],
+      child: Consumer<ThemeManager>(
+        builder: (context, themeManager, child) {
+          return MaterialApp(
+            title: 'Roomantic',
+            theme: ThemeData(
+              primarySwatch: Colors.purple,
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: AppColors.secondaryBackground,
+              appBarTheme: AppBarTheme(
+                backgroundColor: AppColors.secondaryBackground,
+                foregroundColor: AppColors.primaryDarkBlue,
+                elevation: 0,
+                iconTheme: const IconThemeData(color: AppColors.primaryDarkBlue),
+              ),
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.primaryPurple,
+                secondary: AppColors.primaryLightPurple,
+                background: AppColors.secondaryBackground,
+                surface: AppColors.white,
+                onBackground: AppColors.primaryDarkBlue,
+                onSurface: AppColors.primaryDarkBlue,
               ),
             ),
-          ),
-        );
-      },
+            darkTheme: ThemeData(
+              primarySwatch: Colors.purple,
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: AppColors.primaryDarkBlue,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: AppColors.primaryDarkBlue,
+                foregroundColor: AppColors.white,
+                elevation: 0,
+                iconTheme: IconThemeData(color: AppColors.white),
+              ),
+              colorScheme: const ColorScheme.dark(
+                primary: AppColors.primaryPurple,
+                secondary: AppColors.primaryLightPurple,
+                background: AppColors.primaryDarkBlue,
+                surface: AppColors.primaryDarkBlue,
+                onBackground: AppColors.white,
+                onSurface: AppColors.white,
+              ),
+            ),
+            themeMode: themeManager.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            initialRoute: '/splash',
+            routes: {
+              // Splash screens
+              '/splash': (context) => SplashScreenPage(),
+              '/splash2': (context) => SplashScreen2Page(),
+
+              // Authentication routes
+              '/login': (context) => LoginPage(),
+              '/signup': (context) => SignUpPage(),
+              '/forgot_password': (context) => ChangeNotifierProvider(
+                create: (_) => ForgotPasswordViewModel(),
+                child: const ForgotPasswordPage(),
+              ),
+
+              // Main app routes
+              '/': (context) => const HomePage(),
+              '/home': (context) => const HomePage(),
+
+              // Side menu routes
+              '/catalogue': (context) => const CataloguePage(),
+              '/likes': (context) => const MyLikesPage(),
+              '/projects': (context) => const MyProjectsPage(),
+              '/settings': (context) => const SettingsPage(),
+              '/help': (context) => const HelpPage(),
+              '/edit_profile': (context) => const EditProfilePage(),
+
+              // Other pages
+              '/logout': (context) => ChangeNotifierProvider(
+                create: (_) => LogoutViewModel(),
+                child: const LogoutPage(),
+              ),
+              '/catalogue_item': (context) => const CatalogueItemPage(),
+              '/camera_page': (context) => const CameraPage(),
+
+              // Settings navigation routes (for SettingsViewModel)
+              '/language': (context) => const PlaceholderWidget(title: 'Language Settings'),
+              '/notifications': (context) => const PlaceholderWidget(title: 'Notifications'),
+              '/about': (context) => const PlaceholderWidget(title: 'About App'),
+            },
+            onUnknownRoute: (settings) {
+              return MaterialPageRoute(
+                builder: (context) => Scaffold(
+                  appBar: AppBar(
+                    title: Text(
+                      'Page Not Found',
+                      style: TextStyle(
+                        color: AppColors.getAppBarForeground(context),
+                      ),
+                    ),
+                    backgroundColor: AppColors.getAppBarBackground(context),
+                    foregroundColor: AppColors.getAppBarForeground(context),
+                  ),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: AppColors.getSecondaryTextColor(context)
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Page not found',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.getTextColor(context),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'The page "${settings.name}" does not exist.',
+                          style: TextStyle(
+                            color: AppColors.getSecondaryTextColor(context),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamedAndRemoveUntil(
+                                context, '/home', (route) => false);
+                          },
+                          child: const Text('Go to Home'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -105,19 +225,19 @@ class PlaceholderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4FC),
+      backgroundColor: AppColors.getBackgroundColor(context),
       appBar: AppBar(
         title: Text(
           title,
-          style: const TextStyle(
-            color: Color(0xFF14213D),
+          style: TextStyle(
+            color: AppColors.getAppBarForeground(context),
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: const Color(0xFFF2F4FC),
-        foregroundColor: const Color(0xFF14213D),
+        backgroundColor: AppColors.getAppBarBackground(context),
+        foregroundColor: AppColors.getAppBarForeground(context),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF14213D)),
+        iconTheme: IconThemeData(color: AppColors.getAppBarForeground(context)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -130,23 +250,23 @@ class PlaceholderWidget extends StatelessWidget {
             Icon(
               _getPlaceholderIcon(title),
               size: 80,
-              color: const Color(0xFF963CF1),
+              color: AppColors.getPrimaryColor(context),
             ),
             const SizedBox(height: 20),
             Text(
               '$title - Coming Soon',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
-                color: Color(0xFF14213D),
+                color: AppColors.getTextColor(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'This page is under development and will be available soon.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF666666),
+                color: AppColors.getSecondaryTextColor(context),
                 fontSize: 14,
               ),
             ),
@@ -156,8 +276,8 @@ class PlaceholderWidget extends StatelessWidget {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF963CF1),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.getPrimaryColor(context),
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               child: const Text('Go Back'),
@@ -174,8 +294,16 @@ class PlaceholderWidget extends StatelessWidget {
         return Icons.view_in_ar;
       case 'cart':
         return Icons.shopping_cart;
+      case 'camera/ar view':
+        return Icons.camera_alt;
       case 'search':
         return Icons.search;
+      case 'language settings':
+        return Icons.language;
+      case 'notifications':
+        return Icons.notifications;
+      case 'about app':
+        return Icons.info;
       default:
         return Icons.construction;
     }

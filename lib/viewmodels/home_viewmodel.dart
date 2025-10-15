@@ -109,23 +109,25 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   // Bottom navigation method
+  // Bottom navigation method
   void onTabSelected(int index) {
     _selectedIndex = index;
     notifyListeners();
 
     switch (index) {
       case 0: // Home
+      // Already on home, do nothing
         break;
       case 1: // Favorites
         _navigateToRoute = '/likes';
         notifyListeners();
         break;
-      case 2: // AR View
-        _navigateToRoute = '/ar_view';
+      case 2: // AR View (Camera)
+        _navigateToRoute = '/camera_page'; // CHANGED: Navigate to camera page
         notifyListeners();
         break;
-      case 3: // Cart
-        _navigateToRoute = '/cart';
+      case 3: // Shopping Bag - NOW GOES TO CATALOGUE
+        _navigateToRoute = '/catalogue';
         notifyListeners();
         break;
       case 4: // Profile
@@ -151,6 +153,14 @@ class HomeViewModel extends ChangeNotifier {
     _navigateToRoute = '/catalogue';
     _navigationArguments = {'roomId': id};
     notifyListeners();
+  }
+
+  void onAllRoomsTitleTapped() {
+    _navigateToRoute = '/catalogue';
+  }
+
+  void onShoppingBagTapped() {
+    _navigateToRoute = '/catalogue';
   }
 
   void clearNavigation() {
