@@ -40,7 +40,7 @@ class MyApp extends StatelessWidget {
           fontFamily: 'Inter',
         ),
         // Set initial page here - for me
-        home: const MyProjectsPage(),
+        home: const HelpPage(),
         // Route names later for navigation
         routes: {
           '/help': (_) => const HelpPage(),

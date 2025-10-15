@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/help_page_viewmodel.dart';
 import '../../../utils/colors.dart';
 import '../../views/widgets/bottom_nav_bar.dart';
+import '../../views/pages/faq_page.dart';
+import '../../views/pages/guides_page.dart';
 
 class HelpPage extends StatelessWidget {
   const HelpPage({super.key});
@@ -50,7 +52,7 @@ class HelpPage extends StatelessWidget {
                 children: [
                   _buildSearchBar(viewModel),
                   const SizedBox(height: 24),
-                  _buildMainOptions(viewModel),
+                  _buildMainOptions(viewModel, context), // pass context
                   const SizedBox(height: 32),
                   _buildDynamicSections(viewModel),
                 ],
@@ -128,15 +130,20 @@ class HelpPage extends StatelessWidget {
     );
   }
 
-  // Guides & FAQ cards(buttons-will add navigation soon)
-  Widget _buildMainOptions(HelpPageViewModel viewModel) {
+  // Guides & FAQ cards(buttons-now navigate to pages)
+  Widget _buildMainOptions(HelpPageViewModel viewModel, BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: _buildHelpCard(
             icon: Icons.book,
             label: 'Guides',
-            onTap: viewModel.onTapGuides,
+            onTap: () {
+              Navigator.push(
+                context, // use builder context
+                MaterialPageRoute(builder: (_) => GuidesPage()),
+              );
+            },
           ),
         ),
         const SizedBox(width: 16),
@@ -144,7 +151,12 @@ class HelpPage extends StatelessWidget {
           child: _buildHelpCard(
             icon: Icons.help_outline,
             label: 'FAQ',
-            onTap: viewModel.onTapFAQ,
+            onTap: () {
+              Navigator.push(
+                context, // use builder context
+                MaterialPageRoute(builder: (_) => const FAQPage()),
+              );
+            },
           ),
         ),
       ],
@@ -191,7 +203,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 
-  //  list of topics
+  // List of topics
   Widget _buildDynamicSections(HelpPageViewModel viewModel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
