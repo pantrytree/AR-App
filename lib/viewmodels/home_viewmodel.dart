@@ -96,7 +96,7 @@ class HomeViewModel extends ChangeNotifier {
       case 0: // Home
         break;
       case 1: // Favorites
-        _navigateToRoute = '/my_likes';
+        _navigateToRoute = '/my_likes_page';
         break;
       case 2: // AR View - Updated to use correct route name
         _navigateToRoute = '/camera_page';
@@ -105,7 +105,7 @@ class HomeViewModel extends ChangeNotifier {
         _navigateToRoute = '/catalogue';
         break;
       case 4: // Profile
-        _navigateToRoute = '/settings';
+        _navigateToRoute = '/profile';
         break;
     }
     notifyListeners();

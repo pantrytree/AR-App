@@ -28,6 +28,7 @@ import 'views/pages/splash_screen_page.dart';
 import 'views/pages/splash_screen_2_page.dart';
 import 'views/pages/sign_up_page.dart';
 import 'views/pages/furniture_catalogue_page.dart';
+import 'views/pages/profile_page.dart';
 
 // Import all ViewModels
 import 'viewmodels/camera_viewmodel.dart';
@@ -41,6 +42,7 @@ import 'viewmodels/edit_profile_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/login_viewmodel.dart';
 import 'viewmodels/sign_up_viewmodel.dart';
+import 'viewmodels/profile_page_viewmodel.dart';
 
 // Import services
 import 'services/likes_service.dart';
@@ -154,7 +156,7 @@ class MyApp extends StatelessWidget {
 
               // Side menu routes
               '/catalogue': (context) => const CataloguePage(),
-              '/likes': (context) => const MyLikesPage(),
+              '/my_likes_page': (context) => const MyLikesPage(),
               '/settings': (context) => const SettingsPage(),
               '/help': (context) => const HelpPage(),
               '/edit_profile': (context) => const EditProfilePage(),
@@ -171,6 +173,8 @@ class MyApp extends StatelessWidget {
               '/notifications': (context) => const NotificationsPage(),
               '/about': (context) => const AboutPage(),
               '/furniture-catalogue': (context) => const FurnitureCataloguePage(),
+              '/profile': (context) => const AccountHubPage(),
+
 
               // Settings navigation routes (for SettingsViewModel)
               '/language': (context) => LanguagePage(),
