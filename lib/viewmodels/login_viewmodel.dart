@@ -35,13 +35,13 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void onForgotPasswordTapped() {
-    _navigateToRoute = '/forgot-password';
+  void clearNavigation() {
+    _navigateToRoute = null;
     notifyListeners();
   }
 
-  void clearNavigation() {
-    _navigateToRoute = null;
+  void onForgotPasswordTapped() {
+    _navigateToRoute = '/forgot_password';
     notifyListeners();
   }
 }

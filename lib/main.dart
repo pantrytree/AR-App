@@ -7,6 +7,7 @@ import 'package:roomantics/views/pages/change_passwords_page.dart';
 import 'package:roomantics/views/pages/language_page.dart';
 import 'package:roomantics/views/pages/notifications_page.dart';
 import 'package:roomantics/views/pages/privacy_policy_page.dart';
+import 'package:roomantics/views/pages/roomielab_screen.dart';
 import 'package:roomantics/views/pages/terms_of_service_page.dart';
 import 'package:roomantics/views/pages/two_factor_auth_page.dart';
 import 'firebase_options.dart';
@@ -18,7 +19,6 @@ import 'views/pages/logout_page.dart';
 import 'views/pages/catalogue_item_page.dart';
 import 'views/pages/catalogue_page.dart';
 import 'views/pages/my_likes_page.dart';
-import 'views/pages/my_projects_page.dart';
 import 'views/pages/settings_page.dart';
 import 'views/pages/help_page.dart';
 import 'views/pages/edit_profile_page.dart';
@@ -27,6 +27,7 @@ import 'views/pages/camera_page.dart';
 import 'views/pages/splash_screen_page.dart';
 import 'views/pages/splash_screen_2_page.dart';
 import 'views/pages/sign_up_page.dart';
+import 'views/pages/furniture_catalogue_page.dart';
 
 // Import all ViewModels
 import 'viewmodels/camera_viewmodel.dart';
@@ -41,6 +42,10 @@ import 'viewmodels/edit_profile_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/login_viewmodel.dart';
 import 'viewmodels/sign_up_viewmodel.dart';
+
+// Import services
+import 'services/likes_service.dart';
+
 import 'theme/theme.dart';
 import 'utils/colors.dart';
 
@@ -77,6 +82,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HelpPageViewModel()),
         ChangeNotifierProvider(create: (_) => EditProfileViewModel()),
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
+
+        // Add LikesService for shared liked items management
+        ChangeNotifierProvider(create: (_) => LikesService()),
+
         // Use provided themeManager or create a new one
         if (themeManager != null)
           ChangeNotifierProvider.value(value: themeManager!)
@@ -148,7 +157,6 @@ class MyApp extends StatelessWidget {
               // Side menu routes
               '/catalogue': (context) => const CataloguePage(),
               '/likes': (context) => const MyLikesPage(),
-              '/projects': (context) => const MyProjectsPage(),
               '/settings': (context) => const SettingsPage(),
               '/help': (context) => const HelpPage(),
               '/edit_profile': (context) => const EditProfilePage(),
@@ -159,10 +167,12 @@ class MyApp extends StatelessWidget {
                 child: const LogoutPage(),
               ),
               '/catalogue_item': (context) => const CatalogueItemPage(),
-              '/camera_page': (context) => const CameraPage(),
+              '/camera_page': (context) => CameraPage(),
+              '/roomielab': (context) => RoomieLabScreen(), // Full AR studio
               '/language': (context) => const LanguagePage(),
               '/notifications': (context) => const NotificationsPage(),
               '/about': (context) => const AboutPage(),
+              '/furniture-catalogue': (context) => const FurnitureCataloguePage(),
 
               // Settings navigation routes (for SettingsViewModel)
               '/language': (context) => LanguagePage(),
@@ -175,6 +185,7 @@ class MyApp extends StatelessWidget {
               '/active-sessions': (context) => ActiveSessionsPage(),
               '/privacy-policy': (context) => PrivacyPolicyPage(),
               '/terms-of-service': (context) => TermsOfServicePage(),
+              '/forgot_password': (context) => const ForgotPasswordPage(),
             },
             onUnknownRoute: (settings) {
               return MaterialPageRoute(

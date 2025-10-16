@@ -17,9 +17,9 @@ class CatalogueItemPage extends StatefulWidget {
 }
 
 class _CatalogueItemPageState extends State<CatalogueItemPage> {
-  String _productTitle = "Queen Bed";
-  String _productDimensions = "80×80 cm";
-  String _productDescription = "Custom-made, handcrafted furniture designed to fit your unique style and space.";
+  String _furnitureTitle = "Queen Bed";
+  String _furnitureDimensions = "80×80 cm";
+  String _furnitureDescription = "Custom-made, handcrafted furniture designed to fit your unique style and space.";
   bool _isFavorite = false;
 
   final List<Map<String, String>> _relatedItems = [
@@ -52,7 +52,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
           backgroundColor: AppColors.getBackgroundColor(context),
           appBar: AppBar(
             title: Text(
-              "Product Details",
+              "Furniture Details", // Changed from "Product Details"
               style: TextStyle(
                 color: AppColors.getAppBarForeground(context),
                 fontWeight: FontWeight.bold,
@@ -68,9 +68,9 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Title and Dimensions
+                // Furniture Title and Dimensions
                 Text(
-                  _productTitle,
+                  _furnitureTitle,
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -79,7 +79,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _productDimensions,
+                  _furnitureDimensions,
                   style: TextStyle(
                     fontSize: 16,
                     color: AppColors.getSecondaryTextColor(context),
@@ -87,7 +87,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // Product Image
+                // Furniture Image
                 Container(
                   height: 250,
                   width: double.infinity,
@@ -110,9 +110,9 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // Product Description
+                // Furniture Description
                 Text(
-                  _productDescription,
+                  _furnitureDescription,
                   style: TextStyle(
                     fontSize: 16,
                     color: AppColors.getTextColor(context),
@@ -153,7 +153,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
 
                 // Related Items Section
                 Text(
-                  "More to explore",
+                  "More furniture to explore", // Changed from "More to explore"
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -162,7 +162,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Related Items
+                // Related Furniture Items
                 ..._relatedItems.map((item) =>
                     _buildRelatedItem(
                         context,
@@ -198,7 +198,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
         ),
         child: Row(
           children: [
-            // Item icon
+            // Furniture icon
             Container(
               width: 50,
               height: 50,

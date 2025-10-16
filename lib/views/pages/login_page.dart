@@ -16,7 +16,13 @@ class LoginPage extends StatelessWidget {
               // Handle navigation when flagged
               if (viewModel.navigateToRoute != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.pushReplacementNamed(context, viewModel.navigateToRoute!);
+                  if (viewModel.navigateToRoute == '/forgot_password') {
+                    // Push forgot password page (don't replace)
+                    Navigator.pushNamed(context, viewModel.navigateToRoute!);
+                  } else {
+                    // Replace for other routes (like signup, home)
+                    Navigator.pushReplacementNamed(context, viewModel.navigateToRoute!);
+                  }
                   viewModel.clearNavigation();
                 });
               }

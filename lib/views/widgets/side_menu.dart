@@ -5,7 +5,7 @@ import '../../theme/theme.dart';
 import '/utils/text_components.dart';
 import '../pages/help_page.dart';
 import '../pages/my_likes_page.dart';
-import '../pages/my_projects_page.dart';
+import '/views/pages/roomielab_screen.dart';
 import '../pages/edit_profile_page.dart';
 import '../pages/catalogue_page.dart';
 import '../pages/settings_page.dart';
@@ -140,9 +140,9 @@ class SideMenu extends StatelessWidget {
           ),
           _buildMenuItem(
             context: context,
-            text: TextComponents.menuProjects,
+            text: TextComponents.menuRoomie,
             icon: Icons.work_outline,
-            route: "/projects",
+            route: "/roomielab",
           ),
           _buildMenuItem(
             context: context,
@@ -156,12 +156,7 @@ class SideMenu extends StatelessWidget {
             icon: Icons.help_outline,
             route: "/help",
           ),
-          _buildMenuItem(
-            context: context,
-            text: TextComponents.menuForgotPassword,
-            icon: Icons.lock_reset,
-            route: "/forgot_password",
-          ),
+          // Forgot Password menu item has been removed
           const SizedBox(height: 20),
           _buildDivider(context),
           _buildMenuItem(

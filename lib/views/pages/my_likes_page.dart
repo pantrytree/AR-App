@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
-import '../../../viewmodels/my_likes_page_viewmodel.dart';
+import '../../../services/likes_service.dart';
 import '../../../utils/colors.dart';
 import '../../theme/theme.dart';
 import '../../../utils/text_components.dart';
-import '../../views/widgets/bottom_nav_bar.dart';
-import 'catalogue_page.dart';
+import '/views/pages/furniture_catalogue_page.dart';
 
-
-/// TODO (Backend Integration Notes):
-/// - Connect category tabs and liked item data with real backend responses from `/likes`.
-/// - Replace placeholder icons and images with actual product thumbnails.
-/// - Connect navigation buttons (bottom bar and "Explore" button) to real pages once ready.
 class MyLikesPage extends StatefulWidget {
   const MyLikesPage({super.key});
 
@@ -25,12 +18,12 @@ class _MyLikesPageState extends State<MyLikesPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  String _selectedCategory = 'All';
 
   @override
   void initState() {
     super.initState();
 
-    // Animation setup for pulsing "Explore" buttons
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
@@ -39,11 +32,6 @@ class _MyLikesPageState extends State<MyLikesPage>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-
-    // Load placeholder liked items once the UI has been built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MyLikesViewModel>(context, listen: false).loadLikedItems();
-    });
   }
 
   @override
@@ -69,7 +57,7 @@ class _MyLikesPageState extends State<MyLikesPage>
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
-              TextComponents.myLikesTitle(),
+              'My Likes',
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -78,32 +66,21 @@ class _MyLikesPageState extends State<MyLikesPage>
             ),
             centerTitle: true,
           ),
+          body: Consumer<LikesService>(
+            builder: (context, likesService, child) {
+              final likedItems = _selectedCategory == 'All'
+                  ? likesService.likedItems
+                  : likesService.getLikedItemsByCategory(_selectedCategory);
 
-          // Consumer listens to ViewModel updates and rebuilds UI accordingly
-          body: Consumer<MyLikesViewModel>(
-            builder: (context, viewModel, child) {
-              if (viewModel.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (viewModel.errorMessage != null) {
-                // Show error message if data loading fails
-                return Center(
-                  child: Text(
-                      TextComponents.errorLoadingLikes(viewModel.errorMessage!)),
-                );
-              }
-
-              // Show either empty state or liked items grid
               return Column(
                 children: [
-                  _buildCategoryTabs(context, viewModel),
+                  _buildCategoryTabs(),
                   Expanded(
-                    child: viewModel.likedItems.isEmpty
+                    child: likedItems.isEmpty
                         ? _buildEmptyState(context)
                         : Column(
                       children: [
-                        Expanded(child: _buildProductGrid(context, viewModel)),
+                        Expanded(child: _buildFurnitureGrid(context, likedItems, likesService)),
                         _buildExploreMoreButton(context),
                       ],
                     ),
@@ -112,50 +89,25 @@ class _MyLikesPageState extends State<MyLikesPage>
               );
             },
           ),
-
-          // Bottom navigation bar
-          bottomNavigationBar: BottomNavBar(
-            currentIndex: 1, // Likes page is index 1 in navigation bar
-            onTap: (index) {
-              // TODO (Navigation): Replace placeholder routes with actual named routes once pages are ready
-              switch (index) {
-                case 0:
-                  Navigator.pushNamed(context, '/home');
-                  break;
-                case 1:
-                  Navigator.pushNamed(context, '/likes');
-                  break;
-                case 2:
-                  Navigator.pushNamed(context, '/camera');
-                  break;
-                case 3:
-                  Navigator.pushNamed(context, '/shopping');
-                  break;
-                case 4:
-                  Navigator.pushNamed(context, '/profile');
-                  break;
-              }
-            },
-          ),
         );
       },
     );
   }
 
-  /// Builds the category tabs for filtering liked items.
-  /// Each tab updates the selected category in the ViewModel.
-  Widget _buildCategoryTabs(BuildContext context, MyLikesViewModel viewModel) {
+  Widget _buildCategoryTabs() {
+    final List<String> categories = ['All', 'Living Room', 'Bedroom', 'Office', 'Dining', 'Kitchen'];
+
     return Container(
       color: AppColors.getBackgroundColor(context),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: viewModel.categories.map((category) {
-            final isSelected = category == viewModel.selectedCategory;
+          children: categories.map((category) {
+            final isSelected = category == _selectedCategory;
             return Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: _buildCategoryTab(context, category, isSelected, viewModel),
+              child: _buildCategoryTab(category, isSelected),
             );
           }).toList(),
         ),
@@ -163,14 +115,13 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
-  Widget _buildCategoryTab(
-      BuildContext context,
-      String category,
-      bool isSelected,
-      MyLikesViewModel viewModel
-      ) {
+  Widget _buildCategoryTab(String category, bool isSelected) {
     return GestureDetector(
-      onTap: () => viewModel.setSelectedCategory(category),
+      onTap: () {
+        setState(() {
+          _selectedCategory = category;
+        });
+      },
       child: Container(
         constraints: const BoxConstraints(minWidth: 70),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -198,7 +149,6 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
-  /// Builds the empty state UI shown when the user has no liked items.
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
@@ -211,7 +161,7 @@ class _MyLikesPageState extends State<MyLikesPage>
           ),
           const SizedBox(height: 16),
           Text(
-            TextComponents.noLikedItemsYet(),
+            'No liked items yet',
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -220,25 +170,20 @@ class _MyLikesPageState extends State<MyLikesPage>
           ),
           const SizedBox(height: 8),
           Text(
-            TextComponents.likedItemsDescription(),
+            'Items you like will appear here',
             style: GoogleFonts.inter(
               fontSize: 14,
               color: AppColors.getSecondaryTextColor(context),
             ),
           ),
           const SizedBox(height: 20),
-          // Now routes to Catalogue page
-          _buildPulsingExploreButton(context, TextComponents.exploreProducts()),
+          _buildPulsingExploreButton(context, 'Explore Furniture'),
         ],
       ),
     );
   }
 
-  /// Builds the grid layout for displaying liked items.
-  /// Each card shows product name, dimensions, and a heart icon for unliking.
-  Widget _buildProductGrid(BuildContext context, MyLikesViewModel viewModel) {
-    final filteredItems = viewModel.getFilteredItems();
-
+  Widget _buildFurnitureGrid(BuildContext context, List<dynamic> likedItems, LikesService likesService) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -247,15 +192,12 @@ class _MyLikesPageState extends State<MyLikesPage>
         mainAxisSpacing: 16,
         childAspectRatio: 0.7,
       ),
-      itemCount: filteredItems.length,
-      itemBuilder: (context, index) =>
-          _buildProductCard(context, filteredItems[index], viewModel),
+      itemCount: likedItems.length,
+      itemBuilder: (context, index) => _buildFurnitureCard(context, likedItems[index], likesService),
     );
   }
 
-  /// Builds each liked product card.
-  /// TODO (Backend): Replace placeholder icon with product image from backend.
-  Widget _buildProductCard(BuildContext context, dynamic item, MyLikesViewModel viewModel) {
+  Widget _buildFurnitureCard(BuildContext context, dynamic item, LikesService likesService) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.getCardBackground(context),
@@ -273,11 +215,10 @@ class _MyLikesPageState extends State<MyLikesPage>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Placeholder product image area
               Container(
                 height: 120,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLightPurple, // Keep brand color
+                  color: AppColors.primaryLightPurple,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -285,9 +226,9 @@ class _MyLikesPageState extends State<MyLikesPage>
                 ),
                 child: Center(
                   child: Icon(
-                      Icons.chair,
-                      size: 40,
-                      color: AppColors.getPrimaryColor(context)
+                    _getFurnitureIcon(item.furnitureType),
+                    size: 40,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -297,7 +238,7 @@ class _MyLikesPageState extends State<MyLikesPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['name'] ?? 'Item Name',
+                      item.name,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -308,7 +249,7 @@ class _MyLikesPageState extends State<MyLikesPage>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      item['dimensions'] ?? '',
+                      '${item.roomCategory} • ${item.furnitureType}',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.getSecondaryTextColor(context),
@@ -316,18 +257,30 @@ class _MyLikesPageState extends State<MyLikesPage>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.star, size: 14, color: AppColors.primaryPurple),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${item.rating}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.getTextColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ],
           ),
-
-          // Heart icon for removing from likes
           Positioned(
             top: 8,
             right: 8,
             child: GestureDetector(
-              onTap: () => viewModel.removeLikedItem(item['id']),
+              onTap: () => likesService.removeFromLikes(item.id),
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
@@ -353,17 +306,13 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
-  /// Adds a pulsing "Explore More Products" button below the grid.
-  /// Now routes to Catalogue page
   Widget _buildExploreMoreButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: _buildPulsingExploreButton(context, TextComponents.exploreMoreProducts()),
+      child: _buildPulsingExploreButton(context, 'Explore More Furniture'),
     );
   }
 
-  /// Shared button animation for both "Explore" buttons.
-  /// Now routes to Catalogue page
   Widget _buildPulsingExploreButton(BuildContext context, String text) {
     return ScaleTransition(
       scale: _pulseAnimation,
@@ -378,10 +327,9 @@ class _MyLikesPageState extends State<MyLikesPage>
           elevation: 4,
         ),
         onPressed: () {
-          // Navigate to Catalogue page
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const CataloguePage()),
+            MaterialPageRoute(builder: (context) => const FurnitureCataloguePage()),
           );
         },
         child: Text(
@@ -390,5 +338,24 @@ class _MyLikesPageState extends State<MyLikesPage>
         ),
       ),
     );
+  }
+
+  IconData _getFurnitureIcon(String furnitureType) {
+    switch (furnitureType.toLowerCase()) {
+      case 'bed':
+        return Icons.bed;
+      case 'sofa':
+        return Icons.weekend;
+      case 'chair':
+        return Icons.chair;
+      case 'table':
+        return Icons.table_restaurant;
+      case 'lamp':
+        return Icons.lightbulb;
+      case 'wardrobe':
+        return Icons.king_bed;
+      default:
+        return Icons.chair;
+    }
   }
 }

@@ -1,13 +1,14 @@
-// ignore_for_file: deprecated_member_use, unused_import
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
-import '../../viewmodels/camera_viewmodel.dart';
-import '../../utils/colors.dart';
-import '../../utils/text_components.dart';
-import '../../theme/theme.dart';
-import '../../views/widgets/bottom_nav_bar.dart';
+import '../../models/roomielab_model.dart';
+import '/models/furniture_model.dart';
+import '/services/furniture_service.dart';
+import '/services/roomielab_service.dart';
+import '/utils/colors.dart';
+import 'furniture_catalogue_page.dart';
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
@@ -17,425 +18,562 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage> {
+  late CameraController _cameraController;
+  bool _isCameraInitialized = false;
+  bool _isFurnitureSelectorOpen = false;
+  List<FurnitureItem> _availableFurniture = [];
+  List<FurnitureItem> _filteredFurniture = [];
+  String _selectedCategory = 'All';
+  final List<PlacedFurniture> _placedFurniture = [];
+  XFile? _capturedImage;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CameraViewModel>().initializeCamera();
+    _initializeCamera();
+    _loadFurniture();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      _cameraController = CameraController(
+        cameras.first,
+        ResolutionPreset.high,
+      );
+
+      await _cameraController.initialize();
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+        });
+      }
+    } catch (e) {
+      print('Error initializing camera: $e');
+    }
+  }
+
+  void _loadFurniture() {
+    _availableFurniture = FurnitureService.allFurniture;
+    _filteredFurniture = _availableFurniture;
+  }
+
+  void _filterFurniture(String category) {
+    setState(() {
+      _selectedCategory = category;
+      if (category == 'All') {
+        _filteredFurniture = _availableFurniture;
+      } else {
+        _filteredFurniture = _availableFurniture
+            .where((item) => item.furnitureType.toLowerCase() == category.toLowerCase())
+            .toList();
+      }
     });
+  }
+
+  void _addFurnitureToScene(FurnitureItem furniture) {
+    setState(() {
+      _placedFurniture.add(PlacedFurniture(
+        furnitureId: furniture.id,
+        furnitureName: furniture.name,
+        furnitureType: furniture.furnitureType,
+        imageUrl: '', // You'll use the 3D model URL here
+        position: Position(x: 0, y: 0, z: 0),
+      ));
+    });
+    _toggleFurnitureSelector();
+  }
+
+  void _toggleFurnitureSelector() {
+    setState(() {
+      _isFurnitureSelectorOpen = !_isFurnitureSelectorOpen;
+    });
+  }
+
+  Future<void> _captureDesign() async {
+    try {
+      if (!_isCameraInitialized) {
+        print('Camera not initialized');
+        return;
+      }
+
+      print('Taking picture...');
+      final image = await _cameraController.takePicture();
+      print('Picture taken: ${image.path}');
+
+      setState(() {
+        _capturedImage = image;
+      });
+
+      // Show save dialog with the captured image
+      await _showSaveDesignDialog(image.path);
+
+    } catch (e) {
+      print('Error capturing image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error capturing image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showSaveDesignDialog(String imagePath) async {
+    final TextEditingController nameController = TextEditingController();
+
+    // Auto-detect category from placed furniture
+    String? detectedCategory;
+    if (_placedFurniture.isNotEmpty) {
+      detectedCategory = _placedFurniture.first.furnitureType;
+    }
+
+    bool? shouldDeleteImage = true; // Flag to track if we should delete the image
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.getCardBackground(context),
+        title: Text(
+          'Save Design',
+          style: TextStyle(
+            color: AppColors.getTextColor(context),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Preview of captured image
+            Container(
+              height: 150,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                image: DecorationImage(
+                  image: FileImage(File(imagePath)),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Give your design a name',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                hintText: 'My Living Room Design',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (detectedCategory != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLightPurple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primaryLightPurple),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.category, color: AppColors.primaryLightPurple, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Category: $detectedCategory',
+                        style: TextStyle(
+                          color: AppColors.getTextColor(context),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (detectedCategory == null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.orange, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'No furniture selected. Design will be saved as "Uncategorized"',
+                        style: TextStyle(
+                          color: AppColors.getTextColor(context),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Set flag to delete the image and close dialog
+              shouldDeleteImage = true;
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isNotEmpty) {
+                // Set flag to NOT delete the image (since we're saving it)
+                shouldDeleteImage = false;
+                Navigator.pop(context);
+                await _saveDesign(
+                    nameController.text,
+                    imagePath,
+                    detectedCategory ?? 'Uncategorized'
+                );
+              } else {
+                // Show error if name is empty
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Please enter a design name'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryLightPurple,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    // After dialog closes, check if we should delete the temporary image
+    if (shouldDeleteImage == true && _capturedImage != null) {
+      print('Deleting temporary image: ${_capturedImage!.path}');
+      try {
+        final file = File(_capturedImage!.path);
+        if (await file.exists()) {
+          await file.delete();
+          print('Temporary image deleted successfully');
+        }
+      } catch (e) {
+        print('Error deleting temporary image: $e');
+      }
+
+      // Clear the captured image reference
+      setState(() {
+        _capturedImage = null;
+      });
+    }
+  }
+
+  Future<void> _saveDesign(String name, String imagePath, String category) async {
+    try {
+      print('Starting save process...');
+      print('Design name: $name');
+      print('Image path: $imagePath');
+      print('Category: $category');
+
+      final roomieLabService = RoomieLabService();
+
+      // Save the image file
+      print('Saving image...');
+      final savedImagePath = await roomieLabService.saveImage(File(imagePath));
+      print('Image saved to: $savedImagePath');
+
+      final design = RoomieLabDesign(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: name,
+        imagePath: savedImagePath,
+        createdAt: DateTime.now(),
+        placedFurniture: _placedFurniture,
+        category: category,
+      );
+
+      print('Saving design to database...');
+      await roomieLabService.saveDesign(design);
+      print('Design saved successfully!');
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Design "$name" saved in $category category!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        // Clear the scene after successful save
+        _clearScene();
+        setState(() {
+          _capturedImage = null;
+        });
+      }
+    } catch (e) {
+      print('Error saving design: $e');
+      // Handle any errors that occur during save
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving design: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  void _clearScene() {
+    setState(() {
+      _placedFurniture.clear();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.black,
-      body: SafeArea( // ADDED SafeArea to prevent overflow
-        child: Consumer<CameraViewModel>(
-          builder: (context, viewModel, child) {
-            return Stack(
-              children: [
-                // REAL Camera Preview
-                _buildCameraPreview(viewModel, context),
-
-                // AR Grid Overlay
-                if (viewModel.isCameraReady) _buildARGridOverlay(),
-
-                // Controls - Reordered for better layout
-                _buildTopControls(viewModel, context),
-                _buildObjectSelectionPanel(viewModel, context),
-                _buildBottomControls(viewModel, context),
-
-                // Loading & Error States
-                if (viewModel.isLoading) _buildLoadingOverlay(context),
-                if (viewModel.error != null) _buildErrorMessage(viewModel, context),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCameraPreview(CameraViewModel viewModel, BuildContext context) {
-    if (!viewModel.isCameraReady || viewModel.controller == null) {
-      return _buildCameraPlaceholder(viewModel, context);
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      height: double.infinity,
-      child: CameraPreview(viewModel.controller!),
-    );
-  }
-
-  Widget _buildCameraPlaceholder(CameraViewModel viewModel, BuildContext context) {
-    return Container(
-      color: Colors.black,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (viewModel.isLoading) ...[
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
-              ),
-              const SizedBox(height: 20),
-            ],
-            Text(
-              viewModel.isLoading ? 'Starting Camera...' : 'Camera Not Available',
-              style: const TextStyle(
-                color: AppColors.white,
-                fontSize: 16,
-              ),
-            ),
-            if (viewModel.error != null) ...[
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  viewModel.error!,
-                  style: const TextStyle(color: AppColors.error, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopControls(CameraViewModel viewModel, BuildContext context) {
-    return Positioned(
-      top: 20, // Removed MediaQuery padding since we're using SafeArea
-      left: 20,
-      right: 20,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: Colors.black,
+      body: Stack(
         children: [
-          // Back button
-          CircleAvatar(
-            backgroundColor: Colors.black.withOpacity(0.5),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-
-          // Camera Info
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.camera,
-                  color: AppColors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  viewModel.isCameraReady ? 'Live Camera' : 'Setting Up...',
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Switch Camera button
-          if (viewModel.isCameraReady)
-            CircleAvatar(
-              backgroundColor: Colors.black.withOpacity(0.5),
-              child: IconButton(
-                icon: const Icon(Icons.cameraswitch, color: AppColors.white),
-                onPressed: viewModel.switchCamera,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildObjectSelectionPanel(CameraViewModel viewModel, BuildContext context) {
-    return Positioned(
-      top: 100, // Simplified position
-      left: 0,
-      right: 0,
-      child: Container(
-        height: 80, // Reduced height
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 8.0, bottom: 4.0), // Reduced padding
-              child: Text(
-                'Select Furniture:',
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12, // Smaller font
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: viewModel.availableObjects.length,
-                itemBuilder: (context, index) {
-                  final object = viewModel.availableObjects[index];
-                  final isSelected = object == viewModel.selectedObject;
-                  return GestureDetector(
-                    onTap: () => viewModel.selectObject(object),
-                    child: Container(
-                      width: 70, // Smaller width
-                      margin: const EdgeInsets.only(right: 8), // Reduced margin
-                      padding: const EdgeInsets.all(8), // Reduced padding
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primaryPurple
-                            : Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isSelected ? AppColors.white : Colors.transparent,
-                          width: 1, // Thinner border
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _getObjectIcon(object),
-                            color: AppColors.white,
-                            size: 20, // Smaller icon
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            object,
-                            style: const TextStyle(
-                              color: AppColors.white,
-                              fontSize: 8, // Smaller font
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomControls(CameraViewModel viewModel, BuildContext context) {
-    return Positioned(
-      bottom: 10, // Fixed position without padding calculations
-      left: 20,
-      right: 20,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Selected object info - only show if needed
-          if (viewModel.isObjectPlaced)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Camera Preview
+          if (_isCameraInitialized)
+            CameraPreview(_cameraController)
+          else
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: Text(
-                      '${viewModel.selectedObject} Placed',
-                      style: const TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12, // Smaller font
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  CircularProgressIndicator(
+                    color: AppColors.getPrimaryColor(context),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: AppColors.error, size: 16),
-                    onPressed: viewModel.removeObject,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Initializing Camera...',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),
             ),
 
-          // Capture button
-          GestureDetector(
-            onTap: viewModel.captureImage,
-            child: Container(
-              width: 60, // Smaller button
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.white, width: 3),
-                color: Colors.transparent,
-              ),
-              child: Container(
-                margin: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.white,
-                ),
-                child: const Icon(
-                  Icons.photo_camera,
-                  color: AppColors.black,
-                  size: 24, // Smaller icon
-                ),
-              ),
-            ),
+          // Furniture Selector Overlay
+          if (_isFurnitureSelectorOpen)
+            _buildFurnitureSelector(),
+
+          // Control Buttons
+          Positioned(
+            bottom: 20,
+            left: 0,
+            right: 0,
+            child: _buildControlButtons(),
           ),
-
-          const SizedBox(height: 8),
-
-          // Place object button - only show if no object is placed
-          if (!viewModel.isObjectPlaced)
-            GestureDetector(
-              onTap: viewModel.placeObject,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryPurple,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  'Place ${viewModel.selectedObject}',
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 12, // Smaller font
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
 
-  Widget _buildARGridOverlay() {
-    return IgnorePointer(
-      child: SizedBox(
-        width: double.infinity,
-        height: double.infinity,
-        child: CustomPaint(
-          painter: _ARGridPainter(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingOverlay(BuildContext context) {
+  Widget _buildFurnitureSelector() {
     return Container(
-      color: Colors.black.withOpacity(0.7),
-      child: const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorMessage(CameraViewModel viewModel, BuildContext context) {
-    return Positioned(
-      top: 100,
-      left: 20,
-      right: 20,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.error.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.error, color: AppColors.white, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                viewModel.error!,
-                style: const TextStyle(color: AppColors.white, fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+      color: Colors.black.withOpacity(0.9),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Select Furniture',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+              IconButton(
+                icon: Icon(Icons.close, color: Colors.white),
+                onPressed: _toggleFurnitureSelector,
+              ),
+            ],
+          ),
+
+          // Category Filter
+          SizedBox(
+            height: 50,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                'All', 'Sofa', 'Chair', 'Table', 'Bed', 'Lamp'
+              ].map((category) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(category),
+                    selected: _selectedCategory == category,
+                    onSelected: (_) => _filterFurniture(category),
+                  ),
+                );
+              }).toList(),
             ),
-            IconButton(
-              icon: const Icon(Icons.close, color: AppColors.white, size: 16),
-              onPressed: () {
-                viewModel.initializeCamera();
+          ),
+
+          // Furniture Grid
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: _filteredFurniture.length,
+              itemBuilder: (context, index) {
+                final furniture = _filteredFurniture[index];
+                return GestureDetector(
+                  onTap: () => _addFurnitureToScene(furniture),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.getCardBackground(context),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLightPurple,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(8),
+                                topRight: Radius.circular(8),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.chair,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Text(
+                            furniture.name,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  IconData _getObjectIcon(String object) {
-    switch (object.toLowerCase()) {
-      case 'sofa': return Icons.weekend;
-      case 'chair': return Icons.chair;
-      case 'table': return Icons.table_restaurant;
-      case 'bed': return Icons.bed;
-      case 'lamp': return Icons.lightbulb;
-      default: return Icons.widgets;
-    }
-  }
-}
+  Widget _buildControlButtons() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Furniture Selector Button
+          _buildControlButton(
+            icon: Icons.chair,
+            label: 'Furniture',
+            onTap: _toggleFurnitureSelector,
+          ),
 
-class _ARGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
+          // Capture Button
+          _buildControlButton(
+            icon: Icons.camera_alt,
+            label: 'Capture',
+            onTap: _captureDesign,
+            isPrimary: true,
+          ),
 
-    const gridSize = 50.0;
-    for (double x = 0; x < size.width; x += gridSize) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += gridSize) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-
-    // Center crosshair
-    final centerPaint = Paint()
-      ..color = AppColors.success.withOpacity(0.6)
-      ..strokeWidth = 2.0;
-    canvas.drawLine(
-      Offset(size.width / 2 - 20, size.height / 2),
-      Offset(size.width / 2 + 20, size.height / 2),
-      centerPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width / 2, size.height / 2 - 20),
-      Offset(size.width / 2, size.height / 2 + 20),
-      centerPaint,
+          // Clear Scene Button
+          _buildControlButton(
+            icon: Icons.clear,
+            label: 'Clear',
+            onTap: _clearScene,
+          ),
+        ],
+      ),
     );
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget _buildControlButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: isPrimary ? AppColors.primaryLightPurple : Colors.white.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(icon, color: isPrimary ? Colors.white : Colors.white),
+            onPressed: onTap,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
 }

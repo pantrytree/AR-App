@@ -70,7 +70,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 👤 User Section with icon
+                    // 👤 Account Hub Section with icon
                     _buildUserSection(context, settingsViewModel),
 
                     const SizedBox(height: 20),
@@ -137,7 +137,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'User',
+                    'Account Hub', // Changed from 'User' to 'Account Hub'
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

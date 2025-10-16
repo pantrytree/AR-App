@@ -226,8 +226,8 @@ class TextComponents {
   static String userEmail = "guest@example.com"; // Mutable property for dynamic email
 
   // MY PROJECTS PAGE STRINGS
-
-  static String myProjectsTitle() => "My Projects";
+  static String get menuRoomie => "RoomieLab";
+  static String roomieLabTitle() => "RoomieLab";
   static String loadingProjects() => "Loading projects...";
   static String projectsLoadError() => "Couldn't load projects.";
   static String noProjectsYet() => "No projects yet";
@@ -266,6 +266,8 @@ class TextComponents {
   static String exploreMoreProducts() => "Explore More Products";
   static String errorLoadingLikes(String errorMessage) =>
       "Failed to load liked items. Error: $errorMessage";
+  static String exploreFurnitures() => "Explore Furnitures";
+  static String exploreMoreFurnitures() => "Explore More Furnitures";
 
   //  FALLBACK MESSAGES & PLACEHOLDERS
 
