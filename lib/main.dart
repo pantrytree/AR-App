@@ -13,6 +13,7 @@ import 'views/pages/my_likes_page.dart';
 import 'views/pages/my_projects_page.dart';
 import 'views/pages/edit_profile_page.dart';
 
+
 /// Entry point of the app
 void main() {
   runApp(const MyApp());

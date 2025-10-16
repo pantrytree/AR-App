@@ -6,6 +6,7 @@ import '../../../utils/colors.dart';
 import '../../views/widgets/bottom_nav_bar.dart';
 import '../../views/pages/faq_page.dart';
 import '../../views/pages/guides_page.dart';
+//import '../../views/pages/profile_page.dart';
 
 class HelpPage extends StatelessWidget {
   const HelpPage({super.key});

@@ -1,15 +1,22 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart'; // For picking images
 import 'package:provider/provider.dart';
 import '../../viewmodels/edit_profile_viewmodel.dart';
 import '../../utils/colors.dart';
 import '../widgets/bottom_nav_bar.dart';
 
-/// EditProfilePage allows the user to update their profile information,
-/// including name, email, username, password, and profile image.
+/// EditProfilePage
 ///
-/// This page is a child page under the Profile tab. It does not have its
-/// own BottomNavBar index, but it displays the bar for visual consistency.
+/// Allows users to:
+/// - Update Name, Email, Username, Password
+/// - Change profile photo from camera or gallery
+///
+/// TODO: Replace SharedPreferences logic with backend API:
+///       - GET /user/profile → load current user profile
+///       - PUT /user/profile → update name, email, username, password
+///       - POST /user/profile/image → upload profile image
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
 
@@ -25,25 +32,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   bool _isSaving = false;
 
+  final ImagePicker _picker = ImagePicker(); // ImagePicker instance
+
   @override
   void initState() {
     super.initState();
 
-    // Initialize ViewModel and controllers
-    final viewModel = EditProfileViewModel();
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _usernameController = TextEditingController();
+    _passwordController = TextEditingController();
 
-    _nameController = TextEditingController(text: viewModel.name);
-    _emailController = TextEditingController(text: viewModel.email);
-    _usernameController = TextEditingController(text: viewModel.username);
-    _passwordController = TextEditingController(text: viewModel.password);
-
-    // Load existing user data
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await viewModel.loadUserProfile();
-      _nameController.text = viewModel.name;
-      _emailController.text = viewModel.email;
-      _usernameController.text = viewModel.username;
-      _passwordController.text = viewModel.password;
+    // Load user profile data from ViewModel after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vm = Provider.of<EditProfileViewModel>(context, listen: false);
+      vm.loadUserProfile().then((_) {
+        _nameController.text = vm.name;
+        _emailController.text = vm.email;
+        _usernameController.text = vm.username;
+        _passwordController.text = vm.password; // Usually empty
+      });
     });
   }
 
@@ -56,9 +64,54 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
+  /// Opens a bottom sheet to let the user pick an image from the gallery
+  /// or take a new photo with the camera
+  Future<void> _pickImage(EditProfileViewModel vm) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Pick from gallery
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from gallery'),
+              onTap: () async {
+                Navigator.pop(context); // Close bottom sheet
+                final picked = await _picker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 80, // Compress to reduce size
+                );
+                if (picked != null) {
+                  vm.setProfileImage(File(picked.path)); // Update ViewModel
+                }
+              },
+            ),
+            // Take a photo with camera
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take a photo'),
+              onTap: () async {
+                Navigator.pop(context);
+                final picked = await _picker.pickImage(
+                  source: ImageSource.camera,
+                  imageQuality: 80,
+                );
+                if (picked != null) {
+                  vm.setProfileImage(File(picked.path));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
+    return ChangeNotifierProvider<EditProfileViewModel>(
       create: (_) => EditProfileViewModel(),
       child: Consumer<EditProfileViewModel>(
         builder: (context, viewModel, child) {
@@ -82,25 +135,28 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 onPressed: () => Navigator.pop(context),
               ),
             ),
-            body: SingleChildScrollView(
+            body: viewModel.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
               child: Form(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Avatar with change photo functionality
                     _buildProfileAvatar(viewModel),
                     const SizedBox(height: 30),
                     _buildTextField(
                       label: 'Name',
                       controller: _nameController,
-                      onChanged: viewModel.setName,
+                      onChanged: (v) => viewModel.setName(v),
                       isRequired: true,
                     ),
                     const SizedBox(height: 20),
                     _buildTextField(
                       label: 'E-mail Address',
                       controller: _emailController,
-                      onChanged: viewModel.setEmail,
+                      onChanged: (v) => viewModel.setEmail(v),
                       keyboardType: TextInputType.emailAddress,
                       isRequired: true,
                     ),
@@ -108,30 +164,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     _buildTextField(
                       label: 'User name',
                       controller: _usernameController,
-                      onChanged: viewModel.setUsername,
+                      onChanged: (v) => viewModel.setUsername(v),
                       isRequired: true,
                     ),
                     const SizedBox(height: 20),
                     _buildPasswordField(
                       controller: _passwordController,
-                      onChanged: viewModel.setPassword,
+                      onChanged: (v) => viewModel.setPassword(v),
                       viewModel: viewModel,
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 30),
                     _isSaving
                         ? const Center(child: CircularProgressIndicator())
                         : _buildSaveButton(viewModel),
+                    if (viewModel.errorMessage != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        viewModel.errorMessage!,
+                        style: GoogleFonts.inter(color: Colors.red),
+                      )
+                    ],
                   ],
                 ),
               ),
             ),
-            // BottomNavBar stays consistent with main tabs
             bottomNavigationBar: BottomNavBar(
-              currentIndex: 4, // Profile tab is active
-              onTap: (index) {
-                // Navigate to main tabs
-                // EditProfile is child, so no change needed here
-              },
+              currentIndex: 4,
+              onTap: (index) {},
             ),
           );
         },
@@ -139,14 +198,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds the profile avatar with a camera icon to change the photo
+  /// Builds the profile avatar and integrates the tap to change photo
   Widget _buildProfileAvatar(EditProfileViewModel viewModel) {
+    final imageWidget = viewModel.localImage != null
+        ? CircleAvatar(
+      radius: 60,
+      backgroundImage: FileImage(viewModel.localImage!),
+      backgroundColor: AppColors.primaryLightPurple,
+    )
+        : CircleAvatar(
+      radius: 60,
+      backgroundImage: NetworkImage(viewModel.profileImageUrl),
+      backgroundColor: AppColors.primaryLightPurple,
+    );
+
     return Center(
       child: GestureDetector(
-        onTap: () {
-          // TODO: Integrate image picker for profile photo
-          print('Change Photo clicked!');
-        },
+        onTap: () => _pickImage(viewModel),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -154,12 +222,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppColors.primaryLightPurple,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.white,
-                  width: 3,
-                ),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.shadowColor,
@@ -169,32 +232,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ],
               ),
               child: Stack(
-                alignment: Alignment.center,
+                fit: StackFit.expand,
                 children: [
-                  const Icon(
-                    Icons.person,
-                    size: 50,
-                    color: AppColors.primaryPurple,
-                  ),
+                  ClipOval(child: imageWidget),
                   Positioned(
-                    right: 8,
-                    bottom: 8,
+                    right: 4,
+                    bottom: 4,
                     child: Container(
-                      width: 24,
-                      height: 24,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: AppColors.primaryPurple,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.white,
-                          width: 2,
-                        ),
+                        border: Border.all(color: AppColors.white, width: 2),
                       ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: AppColors.white,
-                        size: 14,
-                      ),
+                      child: const Icon(Icons.camera_alt,
+                          color: Colors.white, size: 18),
                     ),
                   ),
                 ],
@@ -215,7 +268,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds a general text field for name, email, or username
+  /// Generic text field
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
@@ -256,7 +309,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
               color: AppColors.primaryDarkBlue,
             ),
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -270,7 +324,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds the password input field with show/hide toggle
+  /// Password field with show/hide functionality
   Widget _buildPasswordField({
     required TextEditingController controller,
     required void Function(String) onChanged,
@@ -290,38 +344,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.textFieldBackground,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: TextField(
             controller: controller,
             onChanged: onChanged,
             obscureText: viewModel.obscurePassword,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: AppColors.primaryDarkBlue,
-            ),
+            style: GoogleFonts.inter(fontSize: 16, color: AppColors.primaryDarkBlue),
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
               filled: true,
               fillColor: AppColors.textFieldBackground,
               suffixIcon: IconButton(
                 icon: Icon(
-                  viewModel.obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  viewModel.obscurePassword
+                      ? Icons.visibility_off
+                      : Icons.visibility,
                   color: AppColors.grey,
                 ),
-                onPressed: () => viewModel.togglePasswordVisibility(),
+                onPressed: viewModel.togglePasswordVisibility,
               ),
             ),
           ),
@@ -330,15 +376,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds the save button and handles calling the ViewModel to save
+  /// Save button
   Widget _buildSaveButton(EditProfileViewModel viewModel) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
         onPressed: () async {
+          viewModel.setName(_nameController.text);
+          viewModel.setEmail(_emailController.text);
+          viewModel.setUsername(_usernameController.text);
+          viewModel.setPassword(_passwordController.text);
+
           setState(() => _isSaving = true);
-          await viewModel.saveProfile(); // Calls ViewModel API placeholder
+          await viewModel.saveProfile();
           setState(() => _isSaving = false);
 
           if (viewModel.errorMessage != null) {
@@ -354,18 +405,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.buttonPrimary,
           foregroundColor: AppColors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        child: const Text(
-          'Save',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: const Text('Save',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       ),
     );
   }
