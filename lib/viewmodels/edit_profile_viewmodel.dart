@@ -1,20 +1,36 @@
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
-
+/// EditProfileViewModel
+///
 /// Handles:
-/// - Form fields: name, email, username, password
-/// - Profile image upload
-/// - Password visibility toggle
+/// - Name, Email, Username, Password
+/// - Profile image selection
 /// - Form validation
 /// - Loading & error states
-/// - Communication with backend
+/// - Saving updates to SharedPreferences (for AccountHub)
+///
+/// TODO: Replace SharedPreferences logic with actual backend API calls:
+///
+/// 1. GET /user/profile
+///    - Fetch current user data (name, email, username, profile image)
+///    - Should replace loadUserProfile() logic
+///
+/// 2. PUT /user/profile
+///    - Update user details: name, email, username, password
+///    - Should replace saveProfile() logic for text fields
+///
+/// 3. POST /user/profile/image
+///    - Upload new profile picture and return URL
+///    - Should replace saveProfile() logic for profile image
+///
+/// Notes:
+/// - Current implementation uses SharedPreferences as a temporary placeholder
+/// - All setters call notifyListeners() to update UI
+/// - Password is never loaded from local storage
+/// - Once backend is ready, remove SharedPreferences logic entirely
 
-/// Example API endpoints to integrate later:
-///   - GET    /user/profile         → Fetch current user's profile
-///   - PUT    /user/profile         → Update profile info (name, email, username, password)
-///   - POST   /user/profile/image   → Upload a new profile image
-///   - DELETE /user/profile/image   → Remove profile image (optional)
 class EditProfileViewModel extends ChangeNotifier {
   // Form Fields
   String _name = '';
@@ -23,12 +39,12 @@ class EditProfileViewModel extends ChangeNotifier {
   String _password = '';
 
   // Profile Image
-  File? _profileImage;
+  File? _localImage; // Selected from device
+  String _profileImageUrl =
+      'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'; // Default fallback
 
-  // Password Visibility
+  // UI State
   bool _obscurePassword = true;
-
-  // Loading & Error State
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -37,54 +53,47 @@ class EditProfileViewModel extends ChangeNotifier {
   String get email => _email;
   String get username => _username;
   String get password => _password;
+  File? get localImage => _localImage;
+  String get profileImageUrl => _profileImageUrl;
   bool get obscurePassword => _obscurePassword;
-  File? get profileImage => _profileImage;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
   // Setters
-  /// Updates the user's name and notifies listeners
   void setName(String value) {
     _name = value;
     notifyListeners();
   }
 
-  /// Updates the user's email and notifies listeners
   void setEmail(String value) {
     _email = value;
     notifyListeners();
   }
 
-  /// Updates the user's username and notifies listeners
   void setUsername(String value) {
     _username = value;
     notifyListeners();
   }
 
-  /// Updates the user's password and notifies listeners
   void setPassword(String value) {
     _password = value;
     notifyListeners();
   }
 
-  /// Sets a new profile image and notifies listeners
-  /// TODO: Integrate POST /user/profile/image API to upload the image
+  /// Set selected image (from camera or gallery)
+  /// TODO: Implement backend upload (POST /user/profile/image)
   void setProfileImage(File image) {
-    _profileImage = image;
+    _localImage = image;
     notifyListeners();
   }
 
-  /// Toggles the password visibility in the UI
+  /// Toggles password visibility in UI
   void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
     notifyListeners();
   }
 
-  // Validation
-  /// Validates the form fields before saving
-  /// Checks for empty name, email, username and valid email format
-  /// Sets [_errorMessage] if invalid
-  /// Returns true if the form is valid
+  // Form Validation
   bool validateForm() {
     if (_name.isEmpty || _email.isEmpty || _username.isEmpty) {
       _errorMessage = "Name, Email, and Username cannot be empty.";
@@ -98,78 +107,76 @@ class EditProfileViewModel extends ChangeNotifier {
       return false;
     }
 
-    _errorMessage = null; // Clear previous errors if valid
+    _errorMessage = null;
     notifyListeners();
     return true;
   }
 
-  /// Returns a string representing password strength: Weak, Medium, Strong
-  /// Can be used to show a visual indicator in the UI
+  /// Returns password strength as string: Weak, Medium, Strong
   String passwordStrength() {
     if (_password.length < 6) return "Weak";
     if (_password.length < 10) return "Medium";
     return "Strong";
   }
 
-  // Load Profile
-  /// Loads the current user profile from backend (placeholder for now)
-  /// TODO: Replace placeholder logic with GET /user/profile
-  /// Sets the form fields and profile image
+  // Load User Profile
+  /// TODO: Replace SharedPreferences with GET /user/profile API call
   Future<void> loadUserProfile() async {
     _setLoading(true);
-
     try {
-      await Future.delayed(const Duration(seconds: 1)); // simulate API delay
+      final prefs = await SharedPreferences.getInstance();
 
-      // Placeholder data
-      _name = "Shae Fonda";
-      _email = "shae@example.com";
-      _username = "shaeFonda";
-      _password = "";
-      _profileImage = null;
+      // Load saved data locally for now
+      _name = prefs.getString('user_name') ?? 'Your Name';
+      _email = prefs.getString('user_email') ?? 'you@example.com';
+      _username = prefs.getString('user_username') ?? 'username';
+      _profileImageUrl =
+          prefs.getString('profile_image_url') ?? _profileImageUrl;
 
+      _password = ''; // Password should never be loaded
       _errorMessage = null;
     } catch (e) {
       _errorMessage = "Failed to load profile.";
-      debugPrint('EditProfileViewModel.loadUserProfile error: $e');
+      debugPrint('Error loading profile: $e');
     } finally {
       _setLoading(false);
     }
   }
 
   // Save Profile
-  /// Saves changes made to the profile
-  /// Performs form validation first
-  /// TODO: Replace placeholder logic with:
+  /// TODO: Replace SharedPreferences with:
   ///       PUT /user/profile → update name, email, username, password
-  ///       POST /user/profile/image → upload profile image if changed
-  /// Updates [_errorMessage] if saving fails
+  ///       POST /user/profile/image → upload profile image
   Future<void> saveProfile() async {
     if (!validateForm()) return;
 
     _setLoading(true);
-
     try {
-      await Future.delayed(const Duration(seconds: 2)); // simulate API call
+      final prefs = await SharedPreferences.getInstance();
 
-      debugPrint("Profile saved:");
-      debugPrint("Name: $_name");
-      debugPrint("Email: $_email");
-      debugPrint("Username: $_username");
-      debugPrint("Password: $_password");
-      if (_profileImage != null) debugPrint("Profile Image: ${_profileImage!.path}");
+      // Save locally for now (placeholder)
+      await prefs.setString('user_name', _name);
+      await prefs.setString('user_email', _email);
+      await prefs.setString('user_username', _username);
+
+      if (_localImage != null) {
+        // Placeholder: save local path; backend should return uploaded URL
+        await prefs.setString('profile_image_url', _localImage!.path);
+        _profileImageUrl = _localImage!.path; // Update avatar immediately
+      }
 
       _errorMessage = null;
+      debugPrint(
+          '✅ Profile saved: Name=$_name, Email=$_email, Username=$_username');
     } catch (e) {
       _errorMessage = "Failed to save profile.";
-      debugPrint('EditProfileViewModel.saveProfile error: $e');
+      debugPrint('Error saving profile: $e');
     } finally {
       _setLoading(false);
     }
   }
 
-  // Internal Helper
-  /// Sets the loading state and notifies listeners
+  // Internal: update loading state
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart'; // ADD THIS IMPORT
+import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -109,13 +109,16 @@ class CameraViewModel extends ChangeNotifier {
     try {
       final XFile image = await _controller!.takePicture();
 
+      // Store the captured image path for preview
+      _capturedImagePath = image.path;
+
       // Once the image is captured, send it to RoomieLabViewModel
       final roomieLab = Provider.of<RoomieLabViewModel>(context, listen: false);
       roomieLab.addProject(
         image.path,
         _selectedObject,
       );
-      //_capturedImagePath = image.path;
+
       print('Image captured: ${image.path}');
     } catch (e) {
       _error = 'Failed to capture image: $e';
