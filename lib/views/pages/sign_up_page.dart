@@ -5,6 +5,34 @@ import '../../theme/theme.dart';
 import '/viewmodels/sign_up_viewmodel.dart';
 
 class SignUpPage extends StatelessWidget {
+  // Alert dialog function
+  Future<void> _showMyDialog(BuildContext context, String errorMessage) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sign Up Failed'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(errorMessage),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<SignUpViewModel>(
@@ -18,6 +46,14 @@ class SignUpPage extends StatelessWidget {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.pushReplacementNamed(context, model.navigateToRoute!);
                   model.clearNavigation();
+                });
+              }
+
+              // Error dialog handling
+              if (model.errorMessage != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  await _showMyDialog(context, model.errorMessage!);
+                  model.clearError(); // Clear error after showing dialog
                 });
               }
 
@@ -49,7 +85,7 @@ class SignUpPage extends StatelessWidget {
                                 style: TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.white // White for better contrast
+                                    color: AppColors.white
                                 ),
                               ),
                               const SizedBox(height: 32),
@@ -147,23 +183,6 @@ class SignUpPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 32),
-                              if (model.errorMessage != null)
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    model.errorMessage!,
-                                    style: TextStyle(
-                                      color: AppColors.error,
-                                      fontSize: 14,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              const SizedBox(height: 8),
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
@@ -195,7 +214,7 @@ class SignUpPage extends StatelessWidget {
                                 children: [
                                   Text(
                                     "Already have an account? ",
-                                    style: TextStyle(color: AppColors.white), // White for contrast
+                                    style: TextStyle(color: AppColors.white),
                                   ),
                                   GestureDetector(
                                     onTap: model.onSignInTapped,
@@ -203,7 +222,7 @@ class SignUpPage extends StatelessWidget {
                                       'Sign In',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.white, // White for contrast
+                                        color: AppColors.white,
                                       ),
                                     ),
                                   ),

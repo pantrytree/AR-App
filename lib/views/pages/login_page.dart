@@ -5,6 +5,34 @@ import '../../theme/theme.dart';
 import '/viewmodels/login_viewmodel.dart';
 
 class LoginPage extends StatelessWidget {
+  // Alert dialog function
+  Future<void> _showMyDialog(BuildContext context, String errorMessage) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Login Failed'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(errorMessage),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<LoginViewModel>(
@@ -16,19 +44,21 @@ class LoginPage extends StatelessWidget {
               // Handle navigation when flagged
               if (viewModel.navigateToRoute != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (viewModel.navigateToRoute == '/forgot_password') {
-                    // Push forgot password page (don't replace)
-                    Navigator.pushNamed(context, viewModel.navigateToRoute!);
-                  } else {
-                    // Replace for other routes (like signup, home)
-                    Navigator.pushReplacementNamed(context, viewModel.navigateToRoute!);
-                  }
+                  Navigator.pushReplacementNamed(context, viewModel.navigateToRoute!);
                   viewModel.clearNavigation();
                 });
               }
 
+              // Error dialog handling
+              if (viewModel.errorMessage.isNotEmpty) {
+                WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  await _showMyDialog(context, viewModel.errorMessage);
+                  viewModel.clearError(); // Clear error after showing dialog
+                });
+              }
+
               return Scaffold(
-                backgroundColor: AppColors.splashBrackground, // Keep splash background
+                backgroundColor: AppColors.splashBrackground,
                 body: Stack(
                   children: [
                     Padding(
@@ -41,26 +71,10 @@ class LoginPage extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.white, // White text for contrast on splash background
+                                color: AppColors.white,
                               )
                           ),
                           const SizedBox(height: 32),
-                          if (viewModel.errorMessage.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.error.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                viewModel.errorMessage,
-                                style: TextStyle(
-                                  color: AppColors.error,
-                                  fontSize: 14,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
                           const SizedBox(height: 16),
                           Container(
                             decoration: BoxDecoration(
@@ -141,7 +155,7 @@ class LoginPage extends StatelessWidget {
                           TextButton(
                             onPressed: viewModel.onForgotPasswordTapped,
                             style: TextButton.styleFrom(
-                              foregroundColor: AppColors.white, // White for contrast
+                              foregroundColor: AppColors.white,
                             ),
                             child: Text('Forgot your password?'),
                           ),
@@ -152,7 +166,7 @@ class LoginPage extends StatelessWidget {
                               Text(
                                 "Don't have an account? ",
                                 style: TextStyle(
-                                  color: AppColors.white, // White for contrast
+                                  color: AppColors.white,
                                 ),
                               ),
                               GestureDetector(
@@ -161,7 +175,7 @@ class LoginPage extends StatelessWidget {
                                     'Sign Up',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.white, // White for contrast
+                                      color: AppColors.white,
                                     )
                                 ),
                               ),

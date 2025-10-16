@@ -33,14 +33,24 @@ class SignUpViewModel extends ChangeNotifier {
   }
 
   Future<void> signUp() async {
+    if (!(formKey.currentState?.validate() ?? false)) return;
+
     loading = true;
     errorMessage = null;
     notifyListeners();
 
-    await Future.delayed(Duration(seconds: 1)); // Optional: show loading spinner
+    await Future.delayed(Duration(seconds: 1)); // Simulate network latency
 
-    loading = false;
-    navigateToRoute = '/home';
+    // Simulate failure for demonstration
+    bool success = false; // Change to your API call result
+
+    if (success) {
+      loading = false;
+      navigateToRoute = '/home';
+    } else {
+      loading = false;
+      errorMessage = 'Sign up failed. Please try again.';
+    }
     notifyListeners();
   }
 
@@ -71,6 +81,11 @@ class SignUpViewModel extends ChangeNotifier {
 
   void clearNavigation() {
     navigateToRoute = null;
+    notifyListeners();
+  }
+
+  void clearError() {
+    errorMessage = null;
     notifyListeners();
   }
 }
