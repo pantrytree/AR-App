@@ -1,2 +1,56 @@
 # AR-App
 Eduvos project
+
+kotlin: 2.1.0
+gradle: 8.10.2
+
+working dependency versions (16/10):
+name: roomantics
+description: A modern Flutter app for room design and management.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  intl: ^0.20.2
+
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0
+  provider: ^6.1.1
+
+  # Firebase - Ultra stable versions
+  firebase_core: ^4.2.0
+  firebase_auth: ^6.0.0
+  firebase_storage: ^13.0.0
+  cloud_firestore: ^6.0.0
+  firebase_app_check: ^0.4.1
+
+  cloudinary: ^1.0.0
+  google_sign_in: ^7.2.0
+  image_picker: ^1.2.0
+  image_picker_android: ^0.8.9+1
+  image_picker_platform_interface: ^2.9.3
+  camera: ^0.11.2
+  path: ^1.8.3
+  path_provider: ^2.1.1
+  permission_handler: ^12.0.1
+  shared_preferences: ^2.2.2
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/help_data.json
