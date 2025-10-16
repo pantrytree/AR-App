@@ -1,6 +1,7 @@
-name: roomantics  # Lowercase with underscores
+name: Roomantics
 description: A modern Flutter app for room design and management.
-publish_to: 'none'
+
+publish_to: 'none' # This prevents accidental publishing to pub.dev
 
 version: 1.0.0+1
 
@@ -10,23 +11,36 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_staggered_animations: ^1.1.0
+  flutter_svg: ^2.1.6
+  image_picker: ^0.8.7+6
+
+  # Icons and fonts
   cupertino_icons: ^1.0.2
   google_fonts: ^6.1.0
+
+  # State management
   provider: ^6.0.5
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.17.5
-  google_sign_in: ^6.1.5
+
+  # Camera functionality
   camera: ^0.11.2
+
+  # Permissions
   permission_handler: ^12.0.1
-  shared_preferences: ^2.2.2
+
+  # Local storage for saving user theme preference
+  shared_preferences: ^2.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0  # Removed redundant "lints"
+  flutter_lints: ^6.0.0
+  lints: ^6.0.0
 
 flutter:
   uses-material-design: true
+
   assets:
     - assets/help_data.json
+
+
