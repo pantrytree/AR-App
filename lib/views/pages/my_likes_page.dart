@@ -12,7 +12,7 @@ import 'catalogue_page.dart';
 
 /// TODO (Backend Integration Notes):
 /// - Connect category tabs and liked item data with real backend responses from `/likes`.
-/// - Replace placeholder icons and images with actual product thumbnails.
+/// - Replace placeholder icons and images with actual furniture thumbnails.
 /// - Connect navigation buttons (bottom bar and "Explore" button) to real pages once ready.
 class MyLikesPage extends StatefulWidget {
   const MyLikesPage({super.key});
@@ -103,7 +103,7 @@ class _MyLikesPageState extends State<MyLikesPage>
                         ? _buildEmptyState(context)
                         : Column(
                       children: [
-                        Expanded(child: _buildProductGrid(context, viewModel)),
+                        Expanded(child: _buildFurnitureGrid(context, viewModel)), // Changed from _buildProductGrid
                         _buildExploreMoreButton(context),
                       ],
                     ),
@@ -220,7 +220,7 @@ class _MyLikesPageState extends State<MyLikesPage>
           ),
           const SizedBox(height: 8),
           Text(
-            TextComponents.likedItemsDescription(),
+            'Start exploring and like your favorite furniture', // Updated text
             style: GoogleFonts.inter(
               fontSize: 14,
               color: AppColors.getSecondaryTextColor(context),
@@ -228,15 +228,15 @@ class _MyLikesPageState extends State<MyLikesPage>
           ),
           const SizedBox(height: 20),
           // Now routes to Catalogue page
-          _buildPulsingExploreButton(context, TextComponents.exploreProducts()),
+          _buildPulsingExploreButton(context, 'Explore Furniture'), // Updated text
         ],
       ),
     );
   }
 
   /// Builds the grid layout for displaying liked items.
-  /// Each card shows product name, dimensions, and a heart icon for unliking.
-  Widget _buildProductGrid(BuildContext context, MyLikesViewModel viewModel) {
+  /// Each card shows furniture name, dimensions, and a heart icon for unliking.
+  Widget _buildFurnitureGrid(BuildContext context, MyLikesViewModel viewModel) { // Renamed method
     final filteredItems = viewModel.getFilteredItems();
 
     return GridView.builder(
@@ -249,13 +249,13 @@ class _MyLikesPageState extends State<MyLikesPage>
       ),
       itemCount: filteredItems.length,
       itemBuilder: (context, index) =>
-          _buildProductCard(context, filteredItems[index], viewModel),
+          _buildFurnitureCard(context, filteredItems[index], viewModel), // Renamed method
     );
   }
 
-  /// Builds each liked product card.
-  /// TODO (Backend): Replace placeholder icon with product image from backend.
-  Widget _buildProductCard(BuildContext context, dynamic item, MyLikesViewModel viewModel) {
+  /// Builds each liked furniture card.
+  /// TODO (Backend): Replace placeholder icon with furniture image from backend.
+  Widget _buildFurnitureCard(BuildContext context, dynamic item, MyLikesViewModel viewModel) { // Renamed method
     return Container(
       decoration: BoxDecoration(
         color: AppColors.getCardBackground(context),
@@ -273,7 +273,7 @@ class _MyLikesPageState extends State<MyLikesPage>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Placeholder product image area
+              // Placeholder furniture image area
               Container(
                 height: 120,
                 decoration: BoxDecoration(
@@ -297,7 +297,7 @@ class _MyLikesPageState extends State<MyLikesPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['name'] ?? 'Item Name',
+                      item['name'] ?? 'Furniture Name', // Updated text
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -353,12 +353,12 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
-  /// Adds a pulsing "Explore More Products" button below the grid.
+  /// Adds a pulsing "Explore More Furniture" button below the grid.
   /// Now routes to Catalogue page
   Widget _buildExploreMoreButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: _buildPulsingExploreButton(context, TextComponents.exploreMoreProducts()),
+      child: _buildPulsingExploreButton(context, 'Explore More Furniture'), // Updated text
     );
   }
 

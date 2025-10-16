@@ -47,15 +47,7 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   elevation: 0,
-                  actions: [
-                    IconButton(
-                      icon: Icon(
-                          Icons.search,
-                          color: AppColors.getAppBarForeground(context)
-                      ),
-                      onPressed: () => homeViewModel.onSearchTapped(),
-                    ),
-                  ],
+                  // REMOVED the search icon from actions
                 ),
                 drawer: const SideMenu(),
                 body: _buildBody(context, homeViewModel),
@@ -68,6 +60,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // ... rest of your home page code remains the same ...
   Widget _buildBody(BuildContext context, HomeViewModel homeViewModel) {
     if (homeViewModel.isLoading) {
       return _buildLoadingState(context);

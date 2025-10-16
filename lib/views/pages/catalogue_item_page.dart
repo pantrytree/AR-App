@@ -5,11 +5,11 @@ import '/utils/text_components.dart';
 import '../../theme/theme.dart';
 
 class CatalogueItemPage extends StatefulWidget {
-  final String? productId;
+  final String? furnitureId; // Changed from productId
 
   const CatalogueItemPage({
     super.key,
-    this.productId,
+    this.furnitureId, required , required productIdproductId, // Changed parameter name
   });
 
   @override
@@ -17,9 +17,9 @@ class CatalogueItemPage extends StatefulWidget {
 }
 
 class _CatalogueItemPageState extends State<CatalogueItemPage> {
-  String _productTitle = "Queen Bed";
-  String _productDimensions = "80×80 cm";
-  String _productDescription = "Custom-made, handcrafted furniture designed to fit your unique style and space.";
+  String _furnitureTitle = "Queen Bed"; // Changed variable name
+  String _furnitureDimensions = "80×80 cm"; // Changed variable name
+  String _furnitureDescription = "Custom-made, handcrafted furniture designed to fit your unique style and space."; // Changed variable name
   bool _isFavorite = false;
 
   final List<Map<String, String>> _relatedItems = [
@@ -40,8 +40,8 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     print("${_isFavorite ? 'Added' : 'Removed'} from favorites");
   }
 
-  void _navigateToRelatedItem(String productId) {
-    Navigator.pushNamed(context, '/catalogue_item', arguments: {'productId': productId});
+  void _navigateToRelatedItem(String furnitureId) { // Changed parameter name
+    Navigator.pushNamed(context, '/catalogue_item', arguments: {'furnitureId': furnitureId}); // Changed key
   }
 
   @override
@@ -52,7 +52,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
           backgroundColor: AppColors.getBackgroundColor(context),
           appBar: AppBar(
             title: Text(
-              "Product Details",
+              "Furniture Details", // Changed title
               style: TextStyle(
                 color: AppColors.getAppBarForeground(context),
                 fontWeight: FontWeight.bold,
@@ -68,9 +68,9 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Title and Dimensions
+                // Furniture Title and Dimensions
                 Text(
-                  _productTitle,
+                  _furnitureTitle, // Changed variable
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -79,7 +79,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _productDimensions,
+                  _furnitureDimensions, // Changed variable
                   style: TextStyle(
                     fontSize: 16,
                     color: AppColors.getSecondaryTextColor(context),
@@ -87,7 +87,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // Product Image
+                // Furniture Image
                 Container(
                   height: 250,
                   width: double.infinity,
@@ -110,9 +110,9 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // Product Description
+                // Furniture Description
                 Text(
-                  _productDescription,
+                  _furnitureDescription, // Changed variable
                   style: TextStyle(
                     fontSize: 16,
                     color: AppColors.getTextColor(context),
@@ -162,9 +162,9 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Related Items
+                // Related Furniture Items
                 ..._relatedItems.map((item) =>
-                    _buildRelatedItem(
+                    _buildRelatedFurnitureItem( // Renamed method
                         context,
                         item["title"]!,
                         item["dimensions"]!,
@@ -179,9 +179,9 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
-  Widget _buildRelatedItem(BuildContext context, String title, String dimensions, String productId) {
+  Widget _buildRelatedFurnitureItem(BuildContext context, String title, String dimensions, String furnitureId) { // Renamed method and parameter
     return GestureDetector(
-      onTap: () => _navigateToRelatedItem(productId),
+      onTap: () => _navigateToRelatedItem(furnitureId), // Uses updated method
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -198,7 +198,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
         ),
         child: Row(
           children: [
-            // Item icon
+            // Furniture icon
             Container(
               width: 50,
               height: 50,

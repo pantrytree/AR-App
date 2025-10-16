@@ -20,7 +20,7 @@ class TextComponents {
   static const String menuHome = "Home";
   static const String menuCatalogue = "Catalogue";
   static const String menuLikes = "My Likes";
-  static const String menuProjects = "My Projects";
+  static const String menuProjects = "Roomielab";
   static const String menuSettings = "Settings";
   static const String menuHelp = "Help & Support";
   static const String menuForgotPassword = "Forgot Password";

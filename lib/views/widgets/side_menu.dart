@@ -5,7 +5,7 @@ import '../../theme/theme.dart';
 import '/utils/text_components.dart';
 import '../pages/help_page.dart';
 import '../pages/my_likes_page.dart';
-import '../pages/my_projects_page.dart';
+import '../pages/roomielab_page.dart';
 import '../pages/edit_profile_page.dart';
 import '../pages/catalogue_page.dart';
 import '../pages/settings_page.dart';
@@ -140,10 +140,11 @@ class SideMenu extends StatelessWidget {
           ),
           _buildMenuItem(
             context: context,
-            text: TextComponents.menuProjects,
-            icon: Icons.work_outline,
-            route: "/projects",
+            text: "RoomieLab",
+            icon: Icons.science_outlined,
+            route: "/roomielab",
           ),
+
           _buildMenuItem(
             context: context,
             text: TextComponents.menuSettings,

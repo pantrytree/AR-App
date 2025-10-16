@@ -9,6 +9,9 @@ import 'package:roomantics/views/pages/notifications_page.dart';
 import 'package:roomantics/views/pages/privacy_policy_page.dart';
 import 'package:roomantics/views/pages/terms_of_service_page.dart';
 import 'package:roomantics/views/pages/two_factor_auth_page.dart';
+import 'package:roomantics/viewmodels/roomielab_viewmodel.dart';
+import 'package:roomantics/views/pages/roomielab_page.dart';
+
 import 'firebase_options.dart';
 
 // Import all pages
@@ -18,7 +21,7 @@ import 'views/pages/logout_page.dart';
 import 'views/pages/catalogue_item_page.dart';
 import 'views/pages/catalogue_page.dart';
 import 'views/pages/my_likes_page.dart';
-import 'views/pages/my_projects_page.dart';
+import 'views/pages/roomielab_page.dart';
 import 'views/pages/settings_page.dart';
 import 'views/pages/help_page.dart';
 import 'views/pages/edit_profile_page.dart';
@@ -35,19 +38,17 @@ import 'viewmodels/side_menu_viewmodel.dart';
 import 'viewmodels/forgot_password_viewmodel.dart';
 import 'viewmodels/logout_viewmodel.dart';
 import 'viewmodels/my_likes_page_viewmodel.dart';
-import 'viewmodels/my_projects_viewmodel.dart';
+import 'viewmodels/roomielab_viewmodel.dart';
 import 'viewmodels/help_page_viewmodel.dart';
 import 'viewmodels/edit_profile_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
-import 'viewmodels/login_viewmodel.dart';
-import 'viewmodels/sign_up_viewmodel.dart';
 import 'theme/theme.dart';
 import 'utils/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase and ThemeManager
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -60,9 +61,9 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  final ThemeManager? themeManager;
+  final ThemeManager themeManager;
 
-  const MyApp({super.key, this.themeManager});
+  const MyApp({super.key, required this.themeManager});
 
   @override
   Widget build(BuildContext context) {
@@ -73,16 +74,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SideMenuViewModel(userName: "Bulelwa")),
         ChangeNotifierProvider(create: (_) => CameraViewModel()),
         ChangeNotifierProvider(create: (_) => MyLikesViewModel()),
-        ChangeNotifierProvider(create: (_) => MyProjectsViewModel()),
+        ChangeNotifierProvider(create: (_) => RoomieLabViewModel()),
         ChangeNotifierProvider(create: (_) => HelpPageViewModel()),
         ChangeNotifierProvider(create: (_) => EditProfileViewModel()),
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
-        // Use provided themeManager or create a new one
-        if (themeManager != null)
-          ChangeNotifierProvider.value(value: themeManager!)
-        else
-          ChangeNotifierProvider(create: (_) => ThemeManager()),
-        // Login and SignUp ViewModels are created within their pages
+        // Use provided themeManager
+        ChangeNotifierProvider.value(value: themeManager),
       ],
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
@@ -138,38 +135,35 @@ class MyApp extends StatelessWidget {
               '/signup': (context) => SignUpPage(),
               '/forgot_password': (context) => ChangeNotifierProvider(
                 create: (_) => ForgotPasswordViewModel(),
-                child: const ForgotPasswordPage(),
+                child: ForgotPasswordPage(),
               ),
 
               // Main app routes
-              '/': (context) => const HomePage(),
-              '/home': (context) => const HomePage(),
+              '/': (context) => HomePage(),
+              '/home': (context) => HomePage(),
 
               // Side menu routes
-              '/catalogue': (context) => const CataloguePage(),
-              '/likes': (context) => const MyLikesPage(),
-              '/projects': (context) => const MyProjectsPage(),
-              '/settings': (context) => const SettingsPage(),
-              '/help': (context) => const HelpPage(),
-              '/edit_profile': (context) => const EditProfilePage(),
+              '/catalogue': (context) => CataloguePage(),
+              '/likes': (context) => MyLikesPage(),
+              '/roomielab': (context) => RoomieLabPage(),
+              '/settings': (context) => SettingsPage(),
+              '/help': (context) => HelpPage(),
+              '/edit_profile': (context) => EditProfilePage(),
 
               // Other pages
               '/logout': (context) => ChangeNotifierProvider(
                 create: (_) => LogoutViewModel(),
-                child: const LogoutPage(),
+                child: LogoutPage(),
               ),
-              '/catalogue_item': (context) => const CatalogueItemPage(),
-              '/camera_page': (context) => const CameraPage(),
-              '/language': (context) => const LanguagePage(),
-              '/notifications': (context) => const NotificationsPage(),
-              '/about': (context) => const AboutPage(),
-
-              // Settings navigation routes (for SettingsViewModel)
+              '/catalogue_item': (context) => CatalogueItemPage(furnitureId: 'default_id', productIdproductId: null,),
+              '/camera_page': (context) => CameraPage(),
               '/language': (context) => LanguagePage(),
               '/notifications': (context) => NotificationsPage(),
               '/about': (context) => AboutPage(),
-              '/help': (context) => HelpPage(),
-              '/logout': (context) => LogoutPage(),
+
+
+
+              // Settings navigation routes
               '/change-password': (context) => ChangePasswordPage(),
               '/two-factor-auth': (context) => TwoFactorAuthPage(),
               '/active-sessions': (context) => ActiveSessionsPage(),
@@ -194,9 +188,9 @@ class MyApp extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                            Icons.error_outline,
-                            size: 64,
-                            color: AppColors.getSecondaryTextColor(context)
+                          Icons.error_outline,
+                          size: 64,
+                          color: AppColors.getSecondaryTextColor(context),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -218,7 +212,10 @@ class MyApp extends StatelessWidget {
                         ElevatedButton(
                           onPressed: () {
                             Navigator.pushNamedAndRemoveUntil(
-                                context, '/home', (route) => false);
+                              context,
+                              '/home',
+                                  (route) => false,
+                            );
                           },
                           child: const Text('Go to Home'),
                         ),
@@ -232,98 +229,5 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
-  }
-}
-
-// Placeholder widget for unimplemented pages
-class PlaceholderWidget extends StatelessWidget {
-  final String title;
-  const PlaceholderWidget({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.getBackgroundColor(context),
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: TextStyle(
-            color: AppColors.getAppBarForeground(context),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: AppColors.getAppBarBackground(context),
-        foregroundColor: AppColors.getAppBarForeground(context),
-        elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.getAppBarForeground(context)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _getPlaceholderIcon(title),
-              size: 80,
-              color: AppColors.getPrimaryColor(context),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              '$title - Coming Soon',
-              style: TextStyle(
-                fontSize: 18,
-                color: AppColors.getTextColor(context),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'This page is under development and will be available soon.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.getSecondaryTextColor(context),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.getPrimaryColor(context),
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: const Text('Go Back'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getPlaceholderIcon(String title) {
-    switch (title.toLowerCase()) {
-      case 'ar view':
-        return Icons.view_in_ar;
-      case 'cart':
-        return Icons.shopping_cart;
-      case 'camera/ar view':
-        return Icons.camera_alt;
-      case 'search':
-        return Icons.search;
-      case 'language settings':
-        return Icons.language;
-      case 'notifications':
-        return Icons.notifications;
-      case 'about app':
-        return Icons.info;
-      default:
-        return Icons.construction;
-    }
   }
 }

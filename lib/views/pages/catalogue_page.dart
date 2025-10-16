@@ -17,7 +17,7 @@ class CataloguePage extends StatelessWidget {
       builder: (context, themeManager, child) {
         return ChangeNotifierProvider(
           create: (_) => CatalogueViewModel(),
-          child: const _CataloguePageBody(),
+          child: _CataloguePageBody(),
         );
       },
     );
@@ -45,7 +45,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CatalogueItemPage(productId: item['id']),
+        builder: (_) => CatalogueItemPage(furnitureId: item['id'], productIdproductId: null,),
       ),
     );
   }
@@ -87,8 +87,8 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             centerTitle: true,
             leading: IconButton(
               icon: Icon(
-                  Icons.arrow_back,
-                  color: AppColors.getAppBarForeground(context)
+                Icons.arrow_back,
+                color: AppColors.getAppBarForeground(context),
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -250,9 +250,9 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-                Icons.search_off,
-                size: 64,
-                color: AppColors.getSecondaryTextColor(context)
+              Icons.search_off,
+              size: 64,
+              color: AppColors.getSecondaryTextColor(context),
             ),
             const SizedBox(height: 16),
             Text(
@@ -402,9 +402,9 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
       ),
       child: Center(
         child: Icon(
-            Icons.chair,
-            size: 40,
-            color: AppColors.primaryPurple // Keep purple icon
+          Icons.chair,
+          size: 40,
+          color: AppColors.primaryPurple, // Keep purple icon
         ),
       ),
     );
