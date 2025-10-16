@@ -1,14 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart'; // For picking images
 import 'package:provider/provider.dart';
 import '../../viewmodels/edit_profile_viewmodel.dart';
 import '../../utils/colors.dart';
 import '../../theme/theme.dart';
+import 'change_passwords_page.dart';
 
 /// EditProfilePage allows the user to update profile information:
-/// name, email, username, password, and profile image.
-/// This page is accessed from the side menu and does not include
-/// the bottom navigation bar, keeping navigation clean and focused.
+/// name, email, username, and profile image.
+/// Password field replaced with Change Password button.
+/// Includes image picker functionality for profile photos.
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
 
@@ -20,46 +23,86 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _usernameController;
-  late TextEditingController _passwordController;
 
-  bool _isSaving = false; // Tracks if profile save operation is in progress
+  bool _isSaving = false;
+
+  final ImagePicker _picker = ImagePicker(); // ImagePicker instance
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize EditProfileViewModel
-    final viewModel = EditProfileViewModel();
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _usernameController = TextEditingController();
 
-    // Initialize text controllers with initial values from the ViewModel
-    _nameController = TextEditingController(text: viewModel.name);
-    _emailController = TextEditingController(text: viewModel.email);
-    _usernameController = TextEditingController(text: viewModel.username);
-    _passwordController = TextEditingController(text: viewModel.password);
-
-    // Load existing user profile after the first frame is rendered
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await viewModel.loadUserProfile();
-      _nameController.text = viewModel.name;
-      _emailController.text = viewModel.email;
-      _usernameController.text = viewModel.username;
-      _passwordController.text = viewModel.password;
+    // Load user profile data from ViewModel after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vm = Provider.of<EditProfileViewModel>(context, listen: false);
+      vm.loadUserProfile().then((_) {
+        _nameController.text = vm.name;
+        _emailController.text = vm.email;
+        _usernameController.text = vm.username;
+      });
     });
   }
 
   @override
   void dispose() {
-    // Dispose controllers to free memory
     _nameController.dispose();
     _emailController.dispose();
     _usernameController.dispose();
-    _passwordController.dispose();
     super.dispose();
+  }
+
+  /// Opens a bottom sheet to let the user pick an image from the gallery
+  /// or take a new photo with the camera
+  Future<void> _pickImage(EditProfileViewModel vm) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Pick from gallery
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from gallery'),
+              onTap: () async {
+                Navigator.pop(context); // Close bottom sheet
+                final picked = await _picker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 80, // Compress to reduce size
+                );
+                if (picked != null) {
+                  vm.setProfileImage(File(picked.path)); // Update ViewModel
+                }
+              },
+            ),
+            // Take a photo with camera
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take a photo'),
+              onTap: () async {
+                Navigator.pop(context);
+                final picked = await _picker.pickImage(
+                  source: ImageSource.camera,
+                  imageQuality: 80,
+                );
+                if (picked != null) {
+                  vm.setProfileImage(File(picked.path));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
+    return ChangeNotifierProvider<EditProfileViewModel>(
       create: (_) => EditProfileViewModel(),
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
@@ -80,18 +123,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   backgroundColor: AppColors.getAppBarBackground(context),
                   elevation: 0,
                   leading: IconButton(
-                    icon: Icon(Icons.arrow_back),
+                    icon: const Icon(Icons.arrow_back),
                     color: AppColors.getAppBarForeground(context),
-                    onPressed: () => Navigator.pop(context), // Return to previous page
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
-                body: SingleChildScrollView(
+                body: viewModel.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : SingleChildScrollView(
                   padding: const EdgeInsets.all(20.0),
                   child: Form(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildProfileAvatar(context, viewModel), // Profile image section
+                        // Profile image section with image picker
+                        _buildProfileAvatar(context, viewModel),
                         const SizedBox(height: 30),
                         _buildTextField(
                           context,
@@ -118,22 +164,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           isRequired: true,
                         ),
                         const SizedBox(height: 20),
-                        _buildPasswordField(
-                          context,
-                          controller: _passwordController,
-                          onChanged: viewModel.setPassword,
-                          viewModel: viewModel,
-                        ),
+                        // Replaced password field with Change Password button
+                        _buildChangePasswordButton(context),
                         const SizedBox(height: 40),
                         _isSaving
-                            ? const Center(child: CircularProgressIndicator()) // Show loader while saving
+                            ? const Center(child: CircularProgressIndicator())
                             : _buildSaveButton(context, viewModel),
+                        if (viewModel.errorMessage != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            viewModel.errorMessage!,
+                            style: GoogleFonts.inter(color: Colors.red),
+                          )
+                        ],
                       ],
                     ),
                   ),
                 ),
-                // No bottom navigation bar - this page is accessed from side menu
-                // Users return via back button or save action
+                // No bottom navigation bar - accessed from side menu
               );
             },
           );
@@ -142,15 +190,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds profile avatar with an overlay camera icon.
-  /// Clicking it should allow changing the profile image.
+  /// Builds profile avatar with image picker functionality
   Widget _buildProfileAvatar(BuildContext context, EditProfileViewModel viewModel) {
+    final imageWidget = viewModel.localImage != null
+        ? CircleAvatar(
+      radius: 60,
+      backgroundImage: FileImage(viewModel.localImage!),
+      backgroundColor: AppColors.primaryLightPurple,
+    )
+        : CircleAvatar(
+      radius: 60,
+      backgroundImage: NetworkImage(viewModel.profileImageUrl),
+      backgroundColor: AppColors.primaryLightPurple,
+    );
+
     return Center(
       child: GestureDetector(
-        onTap: () {
-          // Placeholder for image picker integration
-          print('Change Photo clicked!');
-        },
+        onTap: () => _pickImage(viewModel),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -158,9 +214,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppColors.primaryLightPurple, // Keep brand color
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.getCardBackground(context), width: 3),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.shadowColor,
@@ -170,29 +224,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ],
               ),
               child: Stack(
-                alignment: Alignment.center,
+                fit: StackFit.expand,
                 children: [
-                  Icon(
-                      Icons.person,
-                      size: 50,
-                      color: AppColors.getPrimaryColor(context)
-                  ),
+                  ClipOval(child: imageWidget),
                   Positioned(
-                    right: 8,
-                    bottom: 8,
+                    right: 4,
+                    bottom: 4,
                     child: Container(
-                      width: 24,
-                      height: 24,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: AppColors.getPrimaryColor(context),
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.getCardBackground(context), width: 2),
+                        border: Border.all(color: AppColors.white, width: 2),
                       ),
-                      child: Icon(
-                          Icons.camera_alt,
-                          color: AppColors.white,
-                          size: 14
-                      ),
+                      child: const Icon(Icons.camera_alt,
+                          color: Colors.white, size: 18),
                     ),
                   ),
                 ],
@@ -214,7 +261,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   /// Builds a generic text field (name, email, username)
-  /// Supports required validation and keyboard type customization.
   Widget _buildTextField(
       BuildContext context, {
         required String label,
@@ -270,14 +316,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds the password field with show/hide functionality.
-  /// Uses ViewModel to track obscure text state.
-  Widget _buildPasswordField(
-      BuildContext context, {
-        required TextEditingController controller,
-        required void Function(String) onChanged,
-        required EditProfileViewModel viewModel,
-      }) {
+  /// Builds the Change Password button that navigates to ChangePasswordPage
+  Widget _buildChangePasswordButton(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -290,41 +330,44 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.getTextFieldBackground(context),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            obscureText: viewModel.obscurePassword,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: AppColors.getTextColor(context),
-            ),
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              border: OutlineInputBorder(
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ChangePasswordPage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.getCardBackground(context),
+              foregroundColor: AppColors.getTextColor(context),
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                side: BorderSide(
+                  color: AppColors.getSecondaryTextColor(context).withOpacity(0.3),
+                  width: 1,
+                ),
               ),
-              filled: true,
-              fillColor: AppColors.getTextFieldBackground(context),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  viewModel.obscurePassword ? Icons.visibility_off : Icons.visibility,
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Change Password',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
                   color: AppColors.getSecondaryTextColor(context),
                 ),
-                onPressed: () => viewModel.togglePasswordVisibility(),
-              ),
+              ],
             ),
           ),
         ),
@@ -332,42 +375,44 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  /// Builds the save button and handles saving the profile via the ViewModel.
-  /// Displays a loading indicator while saving.
+  /// Builds the smaller save button and handles saving the profile
   Widget _buildSaveButton(BuildContext context, EditProfileViewModel viewModel) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        onPressed: () async {
-          setState(() => _isSaving = true); // Show loader
-          await viewModel.saveProfile(); // Call ViewModel API
-          setState(() => _isSaving = false); // Hide loader
+    return Center(
+      child: SizedBox(
+        width: 120, // Smaller width
+        height: 50,
+        child: ElevatedButton(
+          onPressed: () async {
+            viewModel.setName(_nameController.text);
+            viewModel.setEmail(_emailController.text);
+            viewModel.setUsername(_usernameController.text);
 
-          // Show feedback message
-          if (viewModel.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(viewModel.errorMessage!)),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Profile Saved")),
-            );
-            // Optionally navigate back after successful save
-            // Navigator.pop(context);
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.getPrimaryColor(context),
-          foregroundColor: AppColors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            setState(() => _isSaving = true);
+            await viewModel.saveProfile();
+            setState(() => _isSaving = false);
+
+            if (viewModel.errorMessage != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(viewModel.errorMessage!)),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Profile Saved")),
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.getPrimaryColor(context),
+            foregroundColor: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 2,
           ),
-          elevation: 2,
-        ),
-        child: const Text(
-          'Save',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          child: const Text(
+            'Save',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
         ),
       ),
     );

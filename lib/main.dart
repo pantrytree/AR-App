@@ -36,7 +36,6 @@ import 'viewmodels/side_menu_viewmodel.dart';
 import 'viewmodels/forgot_password_viewmodel.dart';
 import 'viewmodels/logout_viewmodel.dart';
 import 'viewmodels/my_likes_page_viewmodel.dart';
-import 'viewmodels/my_projects_viewmodel.dart';
 import 'viewmodels/help_page_viewmodel.dart';
 import 'viewmodels/edit_profile_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
@@ -78,7 +77,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SideMenuViewModel(userName: "Bulelwa")),
         ChangeNotifierProvider(create: (_) => CameraViewModel()),
         ChangeNotifierProvider(create: (_) => MyLikesViewModel()),
-        ChangeNotifierProvider(create: (_) => MyProjectsViewModel()),
         ChangeNotifierProvider(create: (_) => HelpPageViewModel()),
         ChangeNotifierProvider(create: (_) => EditProfileViewModel()),
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),

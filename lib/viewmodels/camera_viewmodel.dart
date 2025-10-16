@@ -1,22 +1,9 @@
-// CameraViewModel - AR Camera and Furniture Placement Management
-//
-// PURPOSE: Manages camera functionality, AR object placement, and image capture
-//
-// FEATURES:
-// - Real camera initialization and control
-// - Furniture object selection and AR placement
-// - Image capture and saving
-// - Camera switching (front/back)
-//
-// BACKEND INTEGRATION POINTS:
-// - TO DO: Integrate with /api/ar-objects for 3D model URLs
-// - TO DO: Save AR sessions via POST /api/ar-sessions
-// - TO DO: Upload captured images to /api/ar-captures
-//
-// DEPENDENCIES: camera package for hardware access, permission_handler for permissions
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:roomantics/viewmodels/roomielab_viewmodel.dart';
 
 class CameraViewModel extends ChangeNotifier {
   CameraController? _controller;
@@ -30,6 +17,9 @@ class CameraViewModel extends ChangeNotifier {
   String _selectedObject = 'Sofa';
   final List<String> _availableObjects = ['Sofa', 'Chair', 'Table', 'Bed', 'Lamp'];
 
+  // Capture state
+  String? _capturedImagePath;
+
   // Getters
   bool get isCameraReady => _isCameraReady;
   bool get isLoading => _isLoading;
@@ -38,15 +28,18 @@ class CameraViewModel extends ChangeNotifier {
   String get selectedObject => _selectedObject;
   List<String> get availableObjects => _availableObjects;
   CameraController? get controller => _controller;
+  String? get capturedImagePath => _capturedImagePath;
+  bool get hasCapturedImage => _capturedImagePath != null;
 
-  // Initialize REAL camera
+  // ===========================================================
+  // CAMERA SETUP
+  // ===========================================================
   Future<void> initializeCamera() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Request camera permission
       final status = await Permission.camera.request();
       if (!status.isGranted) {
         _error = 'Camera permission denied';
@@ -55,7 +48,6 @@ class CameraViewModel extends ChangeNotifier {
         return;
       }
 
-      // Get available cameras
       _cameras = await availableCameras();
       if (_cameras == null || _cameras!.isEmpty) {
         _error = 'No cameras available';
@@ -64,9 +56,8 @@ class CameraViewModel extends ChangeNotifier {
         return;
       }
 
-      // Initialize camera controller
       _controller = CameraController(
-        _cameras!.first, // Use first available camera
+        _cameras!.first,
         ResolutionPreset.high,
         enableAudio: false,
       );
@@ -84,26 +75,28 @@ class CameraViewModel extends ChangeNotifier {
     }
   }
 
-  // Select object for AR placement
+  // ===========================================================
+  // AR OBJECT MANAGEMENT
+  // ===========================================================
   void selectObject(String object) {
     _selectedObject = object;
     notifyListeners();
   }
 
-  // Place object in AR
   void placeObject() {
     _isObjectPlaced = true;
     notifyListeners();
   }
 
-  // Remove placed object
   void removeObject() {
     _isObjectPlaced = false;
     notifyListeners();
   }
 
-  // Capture image
-  Future<void> captureImage() async {
+  // ===========================================================
+  // CAPTURE
+  // ===========================================================
+  Future<void> captureImage(BuildContext context) async {
     if (_controller == null || !_controller!.value.isInitialized) {
       _error = 'Camera not ready';
       notifyListeners();
@@ -115,7 +108,17 @@ class CameraViewModel extends ChangeNotifier {
 
     try {
       final XFile image = await _controller!.takePicture();
-      // You can save or process the image here
+
+      // Store the captured image path for preview
+      _capturedImagePath = image.path;
+
+      // Once the image is captured, send it to RoomieLabViewModel
+      final roomieLab = Provider.of<RoomieLabViewModel>(context, listen: false);
+      roomieLab.addProject(
+        image.path,
+        _selectedObject,
+      );
+
       print('Image captured: ${image.path}');
     } catch (e) {
       _error = 'Failed to capture image: $e';
@@ -125,7 +128,14 @@ class CameraViewModel extends ChangeNotifier {
     }
   }
 
-  // Switch camera (front/back)
+  void resetCapture() {
+    _capturedImagePath = null;
+    notifyListeners();
+  }
+
+  // ===========================================================
+  // SWITCH CAMERA
+  // ===========================================================
   Future<void> switchCamera() async {
     if (_cameras == null || _cameras!.length < 2) return;
 
