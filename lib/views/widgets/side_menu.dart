@@ -5,10 +5,11 @@ import '../../theme/theme.dart';
 import '/utils/text_components.dart';
 import '../pages/help_page.dart';
 import '../pages/my_likes_page.dart';
-import '../pages/roomielab_page.dart';
+import '../pages/gallery_page.dart';
 import '../pages/edit_profile_page.dart';
 import '../pages/catalogue_page.dart';
 import '../pages/settings_page.dart';
+import '../pages/roomielab_page.dart'; // Import Mandy's RoomieLab page
 
 class SideMenu extends StatelessWidget {
   final String? userName;
@@ -142,9 +143,14 @@ class SideMenu extends StatelessWidget {
             context: context,
             text: "RoomieLab",
             icon: Icons.science_outlined,
-            route: "/roomielab",
+            route: "/roomielab", // Goes to Mandy's main RoomieLab page
           ),
-
+          _buildMenuItem(
+            context: context,
+            text: "My Gallery",
+            icon: Icons.photo_library,
+            route: "/gallery", // Goes to your gallery page
+          ),
           _buildMenuItem(
             context: context,
             text: TextComponents.menuSettings,

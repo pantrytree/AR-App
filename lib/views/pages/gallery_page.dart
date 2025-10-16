@@ -8,8 +8,8 @@ import 'package:roomantics/views/widgets/project_options_menu.dart';
 import 'package:roomantics/views/pages/project_full_screen_page.dart';
 import 'package:roomantics/views/pages/project_edit_page.dart';
 
-class RoomieLabPage extends StatelessWidget {
-  const RoomieLabPage({super.key});
+class GalleryPage extends StatelessWidget {
+  const GalleryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class RoomieLabPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'RoomieLab',
+          'My Gallery',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.getAppBarBackground(context),

@@ -7,10 +7,13 @@ import 'package:roomantics/views/pages/change_passwords_page.dart';
 import 'package:roomantics/views/pages/language_page.dart';
 import 'package:roomantics/views/pages/notifications_page.dart';
 import 'package:roomantics/views/pages/privacy_policy_page.dart';
+import 'package:roomantics/views/pages/project_edit_page.dart';
+import 'package:roomantics/views/pages/project_full_screen_page.dart';
 import 'package:roomantics/views/pages/terms_of_service_page.dart';
 import 'package:roomantics/views/pages/two_factor_auth_page.dart';
 import 'package:roomantics/viewmodels/roomielab_viewmodel.dart';
-import 'package:roomantics/views/pages/roomielab_page.dart';
+import 'package:roomantics/views/pages/gallery_page.dart';
+import 'package:roomantics/views/pages/roomielab_page.dart'; // Add Mandy's RoomieLab page
 
 import 'firebase_options.dart';
 
@@ -21,7 +24,7 @@ import 'views/pages/logout_page.dart';
 import 'views/pages/catalogue_item_page.dart';
 import 'views/pages/catalogue_page.dart';
 import 'views/pages/my_likes_page.dart';
-import 'views/pages/roomielab_page.dart';
+import 'views/pages/gallery_page.dart';
 import 'views/pages/settings_page.dart';
 import 'views/pages/help_page.dart';
 import 'views/pages/edit_profile_page.dart';
@@ -145,7 +148,8 @@ class MyApp extends StatelessWidget {
               // Side menu routes
               '/catalogue': (context) => CataloguePage(),
               '/likes': (context) => MyLikesPage(),
-              '/roomielab': (context) => RoomieLabPage(),
+              '/roomielab': (context) => RoomieLabPage(), // Mandy's main RoomieLab page
+              '/gallery': (context) => GalleryPage(),     // Your gallery page
               '/settings': (context) => SettingsPage(),
               '/help': (context) => HelpPage(),
               '/edit_profile': (context) => EditProfilePage(),
@@ -161,7 +165,9 @@ class MyApp extends StatelessWidget {
               '/notifications': (context) => NotificationsPage(),
               '/about': (context) => AboutPage(),
 
-
+              // Project management routes
+              '/project_full_screen': (context) => ProjectFullScreenPage(project: {}), // Will be passed project data
+              '/project_edit': (context) => ProjectEditPage(project: {}), // Will be passed project data
 
               // Settings navigation routes
               '/change-password': (context) => ChangePasswordPage(),
