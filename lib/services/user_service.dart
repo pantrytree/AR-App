@@ -202,8 +202,6 @@ class UserService {
 
       List<models.User> users = [];
 
-      // Firestore 'in' query supports max 10 items
-      // So we batch the requests if needed
       for (int i = 0; i < userIds.length; i += 10) {
         final batch = userIds.skip(i).take(10).toList();
 
@@ -228,10 +226,8 @@ class UserService {
       final uid = _auth.currentUser?.uid;
       if (uid == null) throw Exception('No user logged in');
 
-      // Delete user document from Firestore
       await _firestore.collection('users').doc(uid).delete();
 
-      // Delete Firebase Auth account
       await _auth.currentUser?.delete();
     } catch (e) {
       throw Exception('Failed to delete account: $e');

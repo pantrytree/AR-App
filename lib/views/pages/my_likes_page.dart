@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
-import '../../../viewmodels/my_likes_page_viewmodel.dart';
-import '../../../utils/colors.dart';
+import 'package:roomantics/viewmodels/my_likes_page_viewmodel.dart';
+import '/utils/colors.dart';
 import '../../theme/theme.dart';
-import '../../../utils/text_components.dart';
-import '../widgets/bottom_nav_bar.dart';
+import '/utils/text_components.dart';
 import 'catalogue_page.dart';
+import '/models/furniture_item.dart';
 
-
-/// TODO (Backend Integration Notes):
-/// - Connect category tabs and liked item data with real backend responses from `/likes`.
-/// - Replace placeholder icons and images with actual product thumbnails.
-/// - Connect navigation buttons (bottom bar and "Explore" button) to real pages once ready.
+/// Enhanced My Likes Page with better functionality
+/// - Real-time favorites synchronization
+/// - Improved UI/UX
+/// - Better error handling
+/// - Optimized performance
 class MyLikesPage extends StatefulWidget {
   const MyLikesPage({super.key});
 
@@ -22,9 +21,12 @@ class MyLikesPage extends StatefulWidget {
 }
 
 class _MyLikesPageState extends State<MyLikesPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -40,10 +42,15 @@ class _MyLikesPageState extends State<MyLikesPage>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Load placeholder liked items once the UI has been built
+    // Load liked items from backend once the UI has been built
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MyLikesViewModel>(context, listen: false).loadLikedItems();
+      _loadInitialData();
     });
+  }
+
+  Future<void> _loadInitialData() async {
+    final viewModel = Provider.of<MyLikesViewModel>(context, listen: false);
+    await viewModel.loadLikedItems();
   }
 
   @override
@@ -54,109 +61,191 @@ class _MyLikesPageState extends State<MyLikesPage>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Consumer<ThemeManager>(
       builder: (context, themeManager, child) {
         return Scaffold(
           backgroundColor: AppColors.getBackgroundColor(context),
-          appBar: AppBar(
-            backgroundColor: AppColors.getAppBarBackground(context),
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(
-                  Icons.arrow_back,
-                  color: AppColors.getAppBarForeground(context)
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: Text(
-              TextComponents.myLikesTitle(),
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.getAppBarForeground(context),
-              ),
-            ),
-            centerTitle: true,
-          ),
-
-          // Consumer listens to ViewModel updates and rebuilds UI accordingly
-          body: Consumer<MyLikesViewModel>(
-            builder: (context, viewModel, child) {
-              if (viewModel.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (viewModel.errorMessage != null) {
-                // Show error message if data loading fails
-                return Center(
-                  child: Text(
-                      TextComponents.errorLoadingLikes(viewModel.errorMessage!)),
-                );
-              }
-
-              // Show either empty state or liked items grid
-              return Column(
-                children: [
-                  _buildCategoryTabs(context, viewModel),
-                  Expanded(
-                    child: viewModel.likedItems.isEmpty
-                        ? _buildEmptyState(context)
-                        : Column(
-                      children: [
-                        Expanded(child: _buildProductGrid(context, viewModel)),
-                        _buildExploreMoreButton(context),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-
-          // Bottom navigation bar
-          bottomNavigationBar: BottomNavBar(
-            currentIndex: 1, // Likes page is index 1 in navigation bar
-            onTap: (index) {
-              // TODO (Navigation): Replace placeholder routes with actual named routes once pages are ready
-              switch (index) {
-                case 0:
-                  Navigator.pushNamed(context, '/home');
-                  break;
-                case 1:
-                  Navigator.pushNamed(context, '/likes');
-                  break;
-                case 2:
-                  Navigator.pushNamed(context, '/camera');
-                  break;
-                case 3:
-                  Navigator.pushNamed(context, '/shopping');
-                  break;
-                case 4:
-                  Navigator.pushNamed(context, '/profile');
-                  break;
-              }
-            },
-          ),
+          appBar: _buildAppBar(context),
+          body: _buildBody(),
         );
       },
     );
   }
 
-  /// Builds the category tabs for filtering liked items.
-  /// Each tab updates the selected category in the ViewModel.
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: AppColors.getAppBarBackground(context),
+      elevation: 0,
+      leading: IconButton(
+        icon: Icon(
+          Icons.arrow_back,
+          color: AppColors.getAppBarForeground(context),
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Text(
+        TextComponents.myLikesTitle(),
+        style: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: AppColors.getAppBarForeground(context),
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        // Refresh button
+        Consumer<MyLikesViewModel>(
+          builder: (context, viewModel, child) {
+            return IconButton(
+              icon: viewModel.isLoading
+                  ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : Icon(
+                Icons.refresh,
+                color: AppColors.getAppBarForeground(context),
+              ),
+              onPressed: viewModel.isLoading
+                  ? null
+                  : () => viewModel.refreshLikedItems(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody() {
+    return Consumer<MyLikesViewModel>(
+      builder: (context, viewModel, child) {
+        // Show loading state only on initial load
+        if (viewModel.isLoading && viewModel.likedItems.isEmpty) {
+          return _buildLoadingState();
+        }
+
+        // Show error state if there's an error and no items
+        if (viewModel.errorMessage != null && viewModel.likedItems.isEmpty) {
+          return _buildErrorState(context, viewModel);
+        }
+
+        // Show empty state or content
+        return RefreshIndicator(
+          onRefresh: () => viewModel.refreshLikedItems(),
+          child: _buildContent(context, viewModel),
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: AppColors.getPrimaryColor(context),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading your favorites...',
+            style: GoogleFonts.inter(
+              color: AppColors.getTextColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, MyLikesViewModel viewModel) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load favorites',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.getTextColor(context),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              viewModel.errorMessage!,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => viewModel.loadLikedItems(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.getPrimaryColor(context),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, MyLikesViewModel viewModel) {
+    return Column(
+      children: [
+        _buildCategoryTabs(context, viewModel),
+        Expanded(
+          child: viewModel.likedItems.isEmpty
+              ? _buildEmptyState(context)
+              : _buildLikedItemsGrid(context, viewModel),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLikedItemsGrid(BuildContext context, MyLikesViewModel viewModel) {
+    final filteredItems = viewModel.getFilteredItems();
+
+    if (filteredItems.isEmpty) {
+      return _buildNoItemsInCategory(context, viewModel);
+    }
+
+    return Column(
+      children: [
+        _buildItemsCount(context, viewModel),
+        Expanded(
+          child: _buildFurnitureGrid(context, viewModel, filteredItems),
+        ),
+        _buildExploreMoreButton(context),
+      ],
+    );
+  }
+
   Widget _buildCategoryTabs(BuildContext context, MyLikesViewModel viewModel) {
     return Container(
       color: AppColors.getBackgroundColor(context),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: viewModel.categories.map((category) {
-            final isSelected = category == viewModel.selectedCategory;
-            return Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: _buildCategoryTab(context, category, isSelected, viewModel),
-            );
+            return _buildCategoryTab(context, category, viewModel);
           }).toList(),
         ),
       ),
@@ -166,204 +255,399 @@ class _MyLikesPageState extends State<MyLikesPage>
   Widget _buildCategoryTab(
       BuildContext context,
       String category,
-      bool isSelected,
-      MyLikesViewModel viewModel
+      MyLikesViewModel viewModel,
       ) {
-    return GestureDetector(
-      onTap: () => viewModel.setSelectedCategory(category),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 70),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.getCategoryTabSelected(context)
-              : AppColors.getCategoryTabUnselected(context),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.getCategoryTabSelected(context)
-                : AppColors.getCategoryTabUnselected(context),
+    final isSelected = category == viewModel.selectedCategory;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        selected: isSelected,
+        onSelected: (_) => viewModel.setSelectedCategory(category),
+        label: Text(
+          category,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: isSelected ? Colors.white : AppColors.getTextColor(context),
           ),
         ),
-        child: Text(
-          category,
-          style: TextStyle(
-            color: isSelected ? AppColors.white : AppColors.getTextColor(context),
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-          ),
-          textAlign: TextAlign.center,
+        selectedColor: AppColors.getPrimaryColor(context),
+        backgroundColor: AppColors.getCardBackground(context),
+        checkmarkColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
       ),
     );
   }
 
-  /// Builds the empty state UI shown when the user has no liked items.
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildItemsCount(BuildContext context, MyLikesViewModel viewModel) {
+    final filteredCount = viewModel.getFilteredItems().length;
+    final totalCount = viewModel.likedItems.length;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
         children: [
-          Icon(
-              Icons.favorite_border,
-              size: 64,
-              color: AppColors.likesHeart
-          ),
-          const SizedBox(height: 16),
           Text(
-            TextComponents.noLikedItemsYet(),
+            'Showing $filteredCount of $totalCount items',
             style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppColors.getTextColor(context),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            TextComponents.likedItemsDescription(),
-            style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: 12,
               color: AppColors.getSecondaryTextColor(context),
             ),
           ),
-          const SizedBox(height: 20),
-          // Now routes to Catalogue page
-          _buildPulsingExploreButton(context, TextComponents.exploreProducts()),
+          const Spacer(),
+          if (viewModel.selectedCategory != 'All')
+            GestureDetector(
+              onTap: () => viewModel.setSelectedCategory('All'),
+              child: Text(
+                'Show all',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.getPrimaryColor(context),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  /// Builds the grid layout for displaying liked items.
-  /// Each card shows product name, dimensions, and a heart icon for unliking.
-  Widget _buildProductGrid(BuildContext context, MyLikesViewModel viewModel) {
-    final filteredItems = viewModel.getFilteredItems();
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.favorite_border_rounded,
+              size: 80,
+              color: AppColors.likesHeart.withOpacity(0.5),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              TextComponents.noLikedItemsYet(),
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.getTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Start exploring and save your favorite furniture items to see them here',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            _buildPulsingExploreButton(context, 'Explore Furniture'),
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildNoItemsInCategory(BuildContext context, MyLikesViewModel viewModel) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 64,
+              color: AppColors.getSecondaryTextColor(context),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No items in ${viewModel.selectedCategory}',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.getTextColor(context),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try selecting a different category or explore more furniture',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            _buildPulsingExploreButton(context, 'Explore More'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFurnitureGrid(
+      BuildContext context,
+      MyLikesViewModel viewModel,
+      List<FurnitureItem> filteredItems,
+      ) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 0.7,
+        childAspectRatio: 0.75,
       ),
       itemCount: filteredItems.length,
-      itemBuilder: (context, index) =>
-          _buildProductCard(context, filteredItems[index], viewModel),
+      itemBuilder: (context, index) => _buildFurnitureCard(
+        context,
+        filteredItems[index],
+        viewModel,
+      ),
     );
   }
 
-  /// Builds each liked product card.
-  /// TODO (Backend): Replace placeholder icon with product image from backend.
-  Widget _buildProductCard(BuildContext context, dynamic item, MyLikesViewModel viewModel) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.getCardBackground(context),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+  Widget _buildFurnitureCard(
+      BuildContext context,
+      FurnitureItem item,
+      MyLikesViewModel viewModel,
+      ) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Stack(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Placeholder product image area
-              Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLightPurple, // Keep brand color
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                      Icons.chair,
-                      size: 40,
-                      color: AppColors.getPrimaryColor(context)
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['name'] ?? 'Item Name',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.getTextColor(context),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item['dimensions'] ?? '',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.getSecondaryTextColor(context),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
+              // Furniture image
+              _buildItemImage(item),
+              // Item details
+              _buildItemDetails(item),
             ],
           ),
-
-          // Heart icon for removing from likes
-          Positioned(
-            top: 8,
-            right: 8,
-            child: GestureDetector(
-              onTap: () => viewModel.removeLikedItem(item['id']),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.getCardBackground(context),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                    Icons.favorite,
-                    color: AppColors.likesHeart,
-                    size: 20
-                ),
-              ),
-            ),
-          ),
+          // Favorite button
+          _buildFavoriteButton(context, item, viewModel),
         ],
       ),
     );
   }
 
-  /// Adds a pulsing "Explore More Products" button below the grid.
-  /// Now routes to Catalogue page
-  Widget _buildExploreMoreButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: _buildPulsingExploreButton(context, TextComponents.exploreMoreProducts()),
+  Widget _buildItemImage(FurnitureItem item) {
+    return Container(
+      height: 120,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.primaryLightPurple.withOpacity(0.1),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      child: item.imageUrl != null && item.imageUrl!.isNotEmpty
+          ? ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+        child: Image.network(
+          item.imageUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildPlaceholderIcon(item),
+        ),
+      )
+          : _buildPlaceholderIcon(item),
     );
   }
 
-  /// Shared button animation for both "Explore" buttons.
-  /// Now routes to Catalogue page
+  Widget _buildPlaceholderIcon(FurnitureItem item) {
+    return Center(
+      child: Icon(
+        _getCategoryIcon(item.category),
+        size: 40,
+        color: AppColors.getPrimaryColor(context),
+      ),
+    );
+  }
+
+  Widget _buildItemDetails(FurnitureItem item) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            item.name,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextColor(context),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          if (item.dimensions?.isNotEmpty ?? false)
+            Text(
+              item.dimensions!,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          if (item.category.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.getPrimaryColor(context).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                item.category,
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  color: AppColors.getPrimaryColor(context),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFavoriteButton(
+      BuildContext context,
+      FurnitureItem item,
+      MyLikesViewModel viewModel,
+      ) {
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: GestureDetector(
+        onTap: () => _showRemoveConfirmation(context, item, viewModel),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.favorite_rounded,
+            color: AppColors.likesHeart,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRemoveConfirmation(
+      BuildContext context,
+      FurnitureItem item,
+      MyLikesViewModel viewModel,
+      ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Remove from Favorites?',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'Are you sure you want to remove "${item.name}" from your favorites?',
+            style: GoogleFonts.inter(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(
+                  color: AppColors.getSecondaryTextColor(context),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _removeItem(context, item, viewModel);
+              },
+              child: Text(
+                'Remove',
+                style: GoogleFonts.inter(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _removeItem(
+      BuildContext context,
+      FurnitureItem item,
+      MyLikesViewModel viewModel,
+      ) async {
+    try {
+      await viewModel.removeLikedItem(item.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Removed "${item.name}" from favorites'),
+            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                await viewModel.toggleFavorite(item as String);
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to remove item'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildExploreMoreButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: _buildPulsingExploreButton(context, 'Explore More Furniture'),
+    );
+  }
+
   Widget _buildPulsingExploreButton(BuildContext context, String text) {
     return ScaleTransition(
       scale: _pulseAnimation,
@@ -373,12 +657,11 @@ class _MyLikesPageState extends State<MyLikesPage>
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(25),
           ),
-          elevation: 4,
+          elevation: 2,
         ),
         onPressed: () {
-          // Navigate to Catalogue page
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const CataloguePage()),
@@ -386,9 +669,27 @@ class _MyLikesPageState extends State<MyLikesPage>
         },
         child: Text(
           text,
-          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    final lowerCategory = category.toLowerCase();
+    if (lowerCategory.contains('chair')) return Icons.chair_rounded;
+    if (lowerCategory.contains('sofa')) return Icons.weekend_rounded;
+    if (lowerCategory.contains('table')) return Icons.table_restaurant_rounded;
+    if (lowerCategory.contains('bed')) return Icons.bed_rounded;
+    if (lowerCategory.contains('lamp') || lowerCategory.contains('light'))
+      return Icons.light_rounded;
+    if (lowerCategory.contains('cabinet') || lowerCategory.contains('storage'))
+      return Icons.kitchen_rounded;
+    if (lowerCategory.contains('design')) return Icons.architecture_rounded;
+    if (lowerCategory.contains('project')) return Icons.work_rounded;
+    return Icons.photo_library_rounded;
   }
 }

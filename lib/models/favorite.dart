@@ -11,7 +11,6 @@ class Favorite {
     required this.createdAt,
   });
 
-  // From JSON (API response)
   factory Favorite.fromJson(Map<String, dynamic> json) {
     return Favorite(
       itemId: json['itemId'] as String,
@@ -20,7 +19,6 @@ class Favorite {
     );
   }
 
-  // From Firestore DocumentSnapshot
   factory Favorite.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Favorite(
@@ -30,16 +28,6 @@ class Favorite {
     );
   }
 
-  // From Firestore Map
-  factory Favorite.fromFirestoreMap(Map<String, dynamic> data) {
-    return Favorite(
-      itemId: data['itemId'] as String,
-      userId: data['userId'] as String,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-    );
-  }
-
-  // To JSON (for API requests)
   Map<String, dynamic> toJson() {
     return {
       'itemId': itemId,
@@ -48,7 +36,6 @@ class Favorite {
     };
   }
 
-  // To Firestore (for Firestore writes)
   Map<String, dynamic> toFirestore() {
     return {
       'itemId': itemId,
@@ -66,18 +53,6 @@ class Favorite {
       return value;
     }
     throw ArgumentError('Invalid date format');
-  }
-
-  Favorite copyWith({
-    String? itemId,
-    String? userId,
-    DateTime? createdAt,
-  }) {
-    return Favorite(
-      itemId: itemId ?? this.itemId,
-      userId: userId ?? this.userId,
-      createdAt: createdAt ?? this.createdAt,
-    );
   }
 
   @override

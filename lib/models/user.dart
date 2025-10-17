@@ -61,18 +61,20 @@ class User {
   // From Firestore Map (subcollection)
   factory User.fromFirestoreMap(Map<String, dynamic> data) {
     return User(
-      uid: data['uid'] as String,
-      email: data['email'] as String,
-      displayName: data['displayName'] as String,
+      uid: data['uid'] as String? ?? '',
+      email: data['email'] as String? ?? '',
+      displayName: data['displayName'] as String? ?? '',
       profileImageUrl: data['profileImageUrl'] as String?,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: data['updatedAt'] != null
+      createdAt: (data['createdAt'] is Timestamp)
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: (data['updatedAt'] is Timestamp)
           ? (data['updatedAt'] as Timestamp).toDate()
           : null,
-      lastLogin: data['lastLogin'] != null
+      lastLogin: (data['lastLogin'] is Timestamp)
           ? (data['lastLogin'] as Timestamp).toDate()
           : null,
-      preferences: data['preferences'] as Map<String, dynamic>?,
+      preferences: data['preferences'] as Map<String, dynamic>? ?? {},
     );
   }
 

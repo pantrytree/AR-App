@@ -1,15 +1,21 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../utils/filter_options.dart';
 import '../../viewmodels/catalogue_viewmodel.dart';
 import '../../utils/colors.dart';
 import '../../theme/theme.dart';
-import 'catalogue_item_page.dart';
+import 'furniture_catalogue_page.dart';
+import '/services/furniture_service.dart';
+import '/models/furniture_item.dart';
 
 class CataloguePage extends StatelessWidget {
-  const CataloguePage({super.key});
+  final String? initialRoom;
+
+  const CataloguePage({
+    super.key,
+    this.initialRoom,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +23,7 @@ class CataloguePage extends StatelessWidget {
       builder: (context, themeManager, child) {
         return ChangeNotifierProvider(
           create: (_) => CatalogueViewModel(),
-          child: const _CataloguePageBody(),
+          child: _CataloguePageBody(initialRoom: initialRoom),
         );
       },
     );
@@ -25,15 +31,99 @@ class CataloguePage extends StatelessWidget {
 }
 
 class _CataloguePageBody extends StatefulWidget {
-  const _CataloguePageBody();
+  final String? initialRoom;
+
+  const _CataloguePageBody({
+    this.initialRoom,
+  });
 
   @override
   State<_CataloguePageBody> createState() => _CataloguePageBodyState();
 }
 
 class _CataloguePageBodyState extends State<_CataloguePageBody> {
+  final FurnitureService _furnitureService = FurnitureService();
   final TextEditingController _searchController = TextEditingController();
-  final Set<String> _likedItems = {}; // Track liked items locally
+  String _searchQuery = '';
+
+  //Track room item counts from Firestore
+  Map<String, int> _roomItemCounts = {};
+  bool _isLoadingCounts = true;
+  List<FurnitureItem> _allFurnitureItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ADDED: Load furniture data
+    _loadFurnitureData();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialRoom != null) {
+        final vm = context.read<CatalogueViewModel>();
+        _applyInitialRoomFilter(vm, widget.initialRoom!);
+      }
+    });
+  }
+
+  Future<void> _loadFurnitureData() async {
+    try {
+      print('Loading furniture data for catalogue...');
+
+      // Load all furniture items
+      final items = await _furnitureService.getFurnitureItems(
+        useFirestore: true,
+      );
+
+      print('Loaded ${items.length} furniture items');
+
+      // Debug: Print all furniture item IDs
+      for (var item in items) {
+        print('Furniture: ${item.name} (ID: ${item.id}) - Room: ${item.roomType}');
+      }
+
+      // Calculate item counts per room type
+      final counts = <String, int>{};
+      for (var item in items) {
+        final roomType = item.roomType.toLowerCase();
+        counts[roomType] = (counts[roomType] ?? 0) + 1;
+      }
+
+      if (mounted) {
+        setState(() {
+          _allFurnitureItems = items;
+          _roomItemCounts = counts;
+          _isLoadingCounts = false;
+        });
+      }
+
+      print('Room counts: $_roomItemCounts');
+    } catch (e) {
+      print('Error loading furniture data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingCounts = false;
+        });
+      }
+    }
+  }
+
+  void _applyInitialRoomFilter(CatalogueViewModel vm, String initialRoom) {
+    final categoryMap = {
+      'Living Room': 'Living Room',
+      'Bedroom': 'Bedroom',
+      'Office': 'Office',
+      'Kitchen': 'Dining',
+      'Dining Room': 'Dining',
+      'Bathroom': 'Bedroom',
+    };
+
+    final targetCategory = categoryMap[initialRoom] ?? initialRoom;
+    final categories = FilterOptions.categoryOptions.map((option) => option.label).toList();
+    if (categories.contains(targetCategory)) {
+      vm.selectCategory(targetCategory);
+    }
+  }
 
   @override
   void dispose() {
@@ -41,41 +131,83 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     super.dispose();
   }
 
-  void _openItem(BuildContext context, Map<String, dynamic> item) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CatalogueItemPage(productId: item['id']),
-      ),
-    );
-  }
-
-  void _toggleLike(String itemId) {
+  void _onSearchChanged(String query) {
     setState(() {
-      if (_likedItems.contains(itemId)) {
-        _likedItems.remove(itemId);
-        // TODO: Remove from My Likes page via ViewModel
-        _showSnackBar(context, 'Removed from likes');
-      } else {
-        _likedItems.add(itemId);
-        // TODO: Add to My Likes page via ViewModel
-        _showSnackBar(context, 'Added to likes');
-      }
+      _searchQuery = query;
     });
   }
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+  void _clearSearch() {
+    setState(() {
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
+
+  void _navigateToCategory(String category) {
+    final filterOption = FilterOptions.categoryOptions.firstWhere(
+          (option) => option.label == category,
+      orElse: () => FilterOptions.categoryOptions.first,
     );
+
+    if (filterOption.value == 'all') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const FurnitureCataloguePage(),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FurnitureCataloguePage(
+            initialRoom: filterOption.value,
+          ),
+        ),
+      );
+    }
+  }
+
+  List<Map<String, dynamic>> _getFilteredRooms() {
+    if (_searchQuery.isEmpty) {
+      return FilterOptions.roomCardOptions;
+    }
+
+    return FilterOptions.roomCardOptions.where((room) {
+      final roomName = room['name'].toString().toLowerCase();
+      final filterOption = room['filterOption'] as FilterOption;
+      final categoryName = filterOption.label.toLowerCase();
+
+      return roomName.contains(_searchQuery.toLowerCase()) ||
+          categoryName.contains(_searchQuery.toLowerCase());
+    }).toList();
+  }
+
+  int _getItemCountForRoom(String roomValue) {
+    // Map filter values to room types in database
+    final roomTypeMap = {
+      'living_room': 'living_room',
+      'bedroom': 'bedroom',
+      'dining': 'dining_room',
+      'office': 'office',
+      'outdoor': 'outdoor',
+      'all': 'all',
+    };
+
+    final mappedRoomType = roomTypeMap[roomValue.toLowerCase()] ?? roomValue.toLowerCase();
+
+    if (mappedRoomType == 'all') {
+      return _allFurnitureItems.length;
+    }
+
+    return _roomItemCounts[mappedRoomType] ?? 0;
   }
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<CatalogueViewModel>();
+    final filteredRooms = _getFilteredRooms();
 
     return Consumer<ThemeManager>(
       builder: (context, themeManager, child) {
@@ -103,50 +235,46 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             iconTheme: IconThemeData(
               color: AppColors.getAppBarForeground(context),
             ),
-          ),
-          body: Column(
-            children: [
-              _buildHeader(context, vm),
-              const SizedBox(height: 10),
-              _buildCategoryChips(context, vm),
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Text(
-                      '${vm.filteredItems.length} items found',
-                      style: GoogleFonts.inter(
-                        color: AppColors.getSecondaryTextColor(context),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+            actions: [
+              IconButton(
+                icon: _isLoadingCounts
+                    ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : Icon(
+                  Icons.refresh,
+                  color: AppColors.getAppBarForeground(context),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: vm.isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _buildGrid(vm),
-                ),
+                onPressed: _isLoadingCounts ? null : _loadFurnitureData,
               ),
             ],
+          ),
+          body: RefreshIndicator(
+            onRefresh: _loadFurnitureData,
+            child: Column(
+              children: [
+                _buildWelcomeSection(context),
+                SizedBox(
+                  height: 60,
+                  child: _buildCategoryChips(context, vm),
+                ),
+                _buildBrowseAllSection(context, filteredRooms),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildHeader(BuildContext context, CatalogueViewModel vm) {
+  Widget _buildWelcomeSection(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
       decoration: BoxDecoration(
-        color: AppColors.primaryPurple, // Keep purple header in both themes
+        color: AppColors.primaryLightPurple,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(20),
           bottomRight: Radius.circular(20),
@@ -156,39 +284,47 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Find Your Style',
+            'Explore Our Collection',
             style: GoogleFonts.inter(
-              color: AppColors.white,
+              color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 20,
             ),
           ),
           const SizedBox(height: 6),
+          // ADDED: Show total item count
           Text(
-            'Discover perfect furniture for your space',
+            _isLoadingCounts
+                ? 'Loading furniture collection...'
+                : 'Discover ${_allFurnitureItems.length} furniture items for every room',
             style: GoogleFonts.inter(
-              color: AppColors.white,
+              color: Colors.white.withOpacity(0.9),
               fontSize: 13,
               fontWeight: FontWeight.w400,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Container(
             height: 46,
             decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.9),
+              color: Colors.white.withOpacity(0.9),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: (v) => vm.setSearchQuery(v),
-              style: GoogleFonts.inter(color: AppColors.primaryDarkBlue),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Search furniture...',
                 hintStyle: GoogleFonts.inter(color: AppColors.mediumGrey),
-                prefixIcon: Icon(Icons.search, color: AppColors.mediumGrey),
+                prefixIcon: Icon(Icons.search, color: AppColors.primaryPurple),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                  icon: Icon(Icons.close, color: AppColors.primaryPurple),
+                  onPressed: _clearSearch,
+                )
+                    : null,
               ),
             ),
           ),
@@ -198,213 +334,235 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
   }
 
   Widget _buildCategoryChips(BuildContext context, CatalogueViewModel vm) {
-    final categories = ['All', 'Bedroom', 'Living Room', 'Office', 'Dining'];
+    final categories = FilterOptions.categoryOptions;
 
-    return SizedBox(
-      height: 52,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, idx) {
-          final category = categories[idx];
-          final selected = category == vm.selectedCategory;
-          return GestureDetector(
-            onTap: () => vm.selectCategory(category),
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 70),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.getCategoryTabSelected(context)
-                    : AppColors.getCategoryTabUnselected(context),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: selected
-                      ? AppColors.getCategoryTabSelected(context)
-                      : AppColors.getCategoryTabUnselected(context),
-                ),
-              ),
-              child: Text(
-                category,
-                style: GoogleFonts.inter(
-                  color: selected ? AppColors.white : AppColors.getTextColor(context),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: categories.map((filterOption) {
+          final selected = filterOption.label == vm.selectedCategory;
+          return _buildCategoryChip(
+            filterOption,
+            selected,
+                () {
+              vm.selectCategory(filterOption.label);
+              _navigateToCategory(filterOption.label);
+            },
           );
-        },
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildGrid(CatalogueViewModel vm) {
-    final items = vm.filteredItems;
-    if (items.isEmpty) {
-      return Center(
+  Widget _buildCategoryChip(FilterOption filterOption, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.getCategoryTabSelected(context)
+              : AppColors.getCategoryTabUnselected(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.getCategoryTabSelected(context)
+                : AppColors.getCategoryTabUnselected(context),
+          ),
+        ),
+        child: Text(
+          filterOption.label,
+          style: TextStyle(
+            fontSize: 14,
+            color: isSelected ? AppColors.white : AppColors.getTextColor(context),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrowseAllSection(BuildContext context, List<Map<String, dynamic>> filteredRooms) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Browse by Room',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.getTextColor(context),
+                  ),
+                ),
+                if (_searchQuery.isNotEmpty)
+                  GestureDetector(
+                    onTap: _clearSearch,
+                    child: Text(
+                      'Clear search',
+                      style: GoogleFonts.inter(
+                        color: AppColors.primaryPurple,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'Select a room category to explore furniture'
+                  : 'Found ${filteredRooms.length} ${filteredRooms.length == 1 ? 'room' : 'rooms'} matching "$_searchQuery"',
+              style: GoogleFonts.inter(
+                color: AppColors.getSecondaryTextColor(context),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: filteredRooms.isEmpty
+                  ? _buildEmptyState()
+                  : GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.2,
+                ),
+                itemCount: filteredRooms.length,
+                itemBuilder: (context, index) {
+                  final room = filteredRooms[index];
+                  return _buildRoomCard(context, room);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off,
+                size: 64,
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No rooms found',
+                style: GoogleFonts.inter(
+                  color: AppColors.getTextColor(context),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Try adjusting your search terms',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: AppColors.getSecondaryTextColor(context),
+                  fontSize: 14,
+                ),
+              ),
+              if (_searchQuery.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _clearSearch,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryPurple,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Clear Search'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoomCard(BuildContext context, Map<String, dynamic> room) {
+    final filterOption = room['filterOption'] as FilterOption;
+
+    final itemCount = _getItemCountForRoom(filterOption.value);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FurnitureCataloguePage(
+              initialRoom: filterOption.value,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.getCardBackground(context),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-                Icons.search_off,
-                size: 64,
-                color: AppColors.getSecondaryTextColor(context)
+              room['icon'],
+              size: 40,
+              color: AppColors.primaryPurple,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
-              'No items found',
+              room['name'],
               style: GoogleFonts.inter(
-                color: AppColors.getTextColor(context),
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
+                color: AppColors.getTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            _isLoadingCounts
+                ? SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primaryPurple,
+              ),
+            )
+                : Text(
+              '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.getSecondaryTextColor(context),
               ),
             ),
           ],
-        ),
-      );
-    }
-
-    return GridView.builder(
-      padding: const EdgeInsets.only(bottom: 16),
-      physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final it = items[index];
-        return _productCard(context, it);
-      },
-    );
-  }
-
-  Widget _productCard(BuildContext context, Map<String, dynamic> item) {
-    final isLiked = _likedItems.contains(item['id']);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.getCardBackground(context),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _openItem(context, item),
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product Image
-            Container(
-              height: 120,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLightPurple, // Keep light purple for images
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              ),
-              child: Stack(
-                children: [
-                  // Image or placeholder
-                  item['imageUrl'] != null && item['imageUrl']!.isNotEmpty
-                      ? ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    child: Image.network(
-                      item['imageUrl']!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildImagePlaceholder(context);
-                      },
-                    ),
-                  )
-                      : _buildImagePlaceholder(context),
-
-                  // Heart icon
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: () => _toggleLike(item['id']),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.getCardBackground(context),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: isLiked ? AppColors.likesHeart : AppColors.getSecondaryTextColor(context),
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Product Info
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item['name'] ?? 'Sample Furniture',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.getTextColor(context),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "${item['dimensions']?['width'] ?? 0} x ${item['dimensions']?['height'] ?? 0} ${item['dimensions']?['unit'] ?? 'cm'}",
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.getSecondaryTextColor(context),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImagePlaceholder(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.primaryLightPurple, // Keep light purple for placeholders
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      child: Center(
-        child: Icon(
-            Icons.chair,
-            size: 40,
-            color: AppColors.primaryPurple // Keep purple icon
         ),
       ),
     );

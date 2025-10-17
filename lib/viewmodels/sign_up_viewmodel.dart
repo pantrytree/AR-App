@@ -35,35 +35,23 @@ class SignUpViewModel extends ChangeNotifier {
   }
 
   Future<void> signUp() async {
-    // Validate form first
-    if (!formKey.currentState!.validate()) {
-      return;
-    }
-
     loading = true;
     errorMessage = null;
     notifyListeners();
 
-    try {
-      final result = await _authService.signup(
-        email: email,
-        password: password,
-        displayName: name,
-      );
+    final success = await _authService.signup(
+      email: email,
+      password: password,
+      displayName: name,
+    );
 
-      if (result['success'] == true) {
-        loading = false;
-        navigateToRoute = '/home';
-      } else {
-        loading = false;
-        errorMessage = result['error'] ?? 'Sign up failed. Please try again.';
-      }
-    } catch (e) {
-      loading = false;
-      errorMessage = 'An unexpected error occurred. Please try again later.';
-      debugPrint('SignUpViewModel signUp error: $e');
+    if (success) {
+      navigateToRoute = '/home';
+    } else {
+      errorMessage = 'Sign up failed. Please try again.';
     }
 
+    loading = false;
     notifyListeners();
   }
 
@@ -88,7 +76,7 @@ class SignUpViewModel extends ChangeNotifier {
   }
 
   void onBackButtonTapped() {
-    navigateToRoute = '/';
+    navigateToRoute = '/splash2';
     notifyListeners();
   }
 

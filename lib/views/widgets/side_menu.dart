@@ -3,42 +3,55 @@ import 'package:provider/provider.dart';
 import '/utils/colors.dart';
 import '../../theme/theme.dart';
 import '/utils/text_components.dart';
-import '../pages/help_page.dart';
-import '../pages/my_likes_page.dart';
-import '../pages/my_projects_page.dart';
-import '../pages/edit_profile_page.dart';
-import '../pages/catalogue_page.dart';
-import '../pages/settings_page.dart';
+import '/viewmodels/side_menu_viewmodel.dart';
+import '/viewmodels/home_viewmodel.dart';
 
 class SideMenu extends StatelessWidget {
-  final String? userName;
-
-  const SideMenu({
-    super.key,
-    this.userName,
-  });
+  const SideMenu({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeManager>(
-      builder: (context, themeManager, child) {
-        return Drawer(
-          child: Container(
-            color: AppColors.getSideMenuBackground(context),
-            child: Column(
-              children: [
-                _buildHeaderSection(context),
-                _buildHeaderDivider(context), // Divider between header and menus
-                _buildMenuItems(context),
-              ],
-            ),
-          ),
-        );
-      },
+    // Get user name from HomeViewModel if available
+    final homeViewModel = context.watch<HomeViewModel>();
+
+    return ChangeNotifierProvider(
+      create: (_) => SideMenuViewModel(userName: homeViewModel.userName),
+      child: Consumer<ThemeManager>(
+        builder: (context, themeManager, child) {
+          return Consumer<SideMenuViewModel>(
+            builder: (context, viewModel, child) {
+              // Handle navigation
+              if (viewModel.navigateToRoute != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.pop(context); // Close drawer
+                  Navigator.pushNamed(
+                    context,
+                    viewModel.navigateToRoute!,
+                    arguments: viewModel.navigationArguments,
+                  ).then((_) => viewModel.clearNavigation());
+                });
+              }
+
+              return Drawer(
+                child: Container(
+                  color: AppColors.getSideMenuBackground(context),
+                  child: Column(
+                    children: [
+                      _buildHeaderSection(context, viewModel),
+                      _buildHeaderDivider(context),
+                      _buildMenuItems(context, viewModel),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildHeaderSection(BuildContext context) {
+  Widget _buildHeaderSection(BuildContext context, SideMenuViewModel viewModel) {
     return Container(
       height: 180,
       decoration: BoxDecoration(
@@ -52,11 +65,31 @@ class SideMenu extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
         child: Row(
           children: [
-            // Profile icon - no background, just the icon
-            Icon(
-              Icons.person,
-              color: AppColors.getSideMenuIcon(context), // Dynamic icon color
-              size: 60,
+            // Profile image or icon
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primaryLightPurple.withOpacity(0.2),
+              ),
+              child: viewModel.profileImageUrl != null
+                  ? ClipOval(
+                child: Image.network(
+                  viewModel.profileImageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.person,
+                    color: AppColors.getSideMenuIcon(context),
+                    size: 40,
+                  ),
+                ),
+              )
+                  : Icon(
+                Icons.person,
+                color: AppColors.getSideMenuIcon(context),
+                size: 40,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -65,25 +98,39 @@ class SideMenu extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    TextComponents.userGreeting(userName),
+                    TextComponents.userGreeting(viewModel.userNameDisplay),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.getSideMenuItemText(context), // Dynamic text color
+                      color: AppColors.getSideMenuItemText(context),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (viewModel.userEmail != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      viewModel.userEmail!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.getSideMenuItemText(context).withOpacity(0.7),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const SizedBox(height: 8),
-                  // Edit Profile as oval button
+                  // Edit Profile button
                   Container(
                     decoration: BoxDecoration(
-                      color: AppColors.getPrimaryColor(context), // Dynamic primary color
-                      borderRadius: BorderRadius.circular(20), // Oval shape
+                      color: AppColors.getPrimaryColor(context),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
-                        onTap: () => Navigator.pushNamed(context, "/edit_profile"),
+                        onTap: () => viewModel.onEditProfileTapped(),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -92,7 +139,7 @@ class SideMenu extends StatelessWidget {
                           child: Text(
                             TextComponents.menuEditProfile,
                             style: TextStyle(
-                              color: AppColors.white, // White text for contrast
+                              color: AppColors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -121,54 +168,34 @@ class SideMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItems(BuildContext context) {
+  Widget _buildMenuItems(BuildContext context, SideMenuViewModel viewModel) {
     return Expanded(
       child: ListView(
         padding: const EdgeInsets.only(top: 20),
         children: [
-          _buildMenuItem(
+          // Dynamic menu items from viewModel
+          ...viewModel.menuItems.map((item) => _buildMenuItem(
             context: context,
-            text: TextComponents.menuCatalogue,
-            icon: Icons.shopping_bag_outlined,
-            route: "/catalogue",
-          ),
-          _buildMenuItem(
-            context: context,
-            text: TextComponents.menuLikes,
-            icon: Icons.favorite_outline,
-            route: "/likes",
-          ),
-          _buildMenuItem(
-            context: context,
-            text: TextComponents.menuProjects,
-            icon: Icons.work_outline,
-            route: "/projects",
-          ),
-          _buildMenuItem(
-            context: context,
-            text: TextComponents.menuSettings,
-            icon: Icons.settings_outlined,
-            route: "/settings",
-          ),
-          _buildMenuItem(
-            context: context,
-            text: TextComponents.menuHelp,
-            icon: Icons.help_outline,
-            route: "/help",
-          ),
-          _buildMenuItem(
-            context: context,
-            text: TextComponents.menuForgotPassword,
-            icon: Icons.lock_reset,
-            route: "/forgot_password",
-          ),
+            viewModel: viewModel,
+            text: item['text'],
+            icon: item['icon'],
+            route: item['route'],
+          )),
+
           const SizedBox(height: 20),
           _buildDivider(context),
+
+          // Logout button
           _buildMenuItem(
             context: context,
+            viewModel: viewModel,
             text: TextComponents.menuLogout,
             icon: Icons.logout,
-            route: "/logout",
+            route: '/logout',
+            onTap: () async {
+              Navigator.pop(context); // Close drawer first
+              Navigator.pushNamed(context, '/logout');
+            },
           ),
         ],
       ),
@@ -188,29 +215,32 @@ class SideMenu extends StatelessWidget {
 
   Widget _buildMenuItem({
     required BuildContext context,
+    required SideMenuViewModel viewModel,
     required String text,
     required IconData icon,
-    required String route,
+    String? route,
+    VoidCallback? onTap,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ListTile(
         leading: Icon(
           icon,
-          color: AppColors.getSideMenuIcon(context), // Dynamic icon color
+          color: AppColors.getSideMenuIcon(context),
           size: 24,
         ),
         title: Text(
           text,
           style: TextStyle(
-            color: AppColors.getSideMenuItemText(context), // Dynamic text color
+            color: AppColors.getSideMenuItemText(context),
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
         ),
-        onTap: () {
-          Navigator.pop(context); // Close drawer first
-          Navigator.pushNamed(context, route);
+        onTap: onTap ?? () {
+          if (route != null) {
+            viewModel.onMenuItemTapped(route);
+          }
         },
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         shape: RoundedRectangleBorder(

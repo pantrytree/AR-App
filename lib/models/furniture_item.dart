@@ -57,10 +57,10 @@ class FurnitureItem {
     final data = doc.data() as Map<String, dynamic>;
     return FurnitureItem(
       id: doc.id,
-      name: data['name'] as String,
-      description: data['description'] as String,
-      category: data['category'] as String,
-      roomType: data['roomType'] as String,
+      name: data['name'] as String? ?? 'Unnamed Item',
+      description: data['description'] as String? ?? 'No Description',
+      category: data['category'] as String? ?? 'Uncategorized',
+      roomType: data['roomType'] as String? ?? 'General',
       imageUrl: data['imageUrl'] as String?,
       images: (data['images'] as List<dynamic>?)?.map((e) => e as String).toList(),
       dimensions: data['dimensions'] as String?,

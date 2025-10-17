@@ -246,7 +246,7 @@ class ProjectService {
       List<FurnitureItem> items = [];
       for (String itemId in project.items) {
         try {
-          final itemDoc = await _firestore.collection('furniture_items').doc(itemId).get();
+          final itemDoc = await _firestore.collection('furnitureItem').doc(itemId).get();
           if (itemDoc.exists) {
             items.add(FurnitureItem.fromFirestore(itemDoc));
           }

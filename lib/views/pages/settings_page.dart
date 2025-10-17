@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/settings_viewmodel.dart';
@@ -15,83 +13,142 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  late SettingsViewModel _viewModel;
+
   @override
   void initState() {
     super.initState();
+    _viewModel = SettingsViewModel();
+
     // Clear any previous navigation when the page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final settingsViewModel = Provider.of<SettingsViewModel>(context, listen: false);
-      settingsViewModel.clearNavigation();
+      _viewModel.clearNavigation();
     });
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeManager>(
       builder: (context, themeManager, child) {
-        return Consumer<SettingsViewModel>(
-          builder: (context, settingsViewModel, child) {
-            // Handle navigation
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (settingsViewModel.navigateToRoute != null) {
-                final route = settingsViewModel.navigateToRoute;
-                settingsViewModel.clearNavigation();
+        return ChangeNotifierProvider<SettingsViewModel>.value(
+          value: _viewModel,
+          child: Consumer<SettingsViewModel>(
+            builder: (context, settingsViewModel, child) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (settingsViewModel.navigateToRoute != null) {
+                  final route = settingsViewModel.navigateToRoute;
+                  settingsViewModel.clearNavigation();
 
-                // Navigate to the route
-                Navigator.pushNamed(context, route!);
-              }
-            });
+                  Navigator.pushNamed(context, route!);
+                }
+              });
 
-            return Scaffold(
-              backgroundColor: AppColors.getBackgroundColor(context),
-              appBar: AppBar(
-                backgroundColor: AppColors.getAppBarBackground(context),
-                elevation: 0,
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back,
-                    color: AppColors.getAppBarForeground(context),
+              return Scaffold(
+                backgroundColor: AppColors.getBackgroundColor(context),
+                appBar: AppBar(
+                  backgroundColor: AppColors.getAppBarBackground(context),
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: AppColors.getAppBarForeground(context),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                   ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                centerTitle: true,
-                title: Text(
-                  TextComponents.settingsPageTitle,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.getAppBarForeground(context),
+                  centerTitle: true,
+                  title: Text(
+                    TextComponents.settingsPageTitle,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.getAppBarForeground(context),
+                    ),
                   ),
                 ),
-              ),
-              body: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 👤 User Section with icon
-                    _buildUserSection(context, settingsViewModel),
+                body: RefreshIndicator(
+                  onRefresh: () => settingsViewModel.refresh(),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ADDED: Show error/success messages
+                        if (settingsViewModel.errorMessage != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.red),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline, color: Colors.red),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    settingsViewModel.errorMessage!,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 16),
+                                  onPressed: () => settingsViewModel.clearMessages(),
+                                ),
+                              ],
+                            ),
+                          ),
 
-                    const SizedBox(height: 20),
+                        if (settingsViewModel.successMessage != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle, color: Colors.green),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    settingsViewModel.successMessage!,
+                                    style: const TextStyle(color: Colors.green),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 16),
+                                  onPressed: () => settingsViewModel.clearMessages(),
+                                ),
+                              ],
+                            ),
+                          ),
 
-                    // ⚙️ General Settings Section
-                    _buildGeneralSection(context, themeManager, settingsViewModel),
-
-                    const SizedBox(height: 20),
-
-                    // 🔐 Account Security Section
-                    _buildAccountSecuritySection(context, settingsViewModel),
-
-                    const SizedBox(height: 20),
-
-                    // ℹ️ Other Options Section
-                    _buildOtherOptionsSection(context, settingsViewModel),
-                  ],
+                        _buildUserSection(context, settingsViewModel),
+                        const SizedBox(height: 20),
+                        _buildGeneralSection(context, themeManager, settingsViewModel),
+                        const SizedBox(height: 20),
+                        _buildAccountSecuritySection(context, settingsViewModel),
+                        const SizedBox(height: 20),
+                        _buildOtherOptionsSection(context, settingsViewModel),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
@@ -124,12 +181,20 @@ class _SettingsPageState extends State<SettingsPage> {
               decoration: BoxDecoration(
                 color: AppColors.getPrimaryColor(context).withOpacity(0.1),
                 shape: BoxShape.circle,
+                image: settingsViewModel.profileImageUrl != null
+                    ? DecorationImage(
+                  image: NetworkImage(settingsViewModel.profileImageUrl!),
+                  fit: BoxFit.cover,
+                )
+                    : null,
               ),
-              child: Icon(
+              child: settingsViewModel.profileImageUrl == null
+                  ? Icon(
                 Icons.person,
                 color: AppColors.getPrimaryColor(context),
                 size: 20,
-              ),
+              )
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -137,7 +202,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'User',
+                    settingsViewModel.userName,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -146,11 +211,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Current User',
+                    settingsViewModel.userEmail,
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.getSecondaryTextColor(context),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -224,7 +291,7 @@ class _SettingsPageState extends State<SettingsPage> {
             title: 'Clear Cache',
             subtitle: 'Free up storage space',
             onTap: () {
-              _showClearCacheDialog(context);
+              _showClearCacheDialog(context, settingsViewModel);
             },
             showTrailing: false,
           ),
@@ -378,7 +445,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
-          // Restructured Logout Button
           _buildSoftItem(
             context,
             icon: Icons.logout,
@@ -392,7 +458,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
-          // Delete Account option
           _buildSoftItem(
             context,
             icon: Icons.delete_outline,
@@ -510,53 +575,93 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showClearCacheDialog(BuildContext context) {
+  void _showClearCacheDialog(BuildContext context, SettingsViewModel settingsViewModel) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.getCardBackground(context),
-        title: Text(
-          'Clear Cache',
-          style: TextStyle(
-            color: AppColors.getTextColor(context),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'This will free up storage space by clearing cached data.',
-          style: TextStyle(
-            color: AppColors.getSecondaryTextColor(context),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
+      builder: (dialogContext) => FutureBuilder<String>(
+        future: settingsViewModel.getCacheSize(),
+        builder: (context, snapshot) {
+          final cacheSize = snapshot.data ?? 'Calculating...';
+
+          return AlertDialog(
+            backgroundColor: AppColors.getCardBackground(context),
+            title: Text(
+              'Clear Cache',
               style: TextStyle(
-                color: AppColors.getSecondaryTextColor(context),
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Cache cleared successfully'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-            child: Text(
-              'Clear',
-              style: TextStyle(
-                color: AppColors.error,
+                color: AppColors.getTextColor(context),
                 fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ],
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This will free up storage space by clearing cached data.',
+                  style: TextStyle(
+                    color: AppColors.getSecondaryTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Current cache size: $cacheSize',
+                  style: TextStyle(
+                    color: AppColors.getPrimaryColor(context),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: AppColors.getSecondaryTextColor(context),
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (loadingContext) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+
+                  final success = await settingsViewModel.clearCache();
+
+                  // Hide loading
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+
+                  if (success && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Cache cleared successfully'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  }
+                },
+                child: Text(
+                  'Clear Cache',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -564,7 +669,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showDeleteAccountDialog(BuildContext context, SettingsViewModel settingsViewModel) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.getCardBackground(context),
         title: Text(
           'Delete Account',
@@ -581,7 +686,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               'Cancel',
               style: TextStyle(
@@ -590,16 +695,51 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Add your delete account logic here
-              // settingsViewModel.deleteAccount();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Account successfully deleted!'),
-                  backgroundColor: AppColors.error,
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (loadingContext) => const Center(
+                  child: CircularProgressIndicator(),
                 ),
               );
+
+              final success = await settingsViewModel.deleteAccount();
+
+              // Hide loading
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+
+              if (success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Account deleted successfully'),
+                    backgroundColor: AppColors.error,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+
+                await Future.delayed(const Duration(seconds: 1));
+
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/login',
+                        (route) => false,
+                  );
+                }
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(settingsViewModel.errorMessage ?? 'Failed to delete account'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             child: Text(
               'Delete',

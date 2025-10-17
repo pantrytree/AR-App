@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../widgets/side_menu.dart';
-import '../widgets/bottom_nav_bar.dart';
+import '../../utils/filter_options.dart';
+import '/views/widgets/side_menu.dart';
+import '/views/widgets/bottom_nav_bar.dart';
 import '/viewmodels/home_viewmodel.dart';
-import '../../../viewmodels/side_menu_viewmodel.dart';
+import '/viewmodels/side_menu_viewmodel.dart';
 import '/utils/colors.dart';
 import '../../theme/theme.dart';
-import '../../../utils/text_components.dart';
+import '/utils/text_components.dart';
+import '/views/pages/furniture_catalogue_page.dart';
+import '/views/pages/my_likes_page.dart';
+import '/views/pages/settings_page.dart';
+import '/views/pages/help_page.dart';
+import '/views/pages/about_page.dart';
+import '/views/pages/roomielab_screen.dart';
+import '/models/furniture_item.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -16,29 +24,53 @@ class HomePage extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => HomeViewModel(),
+          create: (_) => HomeViewModel.instance,
         ),
-        ChangeNotifierProvider(create: (_) => SideMenuViewModel(userName: "Bulelwa")),
+        ChangeNotifierProvider(create: (_) => SideMenuViewModel()),
       ],
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
           return Consumer<HomeViewModel>(
             builder: (context, homeViewModel, child) {
-              // Handle HomeViewModel navigation
-              if (homeViewModel.navigateToRoute != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
+              // Handle navigation only once
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (ModalRoute.of(context)?.isCurrent ?? false) {
+                  homeViewModel.resetToHome();
+                }
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (homeViewModel.navigateToRoute != null) {
+                  final route = homeViewModel.navigateToRoute!;
+                  final arguments = homeViewModel.navigationArguments;
+
+                  // Clear navigation BEFORE navigating to prevent multiple triggers
+                  homeViewModel.clearNavigation();
+
                   Navigator.pushNamed(
                     context,
-                    homeViewModel.navigateToRoute!,
-                    arguments: homeViewModel.navigationArguments,
-                  ).then((_) => homeViewModel.clearNavigation());
-                });
-              }
+                    route,
+                    arguments: arguments,
+                  );
+                }
+              });
 
               return Scaffold(
                 backgroundColor: AppColors.getBackgroundColor(context),
                 appBar: AppBar(
                   backgroundColor: AppColors.getAppBarBackground(context),
+                  leading: Builder(
+                    builder: (BuildContext context) {
+                      return IconButton(
+                        icon: Icon(
+                          Icons.menu,
+                          color: AppColors.getAppBarForeground(context),
+                        ),
+                        onPressed: () {
+                          Scaffold.of(context).openDrawer();
+                        },
+                      );
+                    },
+                  ),
                   title: Text(
                     TextComponents.homePageTitle,
                     style: TextStyle(
@@ -47,15 +79,7 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   elevation: 0,
-                  actions: [
-                    IconButton(
-                      icon: Icon(
-                          Icons.search,
-                          color: AppColors.getAppBarForeground(context)
-                      ),
-                      onPressed: () => homeViewModel.onSearchTapped(),
-                    ),
-                  ],
+                  actions: [],
                 ),
                 drawer: const SideMenu(),
                 body: _buildBody(context, homeViewModel),
@@ -81,10 +105,8 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildLoadingState(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: AppColors.getPrimaryColor(context),
-      ),
+    return const Center(
+      child: CircularProgressIndicator(),
     );
   }
 
@@ -132,100 +154,67 @@ class HomePage extends StatelessWidget {
   Widget _buildContent(BuildContext context, HomeViewModel homeViewModel) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Dynamic Greeting
-            Text(
-              TextComponents.homeGreeting(homeViewModel.currentUser?['displayName'] ?? 'User'),
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.getTextColor(context),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                TextComponents.homeGreeting(homeViewModel.userDisplayName),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.getTextColor(context),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              TextComponents.homeWelcome,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.getSecondaryTextColor(context),
+              const SizedBox(height: 8),
+              Text(
+                TextComponents.homeWelcome,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.getSecondaryTextColor(context),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-
-            // Search Bar
-            _buildSearchBar(context, homeViewModel),
-            const SizedBox(height: 32),
-
-            // Recently Used Section
-            _buildRecentlyUsedSection(context, homeViewModel),
-            const SizedBox(height: 32),
-
-            // All Rooms Section
-            _buildAllRoomsSection(context, homeViewModel),
-
-            // Added an extra space at the bottom to ensure content doesn't get cut off
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar(BuildContext context, HomeViewModel homeViewModel) {
-    return GestureDetector(
-      onTap: () => homeViewModel.onSearchTapped(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.getCardBackground(context),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadowColor,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(
-                Icons.search,
-                color: AppColors.getSecondaryTextColor(context)
-            ),
-            const SizedBox(width: 12),
-            Text(
-              TextComponents.searchPlaceholder,
-              style: TextStyle(
-                color: AppColors.getSecondaryTextColor(context),
-              ),
-            ),
-          ],
+              const SizedBox(height: 32),
+              _buildRecentlyUsedSection(context, homeViewModel),
+              const SizedBox(height: 32),
+              _buildAllRoomsSection(context, homeViewModel),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildRecentlyUsedSection(BuildContext context, HomeViewModel homeViewModel) {
-    final List<Map<String, String>> recentItems = [
-      {'id': '1', 'name': 'Pink Bed'},
-      {'id': '2', 'name': 'Silver Lamp'},
-      {'id': '3', 'name': 'Wooden Desk'},
-      {'id': '4', 'name': 'Grey Couch'},
-    ];
+    // Use real recently viewed items from backend
+    final recentItems = homeViewModel.recentlyViewedItems;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          TextComponents.recentlyUsedTitle,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.getTextColor(context),
+        GestureDetector(
+          onTap: () {
+            homeViewModel.navigateToCatalogue();
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                TextComponents.recentlyUsedTitle,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.getTextColor(context),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppColors.getTextColor(context),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),
@@ -236,37 +225,60 @@ class HomePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-
-        // Recently Used Items as horizontal tabs
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: recentItems.length,
-            itemBuilder: (context, index) {
-              final item = recentItems[index];
-              return _buildRecentItemCard(context, homeViewModel, item);
-            },
+        // Show message if no recent items
+        if (recentItems.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.getCardBackground(context),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.visibility_off_outlined,
+                  color: AppColors.getSecondaryTextColor(context),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'No recently viewed items yet. Start browsing!',
+                    style: TextStyle(
+                      color: AppColors.getSecondaryTextColor(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: recentItems.length,
+              itemBuilder: (context, index) {
+                final item = recentItems[index];
+                return _buildRecentItemCard(context, homeViewModel, item);
+              },
+            ),
           ),
-        ),
       ],
     );
   }
 
   Widget _buildAllRoomsSection(BuildContext context, HomeViewModel homeViewModel) {
-    final List<Map<String, String>> roomCategories = [
-      {'id': '1', 'name': 'Living Room', 'type': 'living_room'},
-      {'id': '2', 'name': 'Dining Room', 'type': 'dining_room'},
-      {'id': '3', 'name': 'Office', 'type': 'office'},
-      {'id': '4', 'name': 'Kitchen', 'type': 'kitchen'},
-    ];
+    // Use real room categories from backend
+    final roomCategories = homeViewModel.roomCategories;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Make the title clickable
         GestureDetector(
-          onTap: () => homeViewModel.onAllRoomsTitleTapped(),
+          onTap: () {
+            // Navigate to catalogue showing all rooms (no filter)
+            homeViewModel.onAllCategoriesTapped();
+          },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -287,11 +299,24 @@ class HomePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-
-        // Room Categories as grid - Fixed height to prevent overflow
-        SizedBox(
-          height: 400,
-          child: GridView.builder(
+        // Show message if no rooms
+        if (roomCategories.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.getCardBackground(context),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'No rooms available',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -305,20 +330,25 @@ class HomePage extends StatelessWidget {
               return _buildRoomCard(context, homeViewModel, room);
             },
           ),
-        ),
       ],
     );
   }
 
-  Widget _buildRecentItemCard(BuildContext context, HomeViewModel homeViewModel, Map<String, String> item) {
+  Widget _buildRecentItemCard(
+      BuildContext context,
+      HomeViewModel homeViewModel,
+      FurnitureItem item,
+      ) {
     return GestureDetector(
-      onTap: () => homeViewModel.onFurnitureItemTapped(item['id']!),
+      onTap: () {
+        homeViewModel.onFurnitureItemTapped(item.id);
+      },
       child: Container(
         width: 100,
         margin: const EdgeInsets.only(right: 12),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Furniture Image
             Container(
               width: 80,
               height: 80,
@@ -332,24 +362,36 @@ class HomePage extends StatelessWidget {
                     offset: const Offset(0, 2),
                   ),
                 ],
+                image: item.imageUrl != null
+                    ? DecorationImage(
+                  image: NetworkImage(item.imageUrl!),
+                  fit: BoxFit.cover,
+                )
+                    : null,
               ),
-              child: Icon(
-                  Icons.chair,
-                  color: AppColors.getPrimaryColor(context),
-                  size: 30
-              ),
+              child: item.imageUrl == null
+                  ? Icon(
+                _getFurnitureIcon(item.category),
+                color: AppColors.getPrimaryColor(context),
+                size: 30,
+              )
+                  : null,
             ),
             const SizedBox(height: 8),
-            Text(
-              item['name']!,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.getTextColor(context),
-                fontWeight: FontWeight.w500,
+            SizedBox(
+              width: 90, // Slightly less than container width for padding
+              child: Text(
+                item.name,
+                style: TextStyle(
+                  fontSize: 11, // Slightly smaller font
+                  color: AppColors.getTextColor(context),
+                  fontWeight: FontWeight.w500,
+                  height: 1.2, // Better line spacing
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -357,10 +399,18 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildRoomCard(BuildContext context, HomeViewModel homeViewModel, Map<String, String> room) {
+  Widget _buildRoomCard(
+      BuildContext context,
+      HomeViewModel homeViewModel,
+      Map<String, dynamic> room,
+      ) {
+    final roomName = room['name'] as String;
+    final itemCount = room['itemCount'] as String;
+    final iconName = room['icon'] as String?;
+
     return GestureDetector(
       onTap: () {
-        homeViewModel.onRoomTapped(room['id']!);
+        homeViewModel.onRoomTapped(roomName);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -378,21 +428,23 @@ class HomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              _getRoomIcon(room['type']!),
+              _getRoomIcon(iconName ?? 'widgets'),
               size: 40,
               color: AppColors.getPrimaryColor(context),
             ),
             const SizedBox(height: 8),
             Text(
-              room['name']!,
+              roomName,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: AppColors.getTextColor(context),
               ),
+              textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 4),
             Text(
-              'Catalogue Page',
+              '$itemCount items',
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.getSecondaryTextColor(context),
@@ -411,22 +463,40 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  IconData _getRoomIcon(String roomType) {
-    switch (roomType.toLowerCase()) {
-      case 'living_room':
-        return Icons.living;
-      case 'dining_room':
-        return Icons.dining;
-      case 'bedroom':
+  IconData _getRoomIcon(String iconName) {
+    final iconMap = {
+      'weekend': Icons.weekend,
+      'bed': Icons.bed,
+      'work': Icons.work,
+      'kitchen': Icons.kitchen,
+      'dining': Icons.dining,
+      'bathtub': Icons.bathtub,
+      'chair': Icons.chair,
+      'table_restaurant': Icons.table_restaurant,
+      'lightbulb': Icons.lightbulb,
+      'weekend_outlined': Icons.weekend_outlined,
+    };
+    return iconMap[iconName] ?? Icons.widgets;
+  }
+
+  IconData _getFurnitureIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'bed':
         return Icons.bed;
-      case 'kitchen':
-        return Icons.kitchen;
-      case 'bathroom':
-        return Icons.bathtub;
-      case 'office':
-        return Icons.work;
+      case 'sofa':
+      case 'couch':
+        return Icons.weekend;
+      case 'chair':
+        return Icons.chair;
+      case 'table':
+        return Icons.table_restaurant;
+      case 'lamp':
+        return Icons.lightbulb;
+      case 'cabinet':
+      case 'wardrobe':
+        return Icons.king_bed;
       default:
-        return Icons.room;
+        return Icons.chair;
     }
   }
 }

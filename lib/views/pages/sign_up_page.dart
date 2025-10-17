@@ -13,7 +13,6 @@ class SignUpPage extends StatelessWidget {
         builder: (context, themeManager, child) {
           return Consumer<SignUpViewModel>(
             builder: (context, model, child) {
-              // Navigation handling
               if (model.navigateToRoute != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.pushReplacementNamed(context, model.navigateToRoute!);
@@ -49,7 +48,7 @@ class SignUpPage extends StatelessWidget {
                                 style: TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.white // White for better contrast
+                                    color: AppColors.white
                                 ),
                               ),
                               const SizedBox(height: 32),
@@ -202,7 +201,7 @@ class SignUpPage extends StatelessWidget {
                                 children: [
                                   Text(
                                     "Already have an account? ",
-                                    style: TextStyle(color: AppColors.white), // White for contrast
+                                    style: TextStyle(color: AppColors.white),
                                   ),
                                   GestureDetector(
                                     onTap: model.onSignInTapped,
@@ -210,7 +209,7 @@ class SignUpPage extends StatelessWidget {
                                       'Sign In',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.white, // White for contrast
+                                        color: AppColors.white,
                                       ),
                                     ),
                                   ),
@@ -231,7 +230,7 @@ class SignUpPage extends StatelessWidget {
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
-                              onTap: model.onBackButtonTapped,
+                              onTap: () => Navigator.pop(context),
                               child: const Padding(
                                 padding: EdgeInsets.all(8.0),
                                 child: Icon(Icons.close, color: Colors.black, size: 28),

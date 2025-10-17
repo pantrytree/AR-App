@@ -36,7 +36,7 @@ class FavoritesService {
         List<FurnitureItem> items = [];
         for (String itemId in itemIds) {
           try {
-            final itemDoc = await _firestore.collection('furniture_items').doc(itemId).get();
+            final itemDoc = await _firestore.collection('furnitureItem').doc(itemId).get();
             if (itemDoc.exists) {
               items.add(FurnitureItem.fromFirestore(itemDoc));
             }

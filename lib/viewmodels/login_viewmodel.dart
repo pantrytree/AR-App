@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:roomantics/services/auth_service.dart';
 
+import '../services/session_service.dart';
+
 class LoginViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
 
@@ -16,7 +18,6 @@ class LoginViewModel extends ChangeNotifier {
   String? get navigateToRoute => _navigateToRoute;
 
   Future<void> login() async {
-    // Validate inputs
     if (emailController.text.trim().isEmpty) {
       _errorMessage = 'Please enter your email';
       notifyListeners();
@@ -36,22 +37,27 @@ class LoginViewModel extends ChangeNotifier {
     try {
       print('LoginViewModel: Starting login...');
 
-      final result = await _authService.login(
+      final user = await _authService.login(
         email: emailController.text.trim(),
         password: passwordController.text,
       );
 
       _isLoading = false;
 
-      if (result['success'] == true) {
-        print('LoginViewModel: Login successful');
-        print('User: ${result['email']}');
+      if (user != null) {
+        final sessionService = SessionService();
+        await sessionService.createOrUpdateSession(
+          sessionId: 'unique_session_id',
+          deviceName: 'Samsung S24 Ultra',
+          platform: 'Android',
+          location: 'Cape Town, SA',
+        );
 
-        // Navigate to home
         _navigateToRoute = '/home';
+        print('LoginViewModel: Login successful');
+        print('Welcome, ${user.displayName}');
       } else {
         print('LoginViewModel: Login failed');
-        _errorMessage = result['error'] ?? 'Login failed. Please try again.';
       }
     } catch (e) {
       _isLoading = false;
@@ -73,7 +79,7 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   void onForgotPasswordTapped() {
-    _navigateToRoute = '/forgot_password';
+    _navigateToRoute = '/forgot-password';
     notifyListeners();
   }
 

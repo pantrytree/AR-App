@@ -18,6 +18,12 @@ class LogoutPage extends StatelessWidget {
             backgroundColor: AppColors.getBackgroundColor(context),
             body: Consumer<LogoutViewModel>(
               builder: (context, viewModel, child) {
+                if (viewModel.errorMessage != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _showErrorDialog(context, viewModel.errorMessage!);
+                  });
+                }
+
                 return SafeArea(
                   child: SizedBox(
                     width: double.infinity,
@@ -74,7 +80,7 @@ class LogoutPage extends StatelessWidget {
                           TextButton(
                             onPressed: () {
                               Navigator.pushNamedAndRemoveUntil(
-                                  context, '/login', (route) => false);
+                                  context, '/signup', (route) => false);
                             },
                             child: Text(
                               TextComponents.addAnotherAccount,
@@ -97,10 +103,16 @@ class LogoutPage extends StatelessWidget {
                                 // Logout Button
                                 Expanded(
                                   child: ElevatedButton(
-                                    onPressed: viewModel.isLoading ? null : () {
-                                      // Navigate to login page
-                                      Navigator.pushNamedAndRemoveUntil(
-                                          context, '/login', (route) => false);
+                                    onPressed: viewModel.isLoading ? null : () async {
+                                      final success = await viewModel.logoutUser();
+                                      if (success && context.mounted) {
+                                        // Navigate to login page after successful logout
+                                        Navigator.pushNamedAndRemoveUntil(
+                                            context,
+                                            '/login',
+                                                (route) => false
+                                        );
+                                      }
                                     },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppColors.getPrimaryColor(context),
@@ -170,6 +182,25 @@ class LogoutPage extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showErrorDialog(BuildContext context, String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout Error'),
+        content: Text(errorMessage),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Provider.of<LogoutViewModel>(context, listen: false).clearError();
+            },
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

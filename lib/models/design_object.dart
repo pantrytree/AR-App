@@ -86,11 +86,10 @@ class DesignObject {
       position.hashCode ^
       rotation.hashCode ^
       scale.hashCode;
-}
 
-// ============================================================================
+  void operator [](String other) {}
+}
 // POSITION CLASS
-// ============================================================================
 
 class Position {
   final double x;
@@ -149,9 +148,7 @@ class Position {
   int get hashCode => x.hashCode ^ y.hashCode ^ z.hashCode;
 }
 
-// ============================================================================
 // ROTATION CLASS
-// ============================================================================
 
 class Rotation {
   final double x;
@@ -228,9 +225,7 @@ class Rotation {
   int get hashCode => x.hashCode ^ y.hashCode ^ z.hashCode;
 }
 
-// ============================================================================
 // SCALE CLASS
-// ============================================================================
 
 class Scale {
   final double x;
@@ -305,9 +300,7 @@ class Scale {
   int get hashCode => x.hashCode ^ y.hashCode ^ z.hashCode;
 }
 
-// ============================================================================
 // HELPER CLASS: Transform (combines Position, Rotation, Scale)
-// ============================================================================
 
 class Transform {
   final Position position;

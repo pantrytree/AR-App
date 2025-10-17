@@ -17,12 +17,25 @@ class AuthService {
   Future<models.User?> getCurrentUserModel() async {
     try {
       final uid = _auth.currentUser?.uid;
-      if (uid == null) return null;
+      print('Getting user model for UID: $uid');
+
+      if (uid == null) {
+        print('No current user UID');
+        return null;
+      }
 
       final doc = await _firestore.collection('users').doc(uid).get();
-      if (!doc.exists) return null;
 
-      return models.User.fromFirestore(doc);
+      if (!doc.exists) {
+        print('User document does not exist in Firestore');
+        return null;
+      }
+
+      print('User document found, parsing...');
+      final user = models.User.fromFirestore(doc);
+      print('User model loaded: ${user.displayName}');
+      return user;
+
     } catch (e) {
       print('Error getting current user model: $e');
       return null;
@@ -45,21 +58,15 @@ class AuthService {
     });
   }
 
-  // 1. Log In
-  // Endpoint: POST /api/auth/login
-  Future<Map<String, dynamic>> login({
+  Future<models.User?> login({
     required String email,
     required String password,
   }) async {
     try {
-      final firebase_auth.UserCredential credential = await _auth.signInWithEmailAndPassword(
+      final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
-      await Future.delayed(Duration(milliseconds: 100));
-
-      final firebase_auth.User? currentUser = _auth.currentUser;
 
       await _firestore.collection('users').doc(credential.user!.uid).update({
         'lastLogin': FieldValue.serverTimestamp(),
@@ -68,82 +75,47 @@ class AuthService {
       try {
         await _apiService.post(
           '/auth/login',
-          body: {'uid': currentUser?.uid ?? '',},
+          body: {'uid': credential.user!.uid},
           requiresAuth: true,
         );
-        print('Backend login notification sent');
       } catch (apiError) {
-        print('Backend login notification failed (non-critical): $apiError');
+        print('Backend login notification failed: $apiError');
       }
-
       final userModel = await getCurrentUserModel();
-      print('DEBUG: userModel type: ${userModel.runtimeType}');
 
-      return {
-        'success': true,
-        'user': credential.user,
-        'userModel': userModel,
-        'message': 'Login successful',
-      };
-
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      print('Firebase Auth Error: ${e.code}');
-      return {
-        'success': false,
-        'error': _getErrorMessage(e.code),
-      };
+      return userModel;
     } catch (e) {
-      print('Unexpected Error: $e');
-      return {
-        'success': false,
-        'error': 'An unexpected error occurred',
-      };
+      print('Login error: $e');
+      return null;
     }
   }
 
-  // 2. Sign Up
-  // Endpoint: POST /api/auth/sign-up
-  Future<Map<String, dynamic>> signup({
+  Future<bool> signup({
     required String email,
     required String password,
     required String displayName,
   }) async {
     try {
-      final firebase_auth.UserCredential credential = await _auth.createUserWithEmailAndPassword(
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       if (credential.user != null) {
         await credential.user!.updateDisplayName(displayName);
-
-        // Force reload to get updated user data
         await credential.user!.reload();
-
-        // Get fresh user instance
-        final firebase_auth.User? updatedUser = _auth.currentUser;
-
-        print('✅ Display name updated: ${updatedUser?.displayName}');
       }
 
-      // Get ID token
-      final String? idToken = await credential.user?.getIdToken();
-      final now = DateTime.now();
-      final userModel = models.User(
-        uid: credential.user!.uid,
-        email: email,
-        displayName: displayName,
-        profileImageUrl: null,
-        createdAt: now,
-        updatedAt: now,
-        lastLogin: now,
-        preferences: {},
-      );
-
-      await _firestore
-          .collection('users')
-          .doc(credential.user!.uid)
-          .set(userModel.toFirestore());
+      await _firestore.collection('users').doc(credential.user!.uid).set({
+        'uid': credential.user!.uid,
+        'email': email,
+        'displayName': displayName,
+        'profileImageUrl': null,
+        'preferences': {},
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastLogin': FieldValue.serverTimestamp(),
+      });
 
       try {
         await _apiService.post(
@@ -159,24 +131,14 @@ class AuthService {
         print('Backend registration failed (non-critical): $apiError');
       }
 
-      return {
-        'success': true,
-        'user': credential.user,
-        'userModel': userModel,
-        'message': 'Account created successfully',
-      };
+      final userModel = await getCurrentUserModel();
+      return true;
     } on firebase_auth.FirebaseAuthException catch (e) {
       print('Firebase Auth Error: ${e.code}');
-      return {
-        'success': false,
-        'error': _getErrorMessage(e.code),
-      };
+      return false;
     } catch (e) {
       print('Unexpected Error: $e');
-      return {
-        'success': false,
-        'error': 'An unexpected error occurred',
-      };
+      return false;
     }
   }
 
@@ -224,7 +186,7 @@ class AuthService {
     }
   }
 
-  // 5. Update email
+// 5. Update email
   Future<Map<String, dynamic>> updateEmail(String newEmail) async {
     try {
       final user = _auth.currentUser;
@@ -235,25 +197,36 @@ class AuthService {
         };
       }
 
-      // Update in Firebase Auth
-      await user.updateEmail(newEmail);
+      print('Updating email from ${user.email} to $newEmail');
 
-      // Update in Firestore
+      if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(newEmail)) {
+        return {
+          'success': false,
+          'error': 'Invalid email format',
+        };
+      }
+
+      await user.verifyBeforeUpdateEmail(newEmail);
+
       await _firestore.collection('users').doc(user.uid).update({
         'email': newEmail,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      print('Email updated successfully');
 
       return {
         'success': true,
         'message': 'Email updated successfully',
       };
     } on firebase_auth.FirebaseAuthException catch (e) {
+      print('Firebase Auth error: ${e.code}');
       return {
         'success': false,
         'error': _getErrorMessage(e.code),
       };
     } catch (e) {
+      print('Unexpected error: $e');
       return {
         'success': false,
         'error': 'Failed to update email',
@@ -288,6 +261,23 @@ class AuthService {
         'success': false,
         'error': 'Failed to update password',
       };
+    }
+  }
+
+  Future<bool> checkRecentPasswordReset(String email) async {
+    try {
+      final resetQuery = await _firestore
+          .collection('password_resets')
+          .where('email', isEqualTo: email)
+          .where('status', isEqualTo: 'completed')
+          .where('completedAt', isGreaterThan:
+      DateTime.now().subtract(const Duration(minutes: 5)))
+          .limit(1)
+          .get();
+
+      return resetQuery.docs.isNotEmpty;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -342,10 +332,8 @@ class AuthService {
 
       final uid = user.uid;
 
-      // Delete user data from Firestore
       await _deleteUserData(uid);
 
-      // Delete Firebase Auth account
       await user.delete();
 
       print('Account deleted successfully');
@@ -480,10 +468,7 @@ class AuthService {
         };
       }
 
-      // Update in Firebase Auth
       await user.updateDisplayName(displayName);
-
-      // Update in Firestore
       await _firestore.collection('users').doc(user.uid).update({
         'displayName': displayName,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -511,10 +496,8 @@ class AuthService {
         };
       }
 
-      // Update in Firebase Auth
       await user.updatePhotoURL(photoURL);
 
-      // Update in Firestore
       await _firestore.collection('users').doc(user.uid).update({
         'profileImageUrl': photoURL,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -529,16 +512,6 @@ class AuthService {
         'success': false,
         'error': 'Failed to update photo',
       };
-    }
-  }
-
-  Future<bool> checkEmailExists(String email) async {
-    try {
-      final methods = await _auth.fetchSignInMethodsForEmail(email);
-      return methods.isNotEmpty;
-    } catch (e) {
-      print('Error checking email: $e');
-      return false;
     }
   }
 

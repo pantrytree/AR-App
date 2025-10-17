@@ -18,13 +18,13 @@ class FurnitureService {
   }) async {
     try {
       if (useFirestore) {
-        Query<Map<String, dynamic>> query = _firestore.collection('furniture_items');
+        Query<Map<String, dynamic>> query = _firestore.collection('furnitureItem');
 
-        if (category != null) {
+        if (category != null && category != 'All') {
           query = query.where('category', isEqualTo: category);
         }
 
-        if (roomType != null) {
+        if (roomType != null && roomType != 'All') {
           query = query.where('roomType', isEqualTo: roomType);
         }
 
@@ -58,7 +58,7 @@ class FurnitureService {
     String? category,
     String? roomType,
   }) {
-    Query<Map<String, dynamic>> query = _firestore.collection('furniture_items');
+    Query<Map<String, dynamic>> query = _firestore.collection('furnitureItem');
 
     if (category != null) {
       query = query.where('category', isEqualTo: category);
@@ -75,12 +75,40 @@ class FurnitureService {
     });
   }
 
+  // Add to your FurnitureService class
+  Stream<List<FurnitureItem>> streamItemsByRoomAndCategory(
+      String roomType,
+      String category, {
+        String? excludeProductId,
+        int limit = 4,
+      }) {
+    Query query = _firestore
+        .collection('furnitureItem')
+        .where('roomType', isEqualTo: roomType)
+        .where('category', isEqualTo: category)
+        .orderBy('name')
+        .limit(limit + 1);
+
+    return query.snapshots().map((snapshot) {
+      List<FurnitureItem> items = snapshot.docs
+          .map((doc) => FurnitureItem.fromFirestore(doc))
+          .toList();
+
+      // Filter out excluded product if provided
+      if (excludeProductId != null) {
+        items = items.where((item) => item.id != excludeProductId).toList();
+      }
+
+      return items;
+    });
+  }
+
   // 3. Get Single Furniture Item
 
   Future<FurnitureItem> getFurnitureItem(String id, {bool useFirestore = true}) async {
     try {
       if (useFirestore) {
-        final doc = await _firestore.collection('furniture_items').doc(id).get();
+        final doc = await _firestore.collection('furnitureItem').doc(id).get();
 
         if (!doc.exists) {
           throw Exception('Furniture item not found');
@@ -99,7 +127,7 @@ class FurnitureService {
   // 4. Stream single furniture item
   Stream<FurnitureItem?> streamFurnitureItem(String id) {
     return _firestore
-        .collection('furniture_items')
+        .collection('furnitureItem')
         .doc(id)
         .snapshots()
         .map((doc) {
@@ -113,7 +141,7 @@ class FurnitureService {
   Future<List<FurnitureItem>> searchFurniture(String query, {bool useFirestore = true}) async {
     try {
       if (useFirestore) {
-        final snapshot = await _firestore.collection('furniture_items').get();
+        final snapshot = await _firestore.collection('furnitureItem').get();
 
         return snapshot.docs
             .map((doc) => FurnitureItem.fromFirestore(doc))
@@ -135,12 +163,19 @@ class FurnitureService {
     }
   }
 
-  // 6. Get Recently Viewed Items
-
+// 6. Get Recently Viewed Items
   Future<List<FurnitureItem>> getRecentlyViewed() async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) throw Exception('User not authenticated');
+      print('Getting recently viewed for user: $userId');
+
+      if (userId == null) {
+        print('User not authenticated');
+        throw Exception('User not authenticated');
+      }
+
+      // Query the recently_viewed
+      print('Querying: users/$userId/recently_viewed');
 
       final snapshot = await _firestore
           .collection('users')
@@ -150,51 +185,95 @@ class FurnitureService {
           .limit(10)
           .get();
 
-      if (snapshot.docs.isEmpty) return [];
+      print('Found ${snapshot.docs.length} recently viewed documents');
 
-      final itemIds = snapshot.docs.map((doc) => doc.data()['itemId'] as String).toList();
+      if (snapshot.docs.isEmpty) {
+        print('No recently viewed items');
+        return [];
+      }
+
+      // Extract item IDs from recently_viewed
+      final itemIds = <String>[];
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        print('Recently viewed doc: ${doc.id}, data: $data');
+
+        // The document ID IS the itemId in the recently_viewed
+        final itemId = doc.id;
+        itemIds.add(itemId);
+        print('   - Item ID: $itemId');
+      }
+
+      print('Recently viewed item IDs: $itemIds');
 
       List<FurnitureItem> items = [];
       for (String itemId in itemIds) {
         try {
-          final itemDoc = await _firestore.collection('furniture_items').doc(itemId).get();
+          print('Fetching furniture item: $itemId');
+
+          final itemDoc = await _firestore
+              .collection('furnitureItem')
+              .doc(itemId)
+              .get();
+
           if (itemDoc.exists) {
-            items.add(FurnitureItem.fromFirestore(itemDoc));
+            final item = FurnitureItem.fromFirestore(itemDoc);
+            items.add(item);
+            print('Added: ${item.name}');
+          } else {
+            print('Furniture item not found: $itemId');
           }
         } catch (e) {
           print('Error fetching item $itemId: $e');
+          continue;
         }
       }
 
+      print('Returning ${items.length} recently viewed items');
       return items;
     } catch (e) {
+      print('Failed to load recently viewed: $e');
+      print('Stack trace: ${StackTrace.current}');
       throw Exception('Failed to load recently viewed: $e');
     }
   }
 
-  // 7. Track Item View
-
+// 7. Track Item View
   Future<void> trackItemView(String itemId) async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) return;
+      if (userId == null) {
+        print('Cannot track view - user not authenticated');
+        return;
+      }
+
+      print('Tracking view for item: $itemId by user: $userId');
+
+      // Check current view count
+      final docRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('recently_viewed')
+          .doc(itemId);
+
+      final existingDoc = await docRef.get();
 
       final recentlyViewed = RecentlyViewed(
         itemId: itemId,
         userId: userId,
         viewedAt: DateTime.now(),
-        viewCount: 1,
+        viewCount: existingDoc.exists
+            ? ((existingDoc.data()?['viewCount'] ?? 0) as int) + 1
+            : 1,
       );
 
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('recently_viewed')
-          .doc(itemId)
-          .set(
+      await docRef.set(
         recentlyViewed.toFirestore(),
         SetOptions(merge: true),
       );
+
+      print('View tracked successfully');
+      print(' Path: users/$userId/recently_viewed/$itemId');
     } catch (e) {
       print('Failed to track view: $e');
     }
@@ -206,7 +285,7 @@ class FurnitureService {
     try {
       if (useFirestore) {
         final snapshot = await _firestore
-            .collection('furniture_items')
+            .collection('furnitureItem')
             .where('featured', isEqualTo: true)
             .limit(10)
             .get();
@@ -231,7 +310,7 @@ class FurnitureService {
     try {
       if (useFirestore) {
         final snapshot = await _firestore
-            .collection('furniture_items')
+            .collection('furnitureItem')
             .where('roomType', isEqualTo: roomType)
             .get();
 
@@ -254,7 +333,7 @@ class FurnitureService {
   Future<List<FurnitureItem>> getItemsByCategory(String category) async {
     try {
       final snapshot = await _firestore
-          .collection('furniture_items')
+          .collection('furnitureItem')
           .where('category', isEqualTo: category)
           .get();
 
@@ -271,7 +350,7 @@ class FurnitureService {
   Future<int> getFurnitureCount() async {
     try {
       final snapshot = await _firestore
-          .collection('furniture_items')
+          .collection('furnitureItem')
           .count()
           .get();
 
@@ -285,7 +364,7 @@ class FurnitureService {
 
   Future<List<String>> getAllCategories() async {
     try {
-      final snapshot = await _firestore.collection('furniture_items').get();
+      final snapshot = await _firestore.collection('furnitureItem').get();
 
       final categories = snapshot.docs
           .map((doc) => doc.data()['category'] as String?)
@@ -303,7 +382,7 @@ class FurnitureService {
 
   Future<List<String>> getAllRoomTypes() async {
     try {
-      final snapshot = await _firestore.collection('furniture_items').get();
+      final snapshot = await _firestore.collection('furnitureItem').get();
 
       final roomTypes = snapshot.docs
           .map((doc) => doc.data()['roomType'] as String?)
@@ -333,7 +412,7 @@ class FurnitureService {
     try {
       final now = DateTime.now();
       final furnitureItem = FurnitureItem(
-        id: '', // Firestore will generate
+        id: '',
         name: name,
         description: description,
         category: category,
@@ -349,7 +428,7 @@ class FurnitureService {
       );
 
       final docRef = await _firestore
-          .collection('furniture_items')
+          .collection('furnitureItem')
           .add(furnitureItem.toFirestore());
 
       return docRef.id;
@@ -388,7 +467,7 @@ class FurnitureService {
       if (featured != null) updates['featured'] = featured;
       if (arModelUrl != null) updates['arModelUrl'] = arModelUrl;
 
-      await _firestore.collection('furniture_items').doc(id).update(updates);
+      await _firestore.collection('furnitureItem').doc(id).update(updates);
     } catch (e) {
       throw Exception('Failed to update furniture item: $e');
     }
@@ -397,7 +476,7 @@ class FurnitureService {
   // 16. Delete Furniture Item
   Future<void> deleteFurnitureItem(String id) async {
     try {
-      await _firestore.collection('furniture_items').doc(id).delete();
+      await _firestore.collection('furnitureItem').doc(id).delete();
     } catch (e) {
       throw Exception('Failed to delete furniture item: $e');
     }
@@ -409,7 +488,7 @@ class FurnitureService {
       final batch = _firestore.batch();
 
       for (var item in items) {
-        final docRef = _firestore.collection('furniture_items').doc();
+        final docRef = _firestore.collection('furnitureItem').doc();
         batch.set(docRef, item.toFirestore());
       }
 

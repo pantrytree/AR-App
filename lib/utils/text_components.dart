@@ -12,9 +12,8 @@ class TextComponents {
     return displayName != null ? "Hi, $displayName" : "Hello!";
   }
 
-  static String homeGreeting(String? displayName) {
-    return displayName != null ? "Welcome back, $displayName!" : "Welcome back!";
-  }
+  static String homeGreeting(String displayName) {
+    return 'Welcome back, $displayName!';  }
 
   // Side Menu Labels
   static const String menuHome = "Home";
@@ -34,21 +33,21 @@ class TextComponents {
   // Bottom Nav Labels
   static const String navHome = "Home";
   static const String navArView = "AR View";
-  static const String navCart = "Cart";
+  static const String navCart = "Catalogue";
   static const String navFavorites = "Favorites";
   static const String navProfile = "Profile";
 
   // Page Headings
   static const String homePageTitle = "Home";
   static const String arViewTitle = "AR View";
-  static const String cartPageTitle = "Shopping Cart";
+  static const String cartPageTitle = "Catalogue";
   static const String profilePageTitle = "My Profile";
   static const String cataloguePageTitle = "Product Details";
   static const String forgotPasswordTitle = "Reset Password";
   static const String resetPasswordTitle = "Reset Password";
   static const String logoutTitle = "Logout";
   static const String favoritesTitle = "My Favorites";
-  static const String settingsPageTitle = "Settings"; // ADDED FOR SETTINGS PAGE
+  static const String settingsPageTitle = "Settings";
 
   // Home Screen
   static const String homeWelcome = "Let's design your dream space";
@@ -77,10 +76,10 @@ class TextComponents {
   static const String signUpButton = "Sign Up";
 
   // Logout Page
-  static const String logoutConfirmationQuestion = "Are you logging out?";
+  static const String logoutConfirmationQuestion = "Are you sure you want to logout?";
   static const String logoutDetailedDescription =
-      "You can always log back in\nat any time, if you just want\nto switch accounts, you can";
-  static const String addAnotherAccount = "add another account";
+      "You will need to sign in again to access your account and data.";
+  static const String addAnotherAccount = "Add Another Account";
   static const String cancelButton = "Cancel";
   static const String logoutButton = "Logout";
 
@@ -212,19 +211,6 @@ class TextComponents {
     return '${width}×${depth}×${height} $unit';
   }
 
-  static String formatPrice(double price) {
-    return '\$${price.toStringAsFixed(2)}';
-  }
-
-  static String formatRating(double rating) {
-    return rating.toStringAsFixed(1);
-  }
-
-  // DYNAMIC USER DATA (MUTABLE PROPERTIES)
-
-  static String userName = "Guest"; // Mutable property for dynamic user name
-  static String userEmail = "guest@example.com"; // Mutable property for dynamic email
-
   // MY PROJECTS PAGE STRINGS
 
   static String myProjectsTitle() => "My Projects";
@@ -332,21 +318,4 @@ class TextComponents {
     color: AppColors.grey.withOpacity(0.8),
   );
 
-  // METHODS TO UPDATE DYNAMIC CONTENT
-
-  /// Updates the user name dynamically (to be called after login/user data fetch)
-  static void updateUserName(String newName) {
-    userName = newName;
-  }
-
-  /// Updates the user email dynamically
-  static void updateUserEmail(String newEmail) {
-    userEmail = newEmail;
-  }
-
-  /// Resets user data to guest/default values
-  static void resetToGuest() {
-    userName = "Guest";
-    userEmail = "guest@example.com";
-  }
 }

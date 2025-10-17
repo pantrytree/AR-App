@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/utils/colors.dart';
 import '../../theme/theme.dart';
+import 'package:roomantics/viewmodels/home_viewmodel.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
-  final Function(int) onTap;
+  final Function(int)? onTap;
 
   const BottomNavBar({
     Key? key,
     required this.currentIndex,
-    required this.onTap,
+    this.onTap,
   }) : super(key: key);
 
   @override
@@ -91,7 +92,7 @@ class BottomNavBar extends StatelessWidget {
     final isSelected = currentIndex == index;
 
     return GestureDetector(
-      onTap: () => onTap(index),
+      onTap: () => _handleNavigation(context, index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         decoration: BoxDecoration(
@@ -122,5 +123,52 @@ class BottomNavBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _handleNavigation(BuildContext context, int index) {
+    // Call the provided onTap callback if it exists
+    if (onTap != null) {
+      onTap!(index);
+      return;
+    }
+
+    // Default navigation logic
+    final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+    homeViewModel.onTabSelected(index);
+
+    // Navigate to the appropriate route
+    switch (index) {
+      case 0: // Home
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+              (route) => false,
+        );
+        break;
+      case 1: // Likes
+        Navigator.pushNamed(
+          context,
+          '/my-likes',
+        );
+        break;
+      case 2: // AR View
+        Navigator.pushNamed(
+          context,
+          '/camera-page',
+        );
+        break;
+      case 3: // Catalogue
+        Navigator.pushNamed(
+          context,
+          '/catalogue',
+        );
+        break;
+      case 4: // Profile
+        Navigator.pushNamed(
+          context,
+          '/account-hub',
+        );
+        break;
+    }
   }
 }

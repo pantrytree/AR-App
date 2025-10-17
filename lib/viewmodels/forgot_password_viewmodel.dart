@@ -1,15 +1,22 @@
 import 'package:flutter/foundation.dart';
+import 'package:roomantics/services/user_service.dart';
+import '/services/auth_service.dart';
 import '/utils/text_components.dart';
 
 class ForgotPasswordViewModel extends ChangeNotifier {
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
   // State variables
   bool _isLoading = false;
   bool _hasError = false;
   String? _errorMessage;
   String? _successMessage;
 
-  // Form field
+  // Form fields
   String _email = '';
+
+  // Step management
+  int _currentStep = 0; // 0: Email, 1: Verification
 
   // Navigation flags
   String? _navigateToRoute;
@@ -21,6 +28,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
   String get email => _email;
+  int get currentStep => _currentStep;
   String? get navigateToRoute => _navigateToRoute;
   Map<String, dynamic>? get navigationArguments => _navigationArguments;
 
@@ -31,51 +39,12 @@ class ForgotPasswordViewModel extends ChangeNotifier {
   }
 
   // ======================
-  // BACKEND INTEGRATION POINTS
+  // BACKEND INTEGRATION
   // ======================
 
-  // TODO: Backend - Implement sendPasswordResetEmail()
-  // Description: Creates a record in password_resets table and sends email
-  // Expected: Returns success message
-  Future<void> _sendPasswordResetEmailToBackend() async {
-    // Backend team to implement:
-    // - Create record in password_resets table
-    // - Send actual reset email to user
-    // - Return success status
-    await Future.delayed(const Duration(seconds: 2)); // Simulate API call
-    return; // Backend should return success response
-  }
-
-  // TODO: Backend - Implement validateResetCode()
-  // Description: Checks reset code against password_resets table
-  // Expected: Returns boolean (valid/invalid)
-  Future<bool> _validateResetCodeWithBackend(String resetCode) async {
-    // Backend team to implement:
-    // - Query password_resets table for valid reset code
-    // - Check expiration time
-    // - Return validation result
-    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-    return true; // Backend should return validation result
-  }
-
-  // TODO: Backend - Implement updateNewPassword()
-  // Description: Updates user password in users table
-  // Expected: Returns success message
-  Future<void> _updateNewPasswordInBackend(String newPassword) async {
-    // Backend team to implement:
-    // - Update password field in users table
-    // - Invalidate used reset codes
-    // - Return success status
-    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-    return; // Backend should return success response
-  }
-
-  // ======================
-  // PUBLIC METHODS
-  // ======================
-
+  /// Step 1: Request password reset
   Future<void> sendPasswordResetEmail() async {
-    if (!_validateForm()) {
+    if (!_validateEmailStep()) {
       return;
     }
 
@@ -86,58 +55,68 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Backend team: This function needs implementation
-      await _sendPasswordResetEmailToBackend();
+      // First check if email exists in our user database
+      final userExists = await _userService.getUserByEmail(_email);
 
-      _successMessage = "Password reset link sent to $_email";
-      _isLoading = false;
-      notifyListeners();
+      if (userExists == null) {
+        throw Exception('No account found with this email address. Please check the email or sign up for a new account.');
+      }
 
+      // If email exists, send reset password email via Firebase Auth
+      final result = await _authService.resetPassword(_email);
+
+      if (result['success'] == true) {
+        _successMessage = "Password reset link sent to $_email\n\nPlease check your email and click the link to reset your password. Don't forget to check your spam folder!";
+        _currentStep = 1; // Move to verification step
+        _isLoading = false;
+        notifyListeners();
+      } else {
+        throw Exception(result['error'] ?? 'Failed to send reset email');
+      }
     } catch (e) {
       _isLoading = false;
       _hasError = true;
-      _errorMessage = 'Failed to send reset link: ${e.toString()}';
+      _errorMessage = e.toString();
       notifyListeners();
     }
   }
 
-  Future<void> validateResetCode(String resetCode) async {
-    // Backend team: This function needs implementation
-    final isValid = await _validateResetCodeWithBackend(resetCode);
-    if (!isValid) {
-      throw Exception('Invalid reset code');
+
+  Future<void> verifyResetCompletion() async {
+    _isLoading = true;
+    _hasError = false;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Check if password was recently reset using Auth Service
+      final wasReset = await _authService.checkRecentPasswordReset(_email);
+
+      if (wasReset) {
+        _successMessage = "Password reset successfully! You can now login with your new password.";
+        _navigateToRoute = '/login';
+        _navigationArguments = {
+          'message': 'Password reset successfully! Please login with your new password.',
+          'email': _email,
+        };
+        _isLoading = false;
+        notifyListeners();
+      } else {
+        throw Exception('Password reset not completed yet. Please check your email and click the reset link. Don\'t forget to check your spam folder!');
+      }
+    } catch (e) {
+      _isLoading = false;
+      _hasError = true;
+      _errorMessage = e.toString();
+      notifyListeners();
     }
   }
 
-  Future<void> updateNewPassword(String newPassword, String confirmPassword) async {
-    if (newPassword != confirmPassword) {
-      throw Exception('Passwords do not match');
-    }
+  // ======================
+  // VALIDATION METHODS
+  // ======================
 
-    // Backend team: This function needs implementation
-    await _updateNewPasswordInBackend(newPassword);
-  }
-
-  // Navigation methods
-  void navigateToLogin() {
-    _navigateToRoute = '/login';
-    _navigationArguments = null;
-    notifyListeners();
-  }
-
-  void navigateToSignUp() {
-    _navigateToRoute = '/signup';
-    _navigationArguments = null;
-    notifyListeners();
-  }
-
-  void clearNavigation() {
-    _navigateToRoute = null;
-    _navigationArguments = null;
-  }
-
-  // Helper methods
-  bool _validateForm() {
+  bool _validateEmailStep() {
     if (_email.isEmpty) {
       _hasError = true;
       _errorMessage = TextComponents.emailRequired;
@@ -160,6 +139,78 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     return emailRegex.hasMatch(email);
   }
 
+  // ======================
+  // UI STATE MANAGEMENT
+  // ======================
+
+  void goToPreviousStep() {
+    if (_currentStep > 0) {
+      _currentStep--;
+      _clearErrors();
+      _successMessage = null;
+      notifyListeners();
+    } else {
+      navigateToLogin();
+    }
+  }
+
+  bool get canGoBack => _currentStep > 0;
+
+  String get currentStepTitle {
+    switch (_currentStep) {
+      case 0:
+        return 'Reset your password';
+      case 1:
+        return 'Check your email';
+      default:
+        return 'Reset Password';
+    }
+  }
+
+  String get currentStepDescription {
+    switch (_currentStep) {
+      case 0:
+        return 'Enter your email address and we\'ll send you a link to reset your password';
+      case 1:
+        return 'We\'ve sent a password reset link to:\n\n$_email\n\nPlease check your email and click the link to reset your password. Don\'t forget to check your spam folder if you can\'t find it!';
+      default:
+        return 'Reset your password';
+    }
+  }
+
+  String get primaryButtonText {
+    switch (_currentStep) {
+      case 0:
+        return 'Send Reset Link';
+      case 1:
+        return 'Return to Login';
+      default:
+        return 'Continue';
+    }
+  }
+
+  // ======================
+  // NAVIGATION METHODS
+  // ======================
+
+  void navigateToLogin() {
+    _navigateToRoute = '/login';
+    _navigationArguments = {
+      'message': 'Password reset link sent! Please check your email.',
+      'email': _email,
+    };
+    notifyListeners();
+  }
+
+  void clearNavigation() {
+    _navigateToRoute = null;
+    _navigationArguments = null;
+  }
+
+  // ======================
+  // HELPER METHODS
+  // ======================
+
   void _clearErrors() {
     if (_hasError) {
       _hasError = false;
@@ -169,9 +220,35 @@ class ForgotPasswordViewModel extends ChangeNotifier {
 
   void resetForm() {
     _email = '';
+    _currentStep = 0;
     _hasError = false;
     _errorMessage = null;
     _successMessage = null;
     notifyListeners();
+  }
+
+  // Resend reset link
+  Future<void> resendResetLink() async {
+    _isLoading = true;
+    _hasError = false;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _authService.resetPassword(_email);
+
+      if (result['success'] == true) {
+        _successMessage = 'Reset link sent again to $_email\n\nPlease check your email and spam folder.';
+        _isLoading = false;
+        notifyListeners();
+      } else {
+        throw Exception(result['error'] ?? 'Failed to resend reset link');
+      }
+    } catch (e) {
+      _isLoading = false;
+      _hasError = true;
+      _errorMessage = 'Failed to resend link: ${e.toString()}';
+      notifyListeners();
+    }
   }
 }

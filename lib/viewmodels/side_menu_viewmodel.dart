@@ -1,116 +1,121 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:roomantics/services/auth_service.dart';
+import 'package:roomantics/models/user.dart' as models;
+import 'package:roomantics/services/cloudinary_service.dart';
 
 class SideMenuViewModel extends ChangeNotifier {
-  String? _userName;
+  final AuthService _authService = AuthService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
+
   String? _navigateToRoute;
   dynamic _navigationArguments;
+  models.User? _currentUser;
+  bool _isLoading = false;
 
   SideMenuViewModel({String? userName}) {
-    _userName = userName;
-    _fetchUserProfile(); // Load user data on initialization
+    _fetchUserProfile();
   }
-
-  // ======================
-  // BACKEND INTEGRATION POINTS
-  // ======================
-
-  // TODO: Backend - Implement fetchUserProfile()
-  // Description: Pulls user data (name, email, profile picture) from users table
-  // Expected: Returns user profile data including name, email, profile picture URL
-  Future<void> _fetchUserProfile() async {
-    // Backend team to implement:
-    // - Query users table for current user
-    // - Return user data including display name, email, profile picture
-    // - Update _userName with actual data from database
-
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
-
-    // Mock implementation - replace with actual backend call
-    if (_userName == null) {
-      // Backend team: Replace this with actual user data fetch
-      _userName = 'Bulelwa'; // This should come from users table
-    }
-
-    notifyListeners();
-  }
-
-  // TODO: Backend - Implement updateProfilePicture()
-  // Description: Updates profile picture field in users table
-  // Expected: Returns success status and new picture URL
-  Future<void> updateProfilePicture(String imagePath) async {
-    // Backend team to implement:
-    // - Upload image to storage
-    // - Update profile_picture field in users table
-    // - Return new image URL
-
-    debugPrint("Updating profile picture - BACKEND NEEDED");
-    // Backend team: Implement image upload and database update
-
-    notifyListeners();
-  }
-
-  // TODO: Backend - Implement logoutUser()
-  // Description: Logs out the current user and clears session
-  // Expected: Returns success status
-  Future<void> logoutUser() async {
-    // Backend team to implement:
-    // - Clear authentication tokens/session
-    // - Navigate to login page
-    // - Clear any user-specific cached data
-
-    debugPrint("Logging out user - BACKEND NEEDED");
-
-    // After backend logout, navigate to login
-    _navigateToRoute = '/login';
-    notifyListeners();
-  }
-
-  // ======================
-  //PUBLIC METHODS & GETTERS
-  // ======================
 
   // Getters
   String? get navigateToRoute => _navigateToRoute;
   dynamic get navigationArguments => _navigationArguments;
+  bool get isLoading => _isLoading;
+  String get userNameDisplay => _currentUser?.displayName ?? 'User';
+  String? get userEmail => _currentUser?.email;
+  String? get profileImageUrl => _currentUser?.profileImageUrl;
+  models.User? get currentUser => _currentUser;
 
-  String get userNameDisplay => _userName ?? 'User';
+  // Fetch user profile from AuthService
+  Future<void> _fetchUserProfile() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _currentUser = await _authService.getCurrentUserModel();
+      print('User profile loaded: ${_currentUser?.displayName}');
+    } catch (e) {
+      print('Error fetching user profile: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Update profile picture
+  Future<void> updateProfilePicture(String imagePath) async {
+    try {
+      print('Uploading profile picture...');
+
+      final userId = _authService.currentUserId;
+      if (userId == null) {
+        print('User not authenticated');
+        return;
+      }
+
+      final imageFile = File(imagePath);
+
+      final imageUrl = await _cloudinaryService.uploadProfileImageUnsigned(
+        imageFile,
+        userId,
+      );
+
+      await _authService.updatePhotoURL(imageUrl);
+
+      await _fetchUserProfile();
+
+      print('Profile picture updated');
+    } catch (e) {
+      print('Error updating profile picture: $e');
+    }
+  }
+
+  Future<void> logoutUser() async {
+    try {
+      print('Logging out...');
+      await _authService.signOut();
+
+      _navigateToRoute = '/logout';
+      notifyListeners();
+
+      print('Logout successful');
+    } catch (e) {
+      print('Logout error: $e');
+    }
+  }
 
   // Menu items configuration
   List<Map<String, dynamic>> get menuItems => [
     {
       'text': 'Home',
-      'icon': Icons.home,
+      'icon': Icons.home_outlined,
       'route': '/home',
     },
     {
       'text': 'Catalogue',
-      'icon': Icons.shopping_bag,
+      'icon': Icons.shopping_bag_outlined,
       'route': '/catalogue',
     },
     {
       'text': 'My Likes',
-      'icon': Icons.favorite,
-      'route': '/likes',
+      'icon': Icons.favorite_outline,
+      'route': '/my-likes',
     },
     {
-      'text': 'My Projects',
-      'icon': Icons.work,
-      'route': '/projects',
+      'text': 'Roomie Lab',
+      'icon': Icons.work_outline,
+      'route': '/roomieLab',
     },
     {
       'text': 'Settings',
-      'icon': Icons.settings,
+      'icon': Icons.settings_outlined,
       'route': '/settings',
     },
     {
       'text': 'Help & Support',
-      'icon': Icons.help,
+      'icon': Icons.help_outline,
       'route': '/help',
-    },
-    {
-      'text': 'Forgot Password',
-      'icon': Icons.lock_reset,
-      'route': '/forgot_password',
     },
   ];
 
@@ -122,8 +127,13 @@ class SideMenuViewModel extends ChangeNotifier {
   }
 
   void onEditProfileTapped() {
-    _navigateToRoute = '/edit_profile';
-    _navigationArguments = {'editMode': true};
+    _navigateToRoute = '/edit-profile';
+    _navigationArguments = null;
+    notifyListeners();
+  }
+
+  void onRoomieLabTapped(){
+    _navigateToRoute = '/roomieLab';
     notifyListeners();
   }
 
@@ -133,16 +143,13 @@ class SideMenuViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Update user name (for when backend provides real data)
-  void updateUserName(String newName) {
-    _userName = newName;
-    notifyListeners();
+  // Refresh user data
+  Future<void> refreshUserProfile() async {
+    await _fetchUserProfile();
   }
 
-  // Dispose method
   @override
   void dispose() {
-    // Clean up any resources if needed
     super.dispose();
   }
 }

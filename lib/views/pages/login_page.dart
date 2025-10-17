@@ -222,7 +222,6 @@ class LoginPage extends StatelessWidget {
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: AppColors.white,
-                                          decoration: TextDecoration.underline,
                                         )
                                     ),
                                   ),

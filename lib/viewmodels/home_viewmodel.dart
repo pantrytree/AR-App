@@ -1,18 +1,67 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '/services/furniture_service.dart';
+import '/services/room_service.dart';
+import '/services/project_service.dart';
+import '/services/auth_service.dart';
+import '/models/furniture_item.dart';
+import '/models/project.dart';
+import '/models/user.dart' as models;
 
 class HomeViewModel extends ChangeNotifier {
-  // Navigation properties
-  String? _navigateToRoute;
-  dynamic _navigationArguments;
+  final FurnitureService _furnitureService;
+  final RoomService _roomService;
+  final ProjectService _projectService;
+  final AuthService _authService;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  static HomeViewModel? _instance;
+  static HomeViewModel get instance {
+    _instance ??= HomeViewModel(
+      furnitureService: FurnitureService(),
+      roomService: RoomService(),
+      projectService: ProjectService(),
+      authService: AuthService(),
+    );
+    return _instance!;
+  }
+
+  HomeViewModel({
+    required FurnitureService furnitureService,
+    required RoomService roomService,
+    required ProjectService projectService,
+    required AuthService authService,
+  })  : _furnitureService = furnitureService,
+        _roomService = roomService,
+        _projectService = projectService,
+        _authService = authService {
+    _initialize();
+  }
+
+  // Stream subscriptions
+  StreamSubscription<List<Map<String, dynamic>>>? _roomsStreamSubscription;
+  StreamSubscription<DocumentSnapshot>? _userProfileSubscription;
+
+  // State
   bool _isLoading = false;
   bool _hasError = false;
   String? _errorMessage;
   int _selectedIndex = 0;
 
-  // Real data properties - will be populated by backend
-  String? _userName;
-  List<dynamic> _recentlyUsedItems = [];
-  List<dynamic> _userRooms = [];
+  // Real data properties
+  models.User? _currentUser;
+  List<FurnitureItem> _recentlyViewedItems = [];
+  List<Project> _userProjects = [];
+  List<Map<String, dynamic>> _rooms = [];
+  String _userDisplayName = 'User';
+  String? _userPhotoUrl;
+
+  // Navigation
+  String? _navigateToRoute;
+  dynamic _navigationArguments;
 
   // Getters
   String? get navigateToRoute => _navigateToRoute;
@@ -21,94 +70,244 @@ class HomeViewModel extends ChangeNotifier {
   bool get hasError => _hasError;
   String? get errorMessage => _errorMessage;
   int get selectedIndex => _selectedIndex;
+  String get userName => _userDisplayName;
+  String get userDisplayName => _userDisplayName;
+  String? get userPhotoUrl => _userPhotoUrl;
+  models.User? get currentUser => _currentUser;
+  List<FurnitureItem> get recentlyViewedItems => _recentlyViewedItems;
+  List<Map<String, dynamic>> get rooms => _rooms;
 
-  // Backend data getters
-  String? get userName => _userName;
-  List<dynamic> get recentlyUsedItems => _recentlyUsedItems.isNotEmpty ? _recentlyUsedItems : _recentlyUsedItemsMock;
-  List<dynamic> get userRooms => _userRooms.isNotEmpty ? _userRooms : _userRoomsMock;
-
-  // Mock data - fallback until backend is implemented
-  List<dynamic> get _recentlyUsedItemsMock => [
-    {'id': '1', 'name': 'Pink Bed', 'imageUrl': null},
-    {'id': '2', 'name': 'Silver Lamp', 'imageUrl': null},
-    {'id': '3', 'name': 'Wooden Desk', 'imageUrl': null},
-    {'id': '4', 'name': 'Grey Couch', 'imageUrl': null},
-  ];
-
-  List<dynamic> get _userRoomsMock => [
-    {'id': '1', 'roomName': 'Living Room', 'roomType': 'living_room'},
-    {'id': '2', 'roomName': 'Dining Room', 'roomType': 'dining_room'},
-    {'id': '3', 'roomName': 'Office', 'roomType': 'office'},
-    {'id': '4', 'roomName': 'Kitchen', 'roomType': 'kitchen'},
-  ];
-
-  dynamic get currentUser => {'displayName': _userName ?? 'Bulelwa'};
-
-  // ======================
-  // BACKEND INTEGRATION POINTS
-  // ======================
-
-  // TODO: Backend - Implement fetchUserName()
-  // Description: Gets the current user's name from the users table
-  // Expected: Returns String (user name)
-  Future<String?> _fetchUserName() async {
-    // Backend team to implement:
-    // - Query users table for current user
-    // - Return user's display name
-    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-    return 'Bulelwa'; // Mock response
+  // Data getters for UI compatibility
+  List<Map<String, dynamic>> get recentlyUsedItems {
+    return _recentlyViewedItems.map((item) => {
+      'id': item.id,
+      'name': item.name,
+      'imageUrl': item.imageUrl,
+      'roomType': item.roomType,
+      'category': item.category,
+    }).toList();
   }
 
-  // TODO: Backend - Implement fetchRecentlyUsedItems()
-  // Description: Retrieves items from recently_used_items table
-  // Expected: Returns List<Map> with item data
-  Future<List<dynamic>> _fetchRecentlyUsedItems() async {
-    // Backend team to implement:
-    // - Query recently_used_items table for current user
-    // - Return list of recently used furniture items
-    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-    return _recentlyUsedItemsMock; // Mock response
+  // Room categories - using the dynamically loaded rooms
+  List<Map<String, dynamic>> get roomCategories {
+    return _rooms.map((room) => {
+      'id': room['name'],
+      'name': room['name'] as String,
+      'category': (room['name'] as String).toLowerCase().replaceAll(' ', '_'),
+      'imageUrl': null,
+      'itemCount': '${room['itemCount']}${(room['itemCount'] as int) >= 10 ? '+' : ''}',
+      'icon': room['icon'],
+    }).toList();
   }
 
-  // TODO: Backend - Implement fetchRoomCategories()
-  // Description: Loads data from room_categories table
-  // Expected: Returns List<Map> with room categories
-  Future<List<dynamic>> _fetchRoomCategories() async {
-    // Backend team to implement:
-    // - Query room_categories table
-    // - Return list of available room categories
-    await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-    return _userRoomsMock; // Mock response
+  // User projects (separate for other uses)
+  List<Map<String, dynamic>> get userProjects {
+    return _userProjects.map((project) => {
+      'id': project.id,
+      'name': project.name,
+      'roomType': project.roomType,
+      'imageUrl': project.imageUrl,
+    }).toList();
   }
 
-  // ======================
-  // PUBLIC METHODS
-  // ======================
+  // Available room types
+  List<Map<String, String>> get availableRoomTypes {
+    return _rooms.map((room) => {
+      'id': room['name'] as String,
+      'name': room['name'] as String,
+      'type': room['name'] as String,
+    }).toList();
+  }
+
+  void resetToHome() {
+    _selectedIndex = 0;
+    _navigateToRoute = null;
+    _navigationArguments = null;
+    notifyListeners();
+  }
+
+  void _initialize() {
+    _loadUserProfile();
+    _loadRecentlyViewed();
+    _setupRoomsStream();
+    _setupUserProfileStream();
+    _loadUserProjects();
+  }
+
+  // Setup real-time stream for user profile
+  void _setupUserProfileStream() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    _userProfileSubscription = _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen(
+          (snapshot) {
+        if (snapshot.exists) {
+          final data = snapshot.data();
+          _userDisplayName = data?['displayName'] as String? ??
+              data?['name'] as String? ??
+              _auth.currentUser?.displayName ??
+              'User';
+          _userPhotoUrl = data?['photoUrl'] as String? ??
+              data?['profilePicture'] as String? ??
+              _auth.currentUser?.photoURL;
+          notifyListeners();
+        }
+      },
+      onError: (error) {
+        print('Error in user profile stream: $error');
+      },
+    );
+  }
+
+  // Load user profile
+  Future<void> _loadUserProfile() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        _userDisplayName = 'Guest';
+        return;
+      }
+
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        _userDisplayName = data?['displayName'] as String? ??
+            data?['name'] as String? ??
+            _auth.currentUser?.displayName ??
+            'User';
+        _userPhotoUrl = data?['photoUrl'] as String? ??
+            data?['profilePicture'] as String? ??
+            _auth.currentUser?.photoURL;
+      } else {
+        _userDisplayName = _auth.currentUser?.displayName ?? 'User';
+        _userPhotoUrl = _auth.currentUser?.photoURL;
+      }
+
+      _currentUser = await _authService.getCurrentUserModel();
+
+      notifyListeners();
+    } catch (e) {
+      print('Error loading user profile: $e');
+      _userDisplayName = _auth.currentUser?.displayName ?? 'User';
+    }
+  }
+
+  void _setupRoomsStream() {
+    _roomsStreamSubscription = _roomService.streamRoomsWithCounts().listen(
+          (rooms) {
+        _rooms = rooms;
+        notifyListeners();
+      },
+      onError: (error) {
+        print('Error in rooms stream: $error');
+        _errorMessage = 'Failed to load rooms';
+        notifyListeners();
+      },
+    );
+  }
+
+  // Load recently viewed items using the RecentlyViewed model
+  Future<void> _loadRecentlyViewed() async {
+    try {
+      print('Loading recently viewed items...');
+      _recentlyViewedItems = await _furnitureService.getRecentlyViewed();
+      print('Loaded ${_recentlyViewedItems.length} recently viewed items');
+      notifyListeners();
+    } catch (e) {
+      print('Error loading recently viewed: $e');
+      _recentlyViewedItems = [];
+    }
+  }
+
+  // Load user projects
+  Future<void> _loadUserProjects() async {
+    try {
+      _userProjects = await _projectService.getProjects();
+      print('Loaded ${_userProjects.length} user projects');
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching projects: $e');
+      _userProjects = [];
+    }
+  }
+
+  // Initialize - called on first load
+  Future<void> initialize() async {
+    await refreshHomePage();
+  }
+
+  // Refresh all data
+  Future<void> refresh() async {
+    await refreshHomePage();
+  }
 
   // Refresh home page data - calls all backend functions
   Future<void> refreshHomePage() async {
+    if (_isLoading) return;
+
     _isLoading = true;
     _hasError = false;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Backend team: These functions need implementation
-      _userName = await _fetchUserName();
-      _recentlyUsedItems = await _fetchRecentlyUsedItems();
-      _userRooms = await _fetchRoomCategories();
+      print('Refreshing home page data...');
+
+      // Fetch all data in parallel for better performance
+      await Future.wait([
+        _loadUserProfile(),
+        _loadRecentlyViewed(),
+        _loadUserProjects(),
+      ]);
 
       _isLoading = false;
+      _errorMessage = null;
+      print('Home page data loaded successfully');
       notifyListeners();
     } catch (e) {
       _isLoading = false;
       _hasError = true;
-      _errorMessage = 'Failed to load data: ${e.toString()}';
+      _errorMessage = 'Failed to load home page data';
+      print('Error refreshing home page: $e');
       notifyListeners();
     }
   }
 
-  // Bottom navigation method
+  // Track item view (for recently viewed)
+  Future<void> trackItemView(String itemId) async {
+    try {
+      await _furnitureService.trackItemView(itemId);
+      await _loadRecentlyViewed();
+    } catch (e) {
+      print('Error tracking item view: $e');
+    }
+  }
+
+  /// Get featured furniture items
+  Future<List<FurnitureItem>> getFeaturedItems() async {
+    try {
+      return await _furnitureService.getFeaturedItems();
+    } catch (e) {
+      print('Error getting featured items: $e');
+      return [];
+    }
+  }
+
+  /// Get furniture items by room type
+  Future<List<FurnitureItem>> getItemsByRoomType(String roomType) async {
+    try {
+      return await _furnitureService.getItemsByRoom(roomType);
+    } catch (e) {
+      print('Error getting items by room type: $e');
+      return [];
+    }
+  }
+
   // Bottom navigation method
   void onTabSelected(int index) {
     _selectedIndex = index;
@@ -116,61 +315,101 @@ class HomeViewModel extends ChangeNotifier {
 
     switch (index) {
       case 0: // Home
-      // Already on home, do nothing
+        refreshHomePage();
         break;
       case 1: // Favorites
-        _navigateToRoute = '/likes';
+        _navigateToRoute = '/my-likes';
         notifyListeners();
         break;
       case 2: // AR View (Camera)
-        _navigateToRoute = '/camera_page'; // CHANGED: Navigate to camera page
+        _navigateToRoute = '/camera-page';
         notifyListeners();
         break;
-      case 3: // Shopping Bag - NOW GOES TO CATALOGUE
+      case 3:
         _navigateToRoute = '/catalogue';
         notifyListeners();
         break;
       case 4: // Profile
-        _navigateToRoute = '/edit_profile';
+        _navigateToRoute = '/account-hub';
         notifyListeners();
         break;
     }
   }
 
-  // Navigation methods
+  // Navigate to furniture catalogue with room filter
+  void navigateToRoomCatalogue(String roomType) {
+    _navigateToRoute = '/catalogue';
+    _navigationArguments = {'initialRoom': roomType};
+    notifyListeners();
+  }
+
+  // Navigate to furniture item details
+  void navigateToFurnitureItem(String itemId) {
+    _navigateToRoute = '/catalogue-item';
+    _navigationArguments = {'productId': itemId};
+    notifyListeners();
+
+    // Track the view
+    trackItemView(itemId);
+  }
+
+  // Navigate to full catalogue
+  void navigateToCatalogue() {
+    _navigateToRoute = '/catalogue';
+    _navigationArguments = null;
+    notifyListeners();
+  }
+
+  // Navigation methods for compatibility
   void onSearchTapped() {
     _navigateToRoute = '/search';
     notifyListeners();
   }
 
   void onFurnitureItemTapped(String id) {
-    _navigateToRoute = '/catalogue_item';
-    _navigationArguments = {'productId': id};
-    notifyListeners();
+    navigateToFurnitureItem(id);
   }
 
-  void onRoomTapped(String id) {
-    _navigateToRoute = '/catalogue';
-    _navigationArguments = {'roomId': id};
-    notifyListeners();
+  // Room tapped - navigate to catalogue with room filter
+  void onRoomTapped(String roomType) {
+    navigateToRoomCatalogue(roomType);
   }
 
-  void onAllRoomsTitleTapped() {
-    _navigateToRoute = '/catalogue';
+  // Category tapped - navigate to catalogue with room filter
+  void onCategoryTapped(String category) {
+    final roomType = category
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+    navigateToRoomCatalogue(roomType);
+  }
+
+  // All categories - navigate to full catalogue
+  void onAllCategoriesTapped() {
+    navigateToCatalogue();
   }
 
   void onShoppingBagTapped() {
-    _navigateToRoute = '/catalogue';
+    navigateToCatalogue();
   }
 
   void clearNavigation() {
     _navigateToRoute = null;
     _navigationArguments = null;
-    notifyListeners();
+  }
+
+  /// Check if user is authenticated
+  bool get isAuthenticated => _authService.isAuthenticated;
+
+  /// Retry loading data after error
+  Future<void> retryLoad() async {
+    await refreshHomePage();
   }
 
   @override
   void dispose() {
+    _roomsStreamSubscription?.cancel();
+    _userProfileSubscription?.cancel();
     super.dispose();
   }
 }

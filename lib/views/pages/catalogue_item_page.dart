@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/utils/colors.dart';
-import '../../../utils/text_components.dart';
-import '../../theme/theme.dart';
+import '/utils/text_components.dart';
+import '/theme/theme.dart';
+import '/services/furniture_service.dart';
+import '/services/favorites_service.dart';
+import '/models/furniture_item.dart';
 
 class CatalogueItemPage extends StatefulWidget {
   final String? productId;
@@ -17,31 +20,162 @@ class CatalogueItemPage extends StatefulWidget {
 }
 
 class _CatalogueItemPageState extends State<CatalogueItemPage> {
-  String _productTitle = "Queen Bed";
-  String _productDimensions = "80×80 cm";
-  String _productDescription = "Custom-made, handcrafted furniture designed to fit your unique style and space.";
+  final FurnitureService _furnitureService = FurnitureService();
+  final FavoritesService _favoritesService = FavoritesService();
+
+  FurnitureItem? _furnitureItem;
+  List<FurnitureItem> _relatedItems = [];
   bool _isFavorite = false;
+  bool _isLoading = true;
+  bool _isLoadingFavorite = false;
+  String? _errorMessage;
 
-  final List<Map<String, String>> _relatedItems = [
-    {"title": "Bedside Table", "dimensions": "30×60 cm", "id": "1"},
-    {"title": "Wardrobe", "dimensions": "120×200 cm", "id": "2"},
-    {"title": "Dresser", "dimensions": "40×80 cm", "id": "3"},
-  ];
-
-  void _openInAR() {
-    print("Opening in AR - navigating to camera page");
-    Navigator.pushNamed(context, '/camera_page');
+  @override
+  void initState() {
+    super.initState();
+    _loadFurnitureData();
   }
 
-  void _toggleFavorite() {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Get productId from arguments if not provided in constructor
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final productId = widget.productId ?? args?['productId'];
+
+    if (productId != null && _furnitureItem?.id != productId) {
+      _loadFurnitureData();
+    }
+  }
+
+  Future<void> _loadFurnitureData() async {
     setState(() {
-      _isFavorite = !_isFavorite;
+      _isLoading = true;
+      _errorMessage = null;
     });
-    print("${_isFavorite ? 'Added' : 'Removed'} from favorites");
+
+    try {
+      // Get productId from arguments or widget
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final productId = widget.productId ?? args?['productId'];
+
+      if (productId == null) {
+        throw Exception('No product ID provided');
+      }
+
+      print('Loading furniture item: $productId');
+
+      // Load furniture item
+      final item = await _furnitureService.getFurnitureItem(productId);
+
+      // Check if it's a favorite
+      final isFav = await _favoritesService.isFavorite(productId);
+
+      // Track view
+      await _furnitureService.trackItemView(productId);
+
+      // Load related items based on category or room type
+      final related = await _furnitureService.getFurnitureItems(
+        category: item.category,
+        useFirestore: true,
+      );
+
+      // Remove current item from related items
+      final filteredRelated = related.where((i) => i.id != productId).take(3).toList();
+
+      if (mounted) {
+        setState(() {
+          _furnitureItem = item;
+          _isFavorite = isFav;
+          _relatedItems = filteredRelated;
+          _isLoading = false;
+        });
+      }
+
+      print('Loaded furniture item: ${item.name}');
+    } catch (e) {
+      print('Error loading furniture: $e');
+
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load furniture details';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_furnitureItem == null || _isLoadingFavorite) return;
+
+    setState(() {
+      _isLoadingFavorite = true;
+    });
+
+    try {
+      print('Toggling favorite for: ${_furnitureItem!.id}');
+
+      final newStatus = await _favoritesService.toggleFavorite(_furnitureItem!.id);
+
+      if (mounted) {
+        setState(() {
+          _isFavorite = newStatus;
+          _isLoadingFavorite = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newStatus
+                  ? 'Added to favorites'
+                  : 'Removed from favorites',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: newStatus ? Colors.green : Colors.grey,
+          ),
+        );
+
+        print('Favorite toggled: $newStatus');
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+
+      if (mounted) {
+        setState(() {
+          _isLoadingFavorite = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update favorite'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _openInAR() {
+    if (_furnitureItem == null) return;
+
+    print('Opening in AR: ${_furnitureItem!.name}');
+
+    Navigator.pushNamed(
+      context,
+      '/camera-page',
+      arguments: {
+        'furnitureItem': _furnitureItem,
+      },
+    );
   }
 
   void _navigateToRelatedItem(String productId) {
-    Navigator.pushNamed(context, '/catalogue_item', arguments: {'productId': productId});
+    Navigator.pushReplacementNamed(
+      context,
+      '/catalogue-item',
+      arguments: {'productId': productId},
+    );
   }
 
   @override
@@ -52,7 +186,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
           backgroundColor: AppColors.getBackgroundColor(context),
           appBar: AppBar(
             title: Text(
-              "Product Details",
+              "Furniture Details",
               style: TextStyle(
                 color: AppColors.getAppBarForeground(context),
                 fontWeight: FontWeight.bold,
@@ -61,127 +195,351 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
             backgroundColor: AppColors.getAppBarBackground(context),
             foregroundColor: AppColors.getAppBarForeground(context),
             elevation: 0,
-            iconTheme: IconThemeData(color: AppColors.getAppBarForeground(context)),
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product Title and Dimensions
-                Text(
-                  _productTitle,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.getTextColor(context),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _productDimensions,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.getSecondaryTextColor(context),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Product Image
-                Container(
-                  height: 250,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColors.getCardBackground(context),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.shadowColor,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.photo,
-                    size: 60,
-                    color: AppColors.getPrimaryColor(context),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Product Description
-                Text(
-                  _productDescription,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.getTextColor(context),
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Action Buttons (Open in AR, Add to Favorites)
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _openInAR,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.getPrimaryColor(context),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text("Open in AR"),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      onPressed: _toggleFavorite,
-                      icon: Icon(
-                        _isFavorite ? Icons.favorite : Icons.favorite_border,
-                        size: 30,
-                        color: _isFavorite ? AppColors.likesHeart : AppColors.getPrimaryColor(context),
-                      ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.getCardBackground(context),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-
-                // Related Items Section
-                Text(
-                  "More to explore",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.getTextColor(context),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Related Items
-                ..._relatedItems.map((item) =>
-                    _buildRelatedItem(
-                        context,
-                        item["title"]!,
-                        item["dimensions"]!,
-                        item["id"]!
-                    )
-                ),
-              ],
+            iconTheme: IconThemeData(
+              color: AppColors.getAppBarForeground(context),
             ),
+            actions: [
+              // Refresh button
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadFurnitureData,
+              ),
+            ],
           ),
+          body: _buildBody(),
         );
       },
     );
   }
 
-  Widget _buildRelatedItem(BuildContext context, String title, String dimensions, String productId) {
+  Widget _buildBody() {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (_errorMessage != null || _furnitureItem == null) {
+      return _buildErrorState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadFurnitureData,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 20),
+            _buildImage(),
+            const SizedBox(height: 20),
+            _buildDescription(),
+            const SizedBox(height: 30),
+            _buildActionButtons(),
+            const SizedBox(height: 30),
+            _buildRelatedItemsSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: AppColors.getPrimaryColor(context),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading furniture details...',
+            style: TextStyle(
+              color: AppColors.getSecondaryTextColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load furniture',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.getTextColor(context),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Please try again',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadFurnitureData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.getPrimaryColor(context),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _furnitureItem!.name,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextColor(context),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            if (_furnitureItem!.dimensions != null) ...[
+              Icon(
+                Icons.straighten,
+                size: 16,
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                _furnitureItem!.dimensions!,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.getSecondaryTextColor(context),
+                ),
+              ),
+            ],
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.getPrimaryColor(context).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _furnitureItem!.category,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.getPrimaryColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImage() {
+    return Container(
+      height: 250,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.getCardBackground(context),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: _furnitureItem!.imageUrl != null
+          ? ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          _furnitureItem!.imageUrl!,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                    loadingProgress.expectedTotalBytes!
+                    : null,
+                color: AppColors.getPrimaryColor(context),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return _buildPlaceholderImage();
+          },
+        ),
+      )
+          : _buildPlaceholderImage(),
+    );
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Center(
+      child: Icon(
+        _getCategoryIcon(_furnitureItem!.category),
+        size: 60,
+        color: AppColors.getPrimaryColor(context),
+      ),
+    );
+  }
+
+  Widget _buildDescription() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Description',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.getTextColor(context),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _furnitureItem!.description,
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.getTextColor(context),
+            height: 1.5,
+          ),
+        ),
+        if (_furnitureItem!.color != null) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(
+                Icons.palette,
+                size: 20,
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Color: ${_furnitureItem!.color}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.getSecondaryTextColor(context),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _openInAR,
+            icon: const Icon(Icons.view_in_ar),
+            label: const Text("Open in AR"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.getPrimaryColor(context),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardBackground(context),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowColor,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: _isLoadingFavorite
+              ? Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.getPrimaryColor(context),
+              ),
+            ),
+          )
+              : IconButton(
+            onPressed: _toggleFavorite,
+            icon: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              size: 30,
+              color: _isFavorite
+                  ? AppColors.likesHeart
+                  : AppColors.getPrimaryColor(context),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRelatedItemsSection() {
+    if (_relatedItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Similar Furniture",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextColor(context),
+          ),
+        ),
+        const SizedBox(height: 16),
+        ..._relatedItems.map((item) => _buildRelatedItem(context, item)),
+      ],
+    );
+  }
+
+  Widget _buildRelatedItem(BuildContext context, FurnitureItem item) {
     return GestureDetector(
-      onTap: () => _navigateToRelatedItem(productId),
+      onTap: () => _navigateToRelatedItem(item.id),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -198,16 +556,28 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
         ),
         child: Row(
           children: [
-            // Item icon
+            // Furniture image or icon
             Container(
-              width: 50,
-              height: 50,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
-                color: AppColors.primaryLightPurple, // Keep brand color for icons
+                color: AppColors.primaryLightPurple.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                Icons.chair,
+              child: item.imageUrl != null
+                  ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  item.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(
+                    _getCategoryIcon(item.category),
+                    color: AppColors.getPrimaryColor(context),
+                  ),
+                ),
+              )
+                  : Icon(
+                _getCategoryIcon(item.category),
                 color: AppColors.getPrimaryColor(context),
               ),
             ),
@@ -217,20 +587,21 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    item.name,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.getTextColor(context),
                     ),
                   ),
-                  Text(
-                    dimensions,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.getSecondaryTextColor(context),
+                  if (item.dimensions != null)
+                    Text(
+                      item.dimensions!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.getSecondaryTextColor(context),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -243,5 +614,20 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
         ),
       ),
     );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    final lowerCategory = category.toLowerCase();
+    if (lowerCategory.contains('chair')) return Icons.chair_rounded;
+    if (lowerCategory.contains('sofa')) return Icons.weekend_rounded;
+    if (lowerCategory.contains('table')) return Icons.table_restaurant_rounded;
+    if (lowerCategory.contains('bed')) return Icons.bed_rounded;
+    if (lowerCategory.contains('lamp') || lowerCategory.contains('light')) {
+      return Icons.light_rounded;
+    }
+    if (lowerCategory.contains('cabinet') || lowerCategory.contains('storage')) {
+      return Icons.kitchen_rounded;
+    }
+    return Icons.chair_rounded;
   }
 }
