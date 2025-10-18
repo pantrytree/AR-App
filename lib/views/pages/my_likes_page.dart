@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:roomantics/viewmodels/my_likes_page_viewmodel.dart';
+import 'package:Roomantics/viewmodels/my_likes_page_viewmodel.dart';
 import '/utils/colors.dart';
 import '../../theme/theme.dart';
 import '/utils/text_components.dart';
+import 'catalogue_item_page.dart';
 import 'catalogue_page.dart';
 import '/models/furniture_item.dart';
 
@@ -51,6 +52,17 @@ class _MyLikesPageState extends State<MyLikesPage>
   Future<void> _loadInitialData() async {
     final viewModel = Provider.of<MyLikesViewModel>(context, listen: false);
     await viewModel.loadLikedItems();
+  }
+
+  void _navigateToItemDetails(BuildContext context, FurnitureItem item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CatalogueItemPage(
+          productId: item.id,
+        ),
+      ),
+    );
   }
 
   @override
@@ -401,9 +413,9 @@ class _MyLikesPageState extends State<MyLikesPage>
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.85,
       ),
       itemCount: filteredItems.length,
       itemBuilder: (context, index) => _buildFurnitureCard(
@@ -419,23 +431,35 @@ class _MyLikesPageState extends State<MyLikesPage>
       FurnitureItem item,
       MyLikesViewModel viewModel,
       ) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: () {
+        _navigateToItemDetails(context, item);
+      },
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: 180,
+            maxHeight: 200,
+          ),
+          child: Stack(
             children: [
-              // Furniture image
-              _buildItemImage(item),
-              // Item details
-              _buildItemDetails(item),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildItemImage(item),
+                  Expanded(
+                    child: _buildItemDetails(item),
+                  ),
+                ],
+              ),
+              // Favorite button
+              _buildFavoriteButton(context, item, viewModel),
             ],
           ),
-          // Favorite button
-          _buildFavoriteButton(context, item, viewModel),
-        ],
+        ),
       ),
     );
   }
@@ -478,50 +502,59 @@ class _MyLikesPageState extends State<MyLikesPage>
   }
 
   Widget _buildItemDetails(FurnitureItem item) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
+    return Container(
+      padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.max,
         children: [
-          Text(
-            item.name,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.getTextColor(context),
+          Flexible(
+            child: Text(
+              item.name,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.getTextColor(context),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
+
           const SizedBox(height: 4),
+
           if (item.dimensions?.isNotEmpty ?? false)
             Text(
               item.dimensions!,
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: 10,
                 color: AppColors.getSecondaryTextColor(context),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-          if (item.category.isNotEmpty) ...[
-            const SizedBox(height: 4),
+
+          const SizedBox(height: 4),
+
+          if (item.category.isNotEmpty)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
                 color: AppColors.getPrimaryColor(context).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(3),
               ),
               child: Text(
                 item.category,
                 style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 9,
                   color: AppColors.getPrimaryColor(context),
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ],
         ],
       ),
     );
@@ -622,7 +655,7 @@ class _MyLikesPageState extends State<MyLikesPage>
             action: SnackBarAction(
               label: 'Undo',
               onPressed: () async {
-                await viewModel.toggleFavorite(item as String);
+                await viewModel.toggleFavorite(item.id);
               },
             ),
           ),

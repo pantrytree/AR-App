@@ -47,8 +47,11 @@ class HomeViewModel extends ChangeNotifier {
 
   // State
   bool _isLoading = false;
+  bool _isUserDataLoaded = false;
+  bool get isUserDataLoaded => _isUserDataLoaded;
   bool _hasError = false;
   String? _errorMessage;
+  bool _disposed = false;
   int _selectedIndex = 0;
 
   // Real data properties
@@ -169,6 +172,7 @@ class HomeViewModel extends ChangeNotifier {
       final userId = _auth.currentUser?.uid;
       if (userId == null) {
         _userDisplayName = 'Guest';
+        _isUserDataLoaded = true;
         return;
       }
 
@@ -189,6 +193,7 @@ class HomeViewModel extends ChangeNotifier {
       }
 
       _currentUser = await _authService.getCurrentUserModel();
+      _isUserDataLoaded = true;
 
       notifyListeners();
     } catch (e) {
@@ -253,12 +258,13 @@ class HomeViewModel extends ChangeNotifier {
     _isLoading = true;
     _hasError = false;
     _errorMessage = null;
+    _isUserDataLoaded = false;
+
     notifyListeners();
 
     try {
       print('Refreshing home page data...');
 
-      // Fetch all data in parallel for better performance
       await Future.wait([
         _loadUserProfile(),
         _loadRecentlyViewed(),
@@ -407,7 +413,15 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     _roomsStreamSubscription?.cancel();
     _userProfileSubscription?.cancel();
     super.dispose();

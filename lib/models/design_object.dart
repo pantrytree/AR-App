@@ -11,6 +11,7 @@ class DesignObject {
     required this.position,
     required this.rotation,
     required this.scale,
+    String? arModelUrl,
   });
 
   // From JSON (API response)

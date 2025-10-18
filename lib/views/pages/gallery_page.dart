@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:roomantics/theme/theme.dart';
-import 'package:roomantics/utils/colors.dart';
-import 'package:roomantics/viewmodels/roomielab_viewmodel.dart';
-import 'package:roomantics/views/widgets/project_options_menu.dart';
-import 'package:roomantics/views/pages/project_full_screen_page.dart';
-import 'package:roomantics/views/pages/project_edit_page.dart';
+import 'package:Roomantics/theme/theme.dart';
+import 'package:Roomantics/utils/colors.dart';
+import 'package:Roomantics/viewmodels/roomielab_viewmodel.dart';
+import 'package:Roomantics/views/widgets/project_options_menu.dart';
+import 'package:Roomantics/views/pages/project_full_screen_page.dart';
+import 'package:Roomantics/views/pages/project_edit_page.dart';
 import '/models/project.dart';
 
 class GalleryPage extends StatefulWidget {

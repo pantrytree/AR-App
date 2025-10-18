@@ -55,7 +55,6 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
   void initState() {
     super.initState();
 
-    // ADDED: Load furniture data
     _loadFurnitureData();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -162,7 +161,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
         context,
         MaterialPageRoute(
           builder: (_) => FurnitureCataloguePage(
-            initialRoom: filterOption.value,
+            initialType: filterOption.value,
           ),
         ),
       );
@@ -292,7 +291,6 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             ),
           ),
           const SizedBox(height: 6),
-          // ADDED: Show total item count
           Text(
             _isLoadingCounts
                 ? 'Loading furniture collection...'

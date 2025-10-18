@@ -52,6 +52,8 @@ class SignUpPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 32),
+
+                              // Name Field
                               Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.9),
@@ -75,6 +77,8 @@ class SignUpPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 16),
+
+                              // Email Field
                               Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.9),
@@ -98,6 +102,8 @@ class SignUpPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 16),
+
+                              // Password Field with Requirements
                               Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.9),
@@ -115,13 +121,29 @@ class SignUpPage extends StatelessWidget {
                                     filled: true,
                                     fillColor: AppColors.white.withOpacity(0.9),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        Icons.info_outline,
+                                        color: AppColors.mediumGrey,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        _showPasswordRequirements(context);
+                                      },
+                                    ),
                                   ),
                                   obscureText: true,
                                   onChanged: model.setPassword,
                                   validator: model.passwordValidator,
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 8),
+
+                              // Password Requirements Hint
+                              _buildPasswordRequirements(model.password),
+                              const SizedBox(height: 8),
+
+                              // Confirm Password Field
                               Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.9),
@@ -146,6 +168,8 @@ class SignUpPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 32),
+
+                              // Error Message
                               if (model.errorMessage != null)
                                 Container(
                                   padding: const EdgeInsets.all(12),
@@ -163,6 +187,8 @@ class SignUpPage extends StatelessWidget {
                                   ),
                                 ),
                               const SizedBox(height: 8),
+
+                              // Sign Up Button
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
@@ -196,6 +222,8 @@ class SignUpPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 16),
+
+                              // Sign In Link
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -220,6 +248,8 @@ class SignUpPage extends StatelessWidget {
                         ),
                       ),
                     ),
+
+                    // Back button
                     SafeArea(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -249,4 +279,108 @@ class SignUpPage extends StatelessWidget {
       ),
     );
   }
+
+  // Password Requirements Widget
+  Widget _buildPasswordRequirements(String password) {
+    final requirements = [
+      _Requirement(
+        text: 'At least 8 characters',
+        fulfilled: password.length >= 8,
+      ),
+      _Requirement(
+        text: 'One uppercase letter',
+        fulfilled: RegExp(r'[A-Z]').hasMatch(password),
+      ),
+      _Requirement(
+        text: 'One lowercase letter',
+        fulfilled: RegExp(r'[a-z]').hasMatch(password),
+      ),
+      _Requirement(
+        text: 'One number',
+        fulfilled: RegExp(r'[0-9]').hasMatch(password),
+      ),
+      _Requirement(
+        text: 'One special character',
+        fulfilled: RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Password must contain:',
+          style: TextStyle(
+            color: AppColors.white,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 4),
+        ...requirements.map((req) => Row(
+          children: [
+            Icon(
+              req.fulfilled ? Icons.check_circle : Icons.circle_outlined,
+              color: req.fulfilled ? Colors.green : AppColors.white.withOpacity(0.6),
+              size: 16,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              req.text,
+              style: TextStyle(
+                color: req.fulfilled ? Colors.green : AppColors.white.withOpacity(0.6),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        )),
+      ],
+    );
+  }
+
+  // Show Password Requirements Dialog
+  void _showPasswordRequirements(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Password Requirements'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildRequirementItem('At least 8 characters'),
+            _buildRequirementItem('One uppercase letter (A-Z)'),
+            _buildRequirementItem('One lowercase letter (a-z)'),
+            _buildRequirementItem('One number (0-9)'),
+            _buildRequirementItem('One special character (!@#\$%^&*)'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequirementItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(Icons.check, color: Colors.green, size: 16),
+          const SizedBox(width: 8),
+          Text(text),
+        ],
+      ),
+    );
+  }
+}
+
+class _Requirement {
+  final String text;
+  final bool fulfilled;
+
+  _Requirement({required this.text, required this.fulfilled});
 }

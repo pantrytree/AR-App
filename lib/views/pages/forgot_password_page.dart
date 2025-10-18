@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import '/utils/colors.dart';
 import '../../../utils/text_components.dart';
@@ -18,15 +17,15 @@ class ForgotPasswordPage extends StatelessWidget {
           return Consumer<ForgotPasswordViewModel>(
             builder: (context, viewModel, child) {
               // Handle navigation
-              if (viewModel.navigateToRoute != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (viewModel.navigateToRoute != null) {
                   Navigator.pushNamed(
                     context,
                     viewModel.navigateToRoute!,
                     arguments: viewModel.navigationArguments,
                   ).then((_) => viewModel.clearNavigation());
-                });
-              }
+                }
+              });
 
               return Scaffold(
                 backgroundColor: AppColors.getBackgroundColor(context),
@@ -70,12 +69,10 @@ class ForgotPasswordPage extends StatelessWidget {
             children: [
               const SizedBox(height: 32),
 
-              // Progress indicator - Simplified to 2 steps
               _buildProgressIndicator(context, viewModel),
 
               const SizedBox(height: 32),
 
-              // Step title and description
               Text(
                 viewModel.currentStepTitle,
                 style: TextStyle(
@@ -87,7 +84,6 @@ class ForgotPasswordPage extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // Use RichText for better formatting in step 1
               if (viewModel.currentStep == 1)
                 _buildEmailDescription(context, viewModel)
               else
@@ -102,7 +98,6 @@ class ForgotPasswordPage extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              // Current step form
               Expanded(
                 child: _buildCurrentStepForm(context, viewModel),
               ),
@@ -225,63 +220,67 @@ class ForgotPasswordPage extends StatelessWidget {
   }
 
   Widget _buildEmailStep(BuildContext context, ForgotPasswordViewModel viewModel) {
-    return Column(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.getTextFieldBackground(context),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: TextField(
-            onChanged: (value) => viewModel.setEmail(value),
-            decoration: InputDecoration(
-              labelText: TextComponents.emailFieldLabel,
-              labelStyle: TextStyle(
-                color: AppColors.getSecondaryTextColor(context),
-                fontSize: 16,
-              ),
-              hintText: TextComponents.emailFieldHint,
-              hintStyle: TextStyle(
-                color: AppColors.getSecondaryTextColor(context).withOpacity(0.6),
-                fontSize: 16,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.getPrimaryColor(context),
-                  width: 1.5,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.getTextFieldBackground(context),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextField(
+              onChanged: (value) => viewModel.setEmail(value),
+              decoration: InputDecoration(
+                labelText: TextComponents.emailFieldLabel,
+                labelStyle: TextStyle(
+                  color: AppColors.getSecondaryTextColor(context),
+                  fontSize: 16,
+                ),
+                hintText: TextComponents.emailFieldHint,
+                hintStyle: TextStyle(
+                  color: AppColors.getSecondaryTextColor(context).withOpacity(0.6),
+                  fontSize: 16,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.getPrimaryColor(context),
+                    width: 1.5,
+                  ),
+                ),
+                filled: true,
+                fillColor: AppColors.getTextFieldBackground(context),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 18,
                 ),
               ),
-              filled: true,
-              fillColor: AppColors.getTextFieldBackground(context),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 18,
+              style: TextStyle(
+                color: AppColors.getTextColor(context),
+                fontSize: 16,
               ),
+              keyboardType: TextInputType.emailAddress,
             ),
-            style: TextStyle(
-              color: AppColors.getTextColor(context),
-              fontSize: 16,
-            ),
-            keyboardType: TextInputType.emailAddress,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -308,7 +307,7 @@ class ForgotPasswordPage extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         GestureDetector(
-          onTap: () => viewModel.navigateToLogin(),
+          onTap: () => _navigateToLogin(context, viewModel.email),
           child: Text(
             "Return to Login",
             style: TextStyle(
@@ -370,7 +369,7 @@ class ForgotPasswordPage extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: viewModel.isLoading ? null : () => _handlePrimaryAction(viewModel),
+        onPressed: viewModel.isLoading ? null : () => _handlePrimaryAction(context, viewModel),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.getPrimaryColor(context),
           foregroundColor: Colors.white,
@@ -400,14 +399,25 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
-  void _handlePrimaryAction(ForgotPasswordViewModel viewModel) {
+  void _handlePrimaryAction(BuildContext context, ForgotPasswordViewModel viewModel) {
     switch (viewModel.currentStep) {
       case 0:
         viewModel.sendPasswordResetEmail();
         break;
       case 1:
-        viewModel.verifyResetCompletion(); // Updated method name
+        viewModel.verifyResetCompletion();
         break;
     }
+  }
+
+  void _navigateToLogin(BuildContext context, String email) {
+    Navigator.pushNamed(
+      context,
+      '/login',
+      arguments: {
+        'message': 'Password reset link sent! Please check your email.',
+        'email': email,
+      },
+    );
   }
 }

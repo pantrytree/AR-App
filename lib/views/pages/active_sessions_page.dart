@@ -1,8 +1,10 @@
 import 'dart:async';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import '../../services/session_service.dart';
 import '../../utils/colors.dart';
 
 class ActiveSessionsPage extends StatefulWidget {
@@ -20,17 +22,25 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
   bool _isLoading = true;
   String? _error;
   StreamSubscription? _sessionsSubscription;
+  String? _currentSessionId;
 
   @override
   void initState() {
     super.initState();
-    _subscribeToSessions();
+    _getCurrentSessionId().then((_) {
+      _subscribeToSessions();
+    });
   }
 
   @override
   void dispose() {
     _sessionsSubscription?.cancel();
     super.dispose();
+  }
+
+  Future<void> _getCurrentSessionId() async {
+    final sessionService = SessionService();
+    _currentSessionId = await sessionService.generateSessionId();
   }
 
   void _subscribeToSessions() {
@@ -47,6 +57,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
         .collection('users')
         .doc(user.uid)
         .collection('sessions')
+        .where('isActive', isEqualTo: true)
         .orderBy('lastActive', descending: true)
         .snapshots()
         .listen((snapshot) {
@@ -60,19 +71,21 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
   }
 
   void _processSessions(List<DocumentSnapshot> docs) {
-    final currentSessionId = _getCurrentSessionId();
-
     _sessions = docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
       return Session(
         id: doc.id,
         device: data['deviceName'] as String? ?? 'Unknown Device',
+        model: data['model'] as String? ?? 'Unknown Model',
+        manufacturer: data['manufacturer'] as String? ?? 'Unknown',
         location: data['location'] as String? ?? 'Unknown Location',
         lastActive: _formatLastActive(data['lastActive'] as Timestamp?),
-        isCurrent: doc.id == currentSessionId,
+        isCurrent: doc.id == _currentSessionId,
         platform: data['platform'] as String? ?? 'Unknown',
-        ipAddress: data['ipAddress'] as String? ?? '',
+        ipAddress: data['ipAddress'] as String? ?? 'Unknown',
         userAgent: data['userAgent'] as String? ?? '',
+        osVersion: data['osVersion'] as String? ?? 'Unknown',
+        appVersion: data['appVersion'] as String? ?? 'Unknown',
         createdAt: data['createdAt'] as Timestamp?,
       );
     }).toList();
@@ -80,12 +93,6 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     setState(() {
       _isLoading = false;
     });
-  }
-
-  String _getCurrentSessionId() {
-    // Use a combination of device ID and user ID for current session
-    // In a real app, you'd use device_info_plus package
-    return 'current_session_${_auth.currentUser?.uid}';
   }
 
   String _formatLastActive(Timestamp? timestamp) {
@@ -102,6 +109,8 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
 
     return '${lastActive.day}/${lastActive.month}/${lastActive.year}';
   }
+
+  // ADD THE MISSING METHODS BELOW:
 
   Future<void> _logoutAllOtherSessions() async {
     try {
@@ -166,20 +175,24 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final currentSessionId = _getCurrentSessionId();
+      final currentSessionId = _currentSessionId;
 
       // Get all sessions except current one
       final sessionsSnapshot = await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('sessions')
+          .where('isActive', isEqualTo: true)
           .get();
 
       final batch = _firestore.batch();
 
       for (final doc in sessionsSnapshot.docs) {
         if (doc.id != currentSessionId) {
-          batch.delete(doc.reference);
+          batch.update(doc.reference, {
+            'isActive': false,
+            'endedAt': FieldValue.serverTimestamp(),
+          });
         }
       }
 
@@ -211,7 +224,10 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
           .doc(user.uid)
           .collection('sessions')
           .doc(session.id)
-          .delete();
+          .update({
+        'isActive': false,
+        'endedAt': FieldValue.serverTimestamp(),
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -243,6 +259,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
           .collection('users')
           .doc(user.uid)
           .collection('sessions')
+          .where('isActive', isEqualTo: true)
           .orderBy('lastActive', descending: true)
           .get();
 
@@ -411,134 +428,158 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
             ? Border.all(color: AppColors.primaryPurple, width: 2)
             : null,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            _getDeviceIcon(session.device, session.platform),
-            color: session.isCurrent
-                ? AppColors.primaryPurple
-                : AppColors.getPrimaryColor(context),
-            size: 24,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              Icon(
+                _getDeviceIcon(session.platform),
+                color: session.isCurrent
+                    ? AppColors.primaryPurple
+                    : AppColors.getPrimaryColor(context),
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      session.device,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.getTextColor(context),
-                      ),
-                    ),
-                    if (session.isCurrent) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Current',
+                    Row(
+                      children: [
+                        Text(
+                          session.device,
                           style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.success,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: AppColors.getTextColor(context),
                           ),
                         ),
+                        if (session.isCurrent) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Current',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.success,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${session.manufacturer} ${session.model}',
+                      style: TextStyle(
+                        color: AppColors.getSecondaryTextColor(context),
+                        fontSize: 12,
                       ),
-                    ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  session.location,
-                  style: TextStyle(
-                    color: AppColors.getSecondaryTextColor(context),
+              ),
+              if (!session.isCurrent)
+                IconButton(
+                  onPressed: () => _logoutSession(session),
+                  icon: Icon(
+                    Icons.logout,
+                    color: AppColors.error,
+                    size: 20,
                   ),
+                  tooltip: 'Logout this device',
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Last active: ${session.lastActive}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.getSecondaryTextColor(context),
-                  ),
-                ),
-                if (session.ipAddress.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'IP: ${session.ipAddress}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppColors.getSecondaryTextColor(context),
-                    ),
-                  ),
-                ],
-              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            session.location,
+            style: TextStyle(
+              color: AppColors.getSecondaryTextColor(context),
             ),
           ),
-          if (!session.isCurrent) ...[
-            IconButton(
-              onPressed: () => _logoutSession(session),
-              icon: Icon(
-                Icons.logout,
-                color: AppColors.error,
-                size: 20,
-              ),
-              tooltip: 'Logout this device',
+          const SizedBox(height: 4),
+          Text(
+            'Last active: ${session.lastActive}',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.getSecondaryTextColor(context),
             ),
-          ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'IP: ${session.ipAddress}',
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.getSecondaryTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'OS: ${session.osVersion} | App: ${session.appVersion}',
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.getSecondaryTextColor(context),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  IconData _getDeviceIcon(String device, String platform) {
-    if (platform.toLowerCase().contains('android') ||
-        device.toLowerCase().contains('samsung') ||
-        device.toLowerCase().contains('android')) {
-      return Icons.android;
-    } else if (platform.toLowerCase().contains('ios') ||
-        device.toLowerCase().contains('iphone') ||
-        device.toLowerCase().contains('ipad')) {
-      return Icons.phone_iphone;
-    } else if (device.toLowerCase().contains('laptop') ||
-        device.toLowerCase().contains('mac') ||
-        device.toLowerCase().contains('desktop')) {
-      return Icons.laptop;
-    } else if (device.toLowerCase().contains('tablet')) {
-      return Icons.tablet;
+  IconData _getDeviceIcon(String platform) {
+    switch (platform.toLowerCase()) {
+      case 'android':
+        return Icons.android;
+      case 'ios':
+        return Icons.phone_iphone;
+      case 'windows':
+        return Icons.laptop_windows;
+      case 'macos':
+        return Icons.laptop_mac;
+      case 'linux':
+        return Icons.laptop;
+      default:
+        return Icons.devices_other;
     }
-    return Icons.devices_other;
   }
 }
 
 class Session {
   final String id;
   final String device;
+  final String model;
+  final String manufacturer;
   final String location;
   final String lastActive;
   final bool isCurrent;
   final String platform;
   final String ipAddress;
   final String userAgent;
+  final String osVersion;
+  final String appVersion;
   final Timestamp? createdAt;
 
   Session({
     required this.id,
     required this.device,
+    required this.model,
+    required this.manufacturer,
     required this.location,
     required this.lastActive,
     required this.isCurrent,
     required this.platform,
     required this.ipAddress,
     required this.userAgent,
+    required this.osVersion,
+    required this.appVersion,
     this.createdAt,
   });
 }

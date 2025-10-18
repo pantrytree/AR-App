@@ -1,27 +1,39 @@
+import 'package:Roomantics/services/auth_service.dart';
+import 'package:Roomantics/services/cloudinary_service.dart';
+import 'package:Roomantics/services/favorites_service.dart';
+import 'package:Roomantics/services/furniture_service.dart';
+import 'package:Roomantics/services/project_service.dart';
+import 'package:Roomantics/services/room_service.dart';
+import 'package:Roomantics/viewmodels/change_password_viewmodel.dart';
+import 'package:Roomantics/viewmodels/guides_page_viewmodel.dart';
+import 'package:Roomantics/viewmodels/notifications_viewmodel.dart';
+import 'package:Roomantics/viewmodels/roomielab_viewmodel.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:roomantics/services/auth_service.dart';
-import 'package:roomantics/services/cloudinary_service.dart';
-import 'package:roomantics/services/favorites_service.dart';
-import 'package:roomantics/services/furniture_service.dart';
-import 'package:roomantics/services/project_service.dart';
-import 'package:roomantics/services/room_service.dart';
-import 'package:roomantics/viewmodels/guides_page_viewmodel.dart';
-import 'package:roomantics/viewmodels/notifications_viewmodel.dart';
-import 'package:roomantics/viewmodels/roomielab_viewmodel.dart';
-import 'package:roomantics/views/pages/about_page.dart';
-import 'package:roomantics/views/pages/active_sessions_page.dart';
-import 'package:roomantics/views/pages/change_passwords_page.dart';
-import 'package:roomantics/views/pages/language_page.dart';
-import 'package:roomantics/views/pages/notifications_page.dart';
-import 'package:roomantics/views/pages/privacy_policy_page.dart';
-import 'package:roomantics/views/pages/profile_page.dart';
-import 'package:roomantics/views/pages/roomielab_page.dart';
-import 'package:roomantics/views/pages/roomielab_screen.dart';
-import 'package:roomantics/views/pages/terms_of_service_page.dart';
-import 'package:roomantics/views/pages/two_factor_auth_page.dart';
+import 'package:Roomantics/services/auth_service.dart';
+import 'package:Roomantics/services/cloudinary_service.dart';
+import 'package:Roomantics/services/favorites_service.dart';
+import 'package:Roomantics/services/furniture_service.dart';
+import 'package:Roomantics/services/project_service.dart';
+import 'package:Roomantics/services/room_service.dart';
+import 'package:Roomantics/viewmodels/change_password_viewmodel.dart';
+import 'package:Roomantics/viewmodels/guides_page_viewmodel.dart';
+import 'package:Roomantics/viewmodels/notifications_viewmodel.dart';
+import 'package:Roomantics/viewmodels/roomielab_viewmodel.dart';
+import 'package:Roomantics/views/pages/about_page.dart';
+import 'package:Roomantics/views/pages/active_sessions_page.dart';
+import 'package:Roomantics/views/pages/change_passwords_page.dart';
+import 'package:Roomantics/views/pages/furniture_catalogue_page.dart';
+import 'package:Roomantics/views/pages/language_page.dart';
+import 'package:Roomantics/views/pages/notifications_page.dart';
+import 'package:Roomantics/views/pages/privacy_policy_page.dart';
+import 'package:Roomantics/views/pages/profile_page.dart';
+import 'package:Roomantics/views/pages/roomielab_page.dart';
+import 'package:Roomantics/views/pages/roomielab_screen.dart';
+import 'package:Roomantics/views/pages/terms_of_service_page.dart';
+import 'package:Roomantics/views/pages/two_factor_auth_page.dart';
 import 'firebase_options.dart';
 
 // Import all pages
@@ -84,8 +96,23 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Add providers for all pages that use ViewModels
+        // Services
+        Provider<AuthService>(create: (_) => AuthService()),
+        Provider<CloudinaryService>(create: (_) => CloudinaryService()),
+        Provider<FavoritesService>(create: (_) => FavoritesService()),
+        Provider<FurnitureService>(create: (_) => FurnitureService()),
+        Provider<ProjectService>(create: (_) => ProjectService()),
+        Provider<RoomService>(create: (_) => RoomService()),
 
+        // ViewModels
+        ChangeNotifierProvider<HomeViewModel>(
+          create: (context) => HomeViewModel(
+            furnitureService: context.read<FurnitureService>(),
+            roomService: context.read<RoomService>(),
+            projectService: context.read<ProjectService>(),
+            authService: context.read<AuthService>(),
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => ForgotPasswordViewModel()),
         ChangeNotifierProvider(create: (_) => GuidesPageViewModel()),
         ChangeNotifierProvider(create: (_) => SideMenuViewModel()),
@@ -96,18 +123,22 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EditProfileViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationsViewModel()),
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
-        ChangeNotifierProvider(create: (_) => SideMenuViewModel()),
         ChangeNotifierProvider(create: (_) => AccountHubViewModel()),
-        // Use provided themeManager or create a new one
+        ChangeNotifierProvider(create: (_) => LoginViewModel()),
+        ChangeNotifierProvider(create: (_) => SignUpViewModel()),
+        ChangeNotifierProvider(create: (_) => LogoutViewModel()),
+        ChangeNotifierProvider(create: (_) => ChangePasswordViewModel()),
+
+        // Theme Manager
         if (themeManager != null)
           ChangeNotifierProvider.value(value: themeManager!)
         else
           ChangeNotifierProvider(create: (_) => ThemeManager()),
-        // Login and SignUp ViewModels are created within their pages
       ],
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
           return MaterialApp(
+            debugShowCheckedModeBanner: false,
             title: 'Roomantic',
             theme: ThemeData(
               primarySwatch: Colors.purple,
@@ -157,10 +188,7 @@ class MyApp extends StatelessWidget {
               // Authentication routes
               '/login': (context) => LoginPage(),
               '/signup': (context) => SignUpPage(),
-              '/forgot-password': (context) => ChangeNotifierProvider(
-                create: (_) => ForgotPasswordViewModel(),
-                child: const ForgotPasswordPage(),
-              ),
+              '/forgot-password': (context) => const ForgotPasswordPage(),
 
               // Main app routes
               '/': (context) => const HomePage(),
@@ -168,6 +196,7 @@ class MyApp extends StatelessWidget {
 
               // Side menu routes
               '/catalogue': (context) => const CataloguePage(),
+              '/furniture-catalogue': (context) => const FurnitureCataloguePage(),
               '/my-likes': (context) => const MyLikesPage(),
               '/project': (context) => const RoomieLabPage(),
               '/roomieLab': (context) => const RoomieLabScreen(),
@@ -177,22 +206,13 @@ class MyApp extends StatelessWidget {
               '/edit-profile': (context) => const EditProfilePage(),
 
               // Other pages
-              '/logout': (context) => ChangeNotifierProvider(
-                create: (_) => LogoutViewModel(),
-                child: const LogoutPage(),
-              ),
+              '/logout': (context) => const LogoutPage(),
               '/catalogue-item': (context) => const CatalogueItemPage(),
               '/camera-page': (context) => const CameraPage(),
               '/language': (context) => const LanguagePage(),
               '/notifications': (context) => const NotificationsPage(),
               '/about': (context) => const AboutPage(),
 
-              // Settings navigation routes (for SettingsViewModel)
-              '/language': (context) => LanguagePage(),
-              '/notifications': (context) => NotificationsPage(),
-              '/about': (context) => AboutPage(),
-              '/help': (context) => HelpPage(),
-              '/logout': (context) => LogoutPage(),
               '/change-password': (context) => ChangePasswordPage(),
               '/two-factor-auth': (context) => TwoFactorAuthPage(),
               '/active-sessions': (context) => ActiveSessionsPage(),

@@ -10,6 +10,7 @@ class Design {
   final String? imageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime lastViewed;
 
   Design({
     required this.id,
@@ -20,38 +21,41 @@ class Design {
     this.imageUrl,
     required this.createdAt,
     required this.updatedAt,
+    required this.lastViewed,
   });
 
   // From JSON (API response)
   factory Design.fromJson(Map<String, dynamic> json) {
     return Design(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      projectId: json['projectId'] as String,
-      name: json['name'] as String,
+      id: json['id'] as String? ?? '',
+      userId: json['userId'] as String? ?? '',
+      projectId: json['projectId'] as String? ?? '',
+      name: json['name'] as String? ?? 'Untitled Design',
       objects: (json['objects'] as List<dynamic>?)
           ?.map((e) => DesignObject.fromJson(e as Map<String, dynamic>))
           .toList() ?? [],
       imageUrl: json['imageUrl'] as String?,
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
+      lastViewed: _parseDateTime(json['lastViewed'] ?? DateTime.now()), // FIXED: was referencing 'data'
     );
   }
 
   // From Firestore DocumentSnapshot
   factory Design.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>? ?? {};
     return Design(
       id: doc.id,
-      userId: data['userId'] as String,
-      projectId: data['projectId'] as String,
-      name: data['name'] as String,
+      userId: data['userId'] as String? ?? '',
+      projectId: data['projectId'] as String? ?? '',
+      name: data['name'] as String? ?? 'Untitled Design',
       objects: (data['objects'] as List<dynamic>?)
           ?.map((e) => DesignObject.fromMap(e as Map<String, dynamic>))
           .toList() ?? [],
       imageUrl: data['imageUrl'] as String?,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: _parseDateTime(data['createdAt']),
+      updatedAt: _parseDateTime(data['updatedAt']),
+      lastViewed: _parseDateTime(data['lastViewed'] ?? DateTime.now()),
     );
   }
 
@@ -59,15 +63,16 @@ class Design {
   factory Design.fromFirestoreMap(Map<String, dynamic> data, String id) {
     return Design(
       id: id,
-      userId: data['userId'] as String,
-      projectId: data['projectId'] as String,
-      name: data['name'] as String,
+      userId: data['userId'] as String? ?? '',
+      projectId: data['projectId'] as String? ?? '',
+      name: data['name'] as String? ?? 'Untitled Design',
       objects: (data['objects'] as List<dynamic>?)
           ?.map((e) => DesignObject.fromMap(e as Map<String, dynamic>))
           .toList() ?? [],
       imageUrl: data['imageUrl'] as String?,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: _parseDateTime(data['createdAt']),
+      updatedAt: _parseDateTime(data['updatedAt']),
+      lastViewed: _parseDateTime(data['lastViewed'] ?? DateTime.now()),
     );
   }
 
@@ -82,6 +87,7 @@ class Design {
       'imageUrl': imageUrl,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'lastViewed': lastViewed.toIso8601String(),
     };
   }
 
@@ -95,18 +101,24 @@ class Design {
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'lastViewed': Timestamp.fromDate(lastViewed),
     };
   }
 
   static DateTime _parseDateTime(dynamic value) {
+    if (value == null) {
+      return DateTime.now();
+    }
     if (value is Timestamp) {
       return value.toDate();
     } else if (value is String) {
       return DateTime.parse(value);
     } else if (value is DateTime) {
       return value;
+    } else if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
     }
-    throw ArgumentError('Invalid date format');
+    return DateTime.now(); // Fallback
   }
 
   Design copyWith({
@@ -118,6 +130,7 @@ class Design {
     String? imageUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastViewed,
   }) {
     return Design(
       id: id ?? this.id,
@@ -128,11 +141,12 @@ class Design {
       imageUrl: imageUrl ?? this.imageUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastViewed: lastViewed ?? this.lastViewed,
     );
   }
 
   @override
-  String toString() => 'Design(id: $id, name: $name, objects: ${objects.length})';
+  String toString() => 'Design(id: $id, name: $name, objects: ${objects.length}, lastViewed: $lastViewed)';
 
   @override
   bool operator ==(Object other) =>

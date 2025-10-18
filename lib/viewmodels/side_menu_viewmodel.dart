@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:roomantics/services/auth_service.dart';
-import 'package:roomantics/models/user.dart' as models;
-import 'package:roomantics/services/cloudinary_service.dart';
+import 'package:Roomantics/services/auth_service.dart';
+import 'package:Roomantics/models/user.dart' as models;
+import 'package:Roomantics/services/cloudinary_service.dart';
 
 class SideMenuViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -24,7 +24,7 @@ class SideMenuViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String get userNameDisplay => _currentUser?.displayName ?? 'User';
   String? get userEmail => _currentUser?.email;
-  String? get profileImageUrl => _currentUser?.profileImageUrl;
+  String? get photoUrl => _currentUser?.photoUrl;
   models.User? get currentUser => _currentUser;
 
   // Fetch user profile from AuthService
@@ -37,6 +37,21 @@ class SideMenuViewModel extends ChangeNotifier {
       print('User profile loaded: ${_currentUser?.displayName}');
     } catch (e) {
       print('Error fetching user profile: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> forceRefreshProfile() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _currentUser = await _authService.getCurrentUserModel();
+      print('Side menu profile refreshed: ${_currentUser?.displayName}');
+    } catch (e) {
+      print('Error refreshing side menu profile: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -130,6 +145,12 @@ class SideMenuViewModel extends ChangeNotifier {
     _navigateToRoute = '/edit-profile';
     _navigationArguments = null;
     notifyListeners();
+  }
+
+  void onDrawerOpened() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      forceRefreshProfile();
+    });
   }
 
   void onRoomieLabTapped(){

@@ -14,14 +14,20 @@ class AuthService {
   bool get isAuthenticated => _auth.currentUser != null;
   String? get currentUserId => _auth.currentUser?.uid;
 
-  Future<models.User?> getCurrentUserModel() async {
+  Future<models.User?> getCurrentUserModel({bool refresh = false}) async {
     try {
       final uid = _auth.currentUser?.uid;
-      print('Getting user model for UID: $uid');
+      print('Getting user model for UID: $uid, refresh: $refresh');
 
       if (uid == null) {
         print('No current user UID');
         return null;
+      }
+
+      if (refresh) {
+        // Force refresh Firebase Auth user
+        await _auth.currentUser?.reload();
+        print('Firebase Auth user reloaded');
       }
 
       final doc = await _firestore.collection('users').doc(uid).get();
@@ -33,7 +39,7 @@ class AuthService {
 
       print('User document found, parsing...');
       final user = models.User.fromFirestore(doc);
-      print('User model loaded: ${user.displayName}');
+      print('User model loaded: ${user.displayName}, Photo: ${user.photoUrl}');
       return user;
 
     } catch (e) {
@@ -110,7 +116,7 @@ class AuthService {
         'uid': credential.user!.uid,
         'email': email,
         'displayName': displayName,
-        'profileImageUrl': null,
+        'photoUrl': null,
         'preferences': {},
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -499,7 +505,7 @@ class AuthService {
       await user.updatePhotoURL(photoURL);
 
       await _firestore.collection('users').doc(user.uid).update({
-        'profileImageUrl': photoURL,
+        'photoUrl': photoURL,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 

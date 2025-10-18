@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:roomantics/services/auth_service.dart';
+import 'package:Roomantics/services/auth_service.dart';
 
 import '../services/session_service.dart';
 
@@ -46,17 +46,17 @@ class LoginViewModel extends ChangeNotifier {
 
       if (user != null) {
         final sessionService = SessionService();
+        final sessionId = await sessionService.generateSessionId();
+
         await sessionService.createOrUpdateSession(
-          sessionId: 'unique_session_id',
-          deviceName: 'Samsung S24 Ultra',
-          platform: 'Android',
-          location: 'Cape Town, SA',
+          sessionId: sessionId,
         );
 
         _navigateToRoute = '/home';
         print('LoginViewModel: Login successful');
         print('Welcome, ${user.displayName}');
       } else {
+        _errorMessage = 'Invalid email or password. Please try again.';
         print('LoginViewModel: Login failed');
       }
     } catch (e) {

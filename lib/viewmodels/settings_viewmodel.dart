@@ -16,14 +16,14 @@ class SettingsViewModel extends ChangeNotifier {
   // User data
   String _userName = 'Loading...';
   String _userEmail = 'Loading...';
-  String? _profileImageUrl;
+  String? _photoUrl;
   String? _errorMessage;
   String? _successMessage;
 
   // Getters
   String get userName => _userName;
   String get userEmail => _userEmail;
-  String? get profileImageUrl => _profileImageUrl;
+  String? get photoUrl => _photoUrl;
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
 
@@ -40,14 +40,14 @@ class SettingsViewModel extends ChangeNotifier {
       // Set basic info from Firebase Auth
       _userName = user.displayName ?? 'User';
       _userEmail = user.email ?? 'No email';
-      _profileImageUrl = user.photoURL;
+      _photoUrl = user.photoURL;
 
       // Load additional data from Firestore
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       if (userDoc.exists) {
         final data = userDoc.data()!;
         _userName = data['displayName'] as String? ?? _userName;
-        _profileImageUrl = data['photoUrl'] as String? ?? _profileImageUrl;
+        _photoUrl = data['photoUrl'] as String? ?? _photoUrl;
       }
 
       notifyListeners();

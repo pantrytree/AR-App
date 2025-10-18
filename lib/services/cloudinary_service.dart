@@ -10,21 +10,24 @@ class CloudinaryService {
   static const String cloudName = 'dwvcvysdl';
   static const String uploadPreset = 'AR-App';
 
-  /// Upload profile image using unsigned upload preset
   Future<String> uploadProfileImageUnsigned(File imageFile, String userId) async {
     try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniquePublicId = 'profile_${userId}_$timestamp';
+
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = uploadPreset
         ..fields['folder'] = 'profile_images'
-        ..fields['public_id'] = 'profile_$userId'
+        ..fields['public_id'] = uniquePublicId
+        ..fields['timestamp'] = timestamp.toString() // Add timestamp as field
         ..files.add(await http.MultipartFile.fromPath(
           'file',
           imageFile.path,
         ));
 
-      print('Uploading to Cloudinary...');
+      print('Uploading to Cloudinary with public_id: $uniquePublicId');
       final response = await request.send();
       final responseData = await response.stream.toBytes();
       final responseString = String.fromCharCodes(responseData);
@@ -33,7 +36,10 @@ class CloudinaryService {
       if (response.statusCode == 200) {
         final imageUrl = jsonResponse['secure_url'];
         print('Upload successful: $imageUrl');
-        return imageUrl;
+
+        // Add cache busting parameter to the URL
+        final cacheBustedUrl = '$imageUrl?t=$timestamp';
+        return cacheBustedUrl;
       } else {
         throw Exception('Upload failed: ${jsonResponse['error']['message']}');
       }
@@ -43,17 +49,20 @@ class CloudinaryService {
     }
   }
 
-  /// Upload project/design image
+  /// Upload project/design image with timestamp
   Future<String> uploadProjectImage(File imageFile, String projectId) async {
     try {
       _validateImage(imageFile);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniquePublicId = 'project_${projectId}_$timestamp';
 
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = uploadPreset
         ..fields['folder'] = 'project_images'
-        ..fields['public_id'] = 'project_$projectId'
+        ..fields['public_id'] = uniquePublicId
+        ..fields['timestamp'] = timestamp.toString()
         ..files.add(await http.MultipartFile.fromPath(
           'file',
           imageFile.path,
@@ -68,7 +77,7 @@ class CloudinaryService {
       if (response.statusCode == 200) {
         final imageUrl = jsonResponse['secure_url'];
         print('Project image uploaded: $imageUrl');
-        return imageUrl;
+        return '$imageUrl?t=$timestamp';
       } else {
         throw Exception('Upload failed: ${jsonResponse['error']['message']}');
       }
@@ -78,17 +87,20 @@ class CloudinaryService {
     }
   }
 
-  /// Upload design/furniture image
+  /// Upload design/furniture image with timestamp
   Future<String> uploadDesignImage(File imageFile, String designId) async {
     try {
       _validateImage(imageFile);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniquePublicId = 'design_${designId}_$timestamp';
 
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = uploadPreset
         ..fields['folder'] = 'design_images'
-        ..fields['public_id'] = 'design_$designId'
+        ..fields['public_id'] = uniquePublicId
+        ..fields['timestamp'] = timestamp.toString()
         ..files.add(await http.MultipartFile.fromPath(
           'file',
           imageFile.path,
@@ -103,7 +115,7 @@ class CloudinaryService {
       if (response.statusCode == 200) {
         final imageUrl = jsonResponse['secure_url'];
         print('Design image uploaded: $imageUrl');
-        return imageUrl;
+        return '$imageUrl?t=$timestamp';
       } else {
         throw Exception('Upload failed: ${jsonResponse['error']['message']}');
       }
@@ -113,17 +125,20 @@ class CloudinaryService {
     }
   }
 
-  /// Upload furniture item image
+  /// Upload furniture item image with timestamp
   Future<String> uploadFurnitureImage(File imageFile, String furnitureId) async {
     try {
       _validateImage(imageFile);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniquePublicId = 'furniture_${furnitureId}_$timestamp';
 
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = uploadPreset
         ..fields['folder'] = 'furniture_items'
-        ..fields['public_id'] = 'furniture_$furnitureId'
+        ..fields['public_id'] = uniquePublicId
+        ..fields['timestamp'] = timestamp.toString()
         ..files.add(await http.MultipartFile.fromPath(
           'file',
           imageFile.path,
@@ -138,7 +153,7 @@ class CloudinaryService {
       if (response.statusCode == 200) {
         final imageUrl = jsonResponse['secure_url'];
         print('Furniture image uploaded: $imageUrl');
-        return imageUrl;
+        return '$imageUrl?t=$timestamp';
       } else {
         throw Exception('Upload failed: ${jsonResponse['error']['message']}');
       }
@@ -148,7 +163,7 @@ class CloudinaryService {
     }
   }
 
-  /// Generic image upload method
+  /// Generic image upload method with timestamp
   Future<String?> uploadImage({
     required String filePath,
     required String folder,
@@ -157,13 +172,16 @@ class CloudinaryService {
     try {
       final file = File(filePath);
       _validateImage(file);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniquePublicId = publicId ?? 'image_$timestamp';
 
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = uploadPreset
         ..fields['folder'] = folder
-        ..fields['public_id'] = publicId ?? 'image_${DateTime.now().millisecondsSinceEpoch}'
+        ..fields['public_id'] = uniquePublicId
+        ..fields['timestamp'] = timestamp.toString()
         ..files.add(await http.MultipartFile.fromPath(
           'file',
           filePath,
@@ -178,7 +196,7 @@ class CloudinaryService {
       if (response.statusCode == 200) {
         final imageUrl = jsonResponse['secure_url'];
         print('Image uploaded successfully: $imageUrl');
-        return imageUrl;
+        return '$imageUrl?t=$timestamp';
       } else {
         print('Cloudinary upload failed: ${jsonResponse['error']['message']}');
         return null;
@@ -222,31 +240,40 @@ class CloudinaryService {
     }
   }
 
-  /// Generate optimized image URL for display
+  /// Generate optimized image URL for display with cache busting
   String getOptimizedImageUrl(String originalUrl, {int width = 300, int height = 300}) {
     if (!originalUrl.contains('cloudinary.com')) {
-      return originalUrl;
+      // Add cache busting to non-Cloudinary URLs too
+      return '$originalUrl?t=${DateTime.now().millisecondsSinceEpoch}';
     }
 
-    // Cloudinary URL transformation
-    final transformedUrl = originalUrl.replaceFirst(
+    // Remove existing cache busting parameter if present
+    final cleanUrl = originalUrl.split('?').first;
+
+    // Cloudinary URL transformation with cache busting
+    final transformedUrl = cleanUrl.replaceFirst(
       '/upload/',
       '/upload/w_$width,h_$height,c_fill,q_auto,f_auto/',
     );
 
-    return transformedUrl;
+    return '$transformedUrl?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Generate thumbnail URL
+  /// Generate thumbnail URL with cache busting
   String getThumbnailUrl(String originalUrl, {int size = 150}) {
     if (!originalUrl.contains('cloudinary.com')) {
-      return originalUrl;
+      return '$originalUrl?t=${DateTime.now().millisecondsSinceEpoch}';
     }
 
-    return originalUrl.replaceFirst(
+    // Remove existing cache busting parameter
+    final cleanUrl = originalUrl.split('?').first;
+
+    final thumbnailUrl = cleanUrl.replaceFirst(
       '/upload/',
       '/upload/w_$size,h_$size,c_fill,q_auto,f_auto/',
     );
+
+    return '$thumbnailUrl?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 
   /// Generate signature for authenticated requests
@@ -291,12 +318,14 @@ class CloudinaryService {
     if (fileSize == 0) throw Exception('File is empty');
   }
 
-  /// Extract public ID from Cloudinary URL
+  /// Extract public ID from Cloudinary URL (handles URLs with cache busting)
   String? extractPublicId(String imageUrl) {
     if (!imageUrl.contains('cloudinary.com')) return null;
 
     try {
-      final uri = Uri.parse(imageUrl);
+      // Remove cache busting parameter
+      final cleanUrl = imageUrl.split('?').first;
+      final uri = Uri.parse(cleanUrl);
       final pathSegments = uri.pathSegments;
 
       final uploadIndex = pathSegments.indexOf('upload');
@@ -312,7 +341,7 @@ class CloudinaryService {
     return null;
   }
 
-  /// Upload multiple images
+  /// Upload multiple images with unique timestamps
   Future<List<String>> uploadMultipleImages({
     required List<String> filePaths,
     required String folder,
@@ -322,10 +351,13 @@ class CloudinaryService {
 
     for (final filePath in filePaths) {
       try {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final uniquePrefix = prefix != null ? '${prefix}_$timestamp' : 'image_$timestamp';
+
         final url = await uploadImage(
           filePath: filePath,
           folder: folder,
-          publicId: prefix != null ? '${prefix}_${DateTime.now().millisecondsSinceEpoch}' : null,
+          publicId: uniquePrefix,
         );
 
         if (url != null) {
@@ -337,5 +369,37 @@ class CloudinaryService {
     }
 
     return uploadedUrls;
+  }
+
+  /// Helper method to add cache busting to any URL
+  String addCacheBusting(String url) {
+    if (url.contains('?')) {
+      return '$url&t=${DateTime.now().millisecondsSinceEpoch}';
+    } else {
+      return '$url?t=${DateTime.now().millisecondsSinceEpoch}';
+    }
+  }
+
+  /// Override existing image (force update)
+  Future<String> overrideProfileImage(File imageFile, String userId) async {
+    try {
+      final basePublicId = 'profile_$userId';
+      final existingPublicId = await _findExistingPublicId(basePublicId);
+
+      if (existingPublicId != null) {
+        await deleteImage(existingPublicId);
+        print('Deleted existing image: $existingPublicId');
+      }
+
+      // Upload new image
+      return await uploadProfileImageUnsigned(imageFile, userId);
+    } catch (e) {
+      print('Error overriding profile image: $e');
+      return await uploadProfileImageUnsigned(imageFile, userId);
+    }
+  }
+
+  Future<String?> _findExistingPublicId(String basePublicId) async {
+    return basePublicId;
   }
 }

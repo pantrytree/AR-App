@@ -13,6 +13,11 @@ class Project {
   final String? imageUrl;
   final bool isPublic;
 
+  // New fields for likes functionality
+  final bool isLiked;
+  final int likeCount;
+  final List<String> likedBy;
+
   Project({
     required this.id,
     required this.userId,
@@ -25,6 +30,11 @@ class Project {
     required this.updatedAt,
     this.imageUrl,
     this.isPublic = false,
+
+    // Initialize new fields
+    this.isLiked = false,
+    this.likeCount = 0,
+    this.likedBy = const [],
   });
 
   // From JSON (API response)
@@ -41,6 +51,11 @@ class Project {
       updatedAt: _parseDateTime(json['updatedAt']),
       imageUrl: json['imageUrl'] as String?,
       isPublic: json['isPublic'] as bool? ?? false,
+
+      // New fields
+      isLiked: json['isLiked'] as bool? ?? false,
+      likeCount: json['likeCount'] as int? ?? 0,
+      likedBy: (json['likedBy'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
     );
   }
 
@@ -59,6 +74,11 @@ class Project {
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       imageUrl: data['imageUrl'] as String?,
       isPublic: data['isPublic'] as bool? ?? false,
+
+      // New fields
+      isLiked: data['isLiked'] as bool? ?? false,
+      likeCount: data['likeCount'] as int? ?? 0,
+      likedBy: (data['likedBy'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
     );
   }
 
@@ -76,6 +96,11 @@ class Project {
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       imageUrl: data['imageUrl'] as String?,
       isPublic: data['isPublic'] as bool? ?? false,
+
+      // New fields
+      isLiked: data['isLiked'] as bool? ?? false,
+      likeCount: data['likeCount'] as int? ?? 0,
+      likedBy: (data['likedBy'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
     );
   }
 
@@ -93,6 +118,11 @@ class Project {
       'updatedAt': updatedAt.toIso8601String(),
       'imageUrl': imageUrl,
       'isPublic': isPublic,
+
+      // New fields
+      'isLiked': isLiked,
+      'likeCount': likeCount,
+      'likedBy': likedBy,
     };
   }
 
@@ -109,6 +139,11 @@ class Project {
       'updatedAt': Timestamp.fromDate(updatedAt),
       'imageUrl': imageUrl,
       'isPublic': isPublic,
+
+      // New fields
+      'isLiked': isLiked,
+      'likeCount': likeCount,
+      'likedBy': likedBy,
     };
   }
 
@@ -135,6 +170,9 @@ class Project {
     DateTime? updatedAt,
     String? imageUrl,
     bool? isPublic,
+    bool? isLiked,
+    int? likeCount,
+    List<String>? likedBy,
   }) {
     return Project(
       id: id ?? this.id,
@@ -148,11 +186,14 @@ class Project {
       updatedAt: updatedAt ?? this.updatedAt,
       imageUrl: imageUrl ?? this.imageUrl,
       isPublic: isPublic ?? this.isPublic,
+      isLiked: isLiked ?? this.isLiked,
+      likeCount: likeCount ?? this.likeCount,
+      likedBy: likedBy ?? this.likedBy,
     );
   }
 
   @override
-  String toString() => 'Project(id: $id, name: $name, items: ${items.length})';
+  String toString() => 'Project(id: $id, name: $name, items: ${items.length}, likes: $likeCount)';
 
   @override
   bool operator ==(Object other) =>

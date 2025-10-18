@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import 'package:roomantics/viewmodels/roomielab_viewmodel.dart';
-import 'package:roomantics/models/project.dart';
+import 'package:Roomantics/viewmodels/roomielab_viewmodel.dart';
+import 'package:Roomantics/models/project.dart';
 
 class ProjectFullScreenPage extends StatefulWidget {
   final String projectId;

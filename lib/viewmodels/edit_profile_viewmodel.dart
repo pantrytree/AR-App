@@ -15,7 +15,7 @@ class EditProfileViewModel extends ChangeNotifier {
   // User data
   String _name = '';
   String _email = '';
-  String? _profileImageUrl;
+  String? _photoUrl;
   File? _profileImage;
 
   // UI state
@@ -26,7 +26,7 @@ class EditProfileViewModel extends ChangeNotifier {
   // Getters
   String get name => _name;
   String get email => _email;
-  String? get profileImageUrl => _profileImageUrl;
+  String? get photoUrl => _photoUrl;
   File? get profileImage => _profileImage;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -74,12 +74,12 @@ class EditProfileViewModel extends ChangeNotifier {
         final data = userDoc.data()!;
         _name = data['displayName'] as String? ?? user.displayName ?? '';
         _email = data['email'] as String? ?? user.email ?? '';
-        _profileImageUrl = data['photoUrl'] as String? ?? user.photoURL;
+        _photoUrl = data['photoUrl'] as String? ?? user.photoURL;
       } else {
         // Fallback to Auth user data
         _name = user.displayName ?? '';
         _email = user.email ?? '';
-        _profileImageUrl = user.photoURL;
+        _photoUrl = user.photoURL;
       }
 
       _isLoading = false;
@@ -104,7 +104,7 @@ class EditProfileViewModel extends ChangeNotifier {
       if (image != null) {
         _profileImage = File(image.path);
         // Clear the old URL since we have a new local image
-        _profileImageUrl = null;
+        _photoUrl = null;
         notifyListeners();
 
         _successMessage = 'Image selected. Click Save to update your profile.';
@@ -128,8 +128,7 @@ class EditProfileViewModel extends ChangeNotifier {
 
       if (image != null) {
         _profileImage = File(image.path);
-        // Clear the old URL since we have a new local image
-        _profileImageUrl = null;
+        _photoUrl = null;
         notifyListeners();
 
         _successMessage = 'Image captured. Click Save to update your profile.';
@@ -145,7 +144,7 @@ class EditProfileViewModel extends ChangeNotifier {
   Future<void> deleteProfileImage() async {
     try {
       _profileImage = null;
-      _profileImageUrl = null;
+      _photoUrl = null;
       notifyListeners();
 
       _successMessage = 'Profile image removed. Click Save to update your profile.';
@@ -172,7 +171,7 @@ class EditProfileViewModel extends ChangeNotifier {
         return false;
       }
 
-      String? newImageUrl = _profileImageUrl;
+      String? newImageUrl = _photoUrl;
 
       // Upload new image if selected
       if (_profileImage != null) {
@@ -186,19 +185,17 @@ class EditProfileViewModel extends ChangeNotifier {
         print('New image URL from Cloudinary: $newImageUrl');
       }
 
-      // Update Firebase Auth first (this usually works even with App Check issues)
       try {
         await user.updateDisplayName(_name);
         if (newImageUrl != null) {
           await user.updatePhotoURL(newImageUrl);
           print('Updated Firebase Auth photo URL: $newImageUrl');
-        } else if (_profileImage == null && _profileImageUrl == null) {
+        } else if (_profileImage == null && _photoUrl == null) {
           await user.updatePhotoURL(null);
           print('Cleared Firebase Auth photo URL');
         }
       } catch (e) {
         print('Error updating Firebase Auth: $e');
-        // Continue with Firestore update even if Auth fails
       }
 
       // Update Firestore with retry logic
@@ -210,11 +207,10 @@ class EditProfileViewModel extends ChangeNotifier {
           'updatedAt': FieldValue.serverTimestamp(),
         };
 
-        // Only update photoUrl if we have a new one or if it was deleted
         if (_profileImage != null) {
           updateData['photoUrl'] = newImageUrl;
           print('Setting Firestore photoUrl to: $newImageUrl');
-        } else if (_profileImage == null && _profileImageUrl == null) {
+        } else if (_profileImage == null && _photoUrl == null) {
           // User removed the image
           updateData['photoUrl'] = null;
           print('Clearing Firestore photoUrl');
@@ -232,7 +228,7 @@ class EditProfileViewModel extends ChangeNotifier {
       }
 
       // Refresh the local data with updated values
-      _profileImageUrl = newImageUrl;
+      _photoUrl = newImageUrl;
       _profileImage = null; // Clear the local file after successful upload
 
       // Force a UI refresh

@@ -152,6 +152,10 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, HomeViewModel homeViewModel) {
+    if (!homeViewModel.isUserDataLoaded) {
+      return _buildUserDataLoadingState(context);
+    }
+
     return SafeArea(
       child: SingleChildScrollView(
         child: Padding(
@@ -180,6 +184,43 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 32),
               _buildAllRoomsSection(context, homeViewModel),
               const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserDataLoadingState(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Skeleton loading for greeting
+              Container(
+                width: 200,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppColors.getCardBackground(context),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: 150,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: AppColors.getCardBackground(context),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 32),
+              _buildRecentlyUsedSection(context, HomeViewModel.instance),
+              const SizedBox(height: 32),
+              _buildAllRoomsSection(context, HomeViewModel.instance),
             ],
           ),
         ),
@@ -410,7 +451,15 @@ class HomePage extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        homeViewModel.onRoomTapped(roomName);
+        print('Room tapped: $roomName');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FurnitureCataloguePage(
+              initialRoom: roomName,
+            ),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(

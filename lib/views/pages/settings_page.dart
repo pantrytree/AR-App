@@ -80,7 +80,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ADDED: Show error/success messages
                         if (settingsViewModel.errorMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -181,14 +180,14 @@ class _SettingsPageState extends State<SettingsPage> {
               decoration: BoxDecoration(
                 color: AppColors.getPrimaryColor(context).withOpacity(0.1),
                 shape: BoxShape.circle,
-                image: settingsViewModel.profileImageUrl != null
+                image: settingsViewModel.photoUrl != null
                     ? DecorationImage(
-                  image: NetworkImage(settingsViewModel.profileImageUrl!),
+                  image: NetworkImage(settingsViewModel.photoUrl!),
                   fit: BoxFit.cover,
                 )
                     : null,
               ),
-              child: settingsViewModel.profileImageUrl == null
+              child: settingsViewModel.photoUrl == null
                   ? Icon(
                 Icons.person,
                 color: AppColors.getPrimaryColor(context),

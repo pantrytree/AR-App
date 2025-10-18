@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/edit_profile_viewmodel.dart';
 import '../../utils/colors.dart';
 import '../../theme/theme.dart';
-import 'change_passwords_page.dart'; // ADDED: Import for Change Password page
+import 'change_passwords_page.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -198,9 +198,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   image: FileImage(viewModel.profileImage!),
                   fit: BoxFit.cover,
                 )
-                    : viewModel.profileImageUrl != null
+                    : viewModel.photoUrl != null
                     ? DecorationImage(
-                  image: NetworkImage(viewModel.profileImageUrl!),
+                  image: NetworkImage(viewModel.photoUrl!),
                   fit: BoxFit.cover,
                 )
                     : null,
@@ -208,7 +208,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  if (viewModel.profileImage == null && viewModel.profileImageUrl == null)
+                  if (viewModel.profileImage == null && viewModel.photoUrl == null)
                     Icon(
                       Icons.person,
                       size: 50,
@@ -279,7 +279,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   viewModel.pickImageFromCamera();
                 },
               ),
-              if (viewModel.profileImageUrl != null || viewModel.profileImage != null)
+              if (viewModel.photoUrl != null || viewModel.profileImage != null)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('Remove Photo'),
@@ -355,7 +355,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  // ADDED: Change Password button (replaces password field)
   Widget _buildChangePasswordButton(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

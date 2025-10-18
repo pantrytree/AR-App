@@ -33,12 +33,27 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     if (_formKey.currentState!.validate()) {
       final viewModel = Provider.of<ChangePasswordViewModel>(context, listen: false);
 
+      // Check if user can change password
+      final canChange = await viewModel.canChangePassword();
+      if (!canChange['canChange']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(canChange['reason'] ?? 'Cannot change password at this time.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
       final success = await viewModel.changePassword(
         currentPassword: _currentPasswordController.text,
         newPassword: _newPasswordController.text,
       );
 
       if (success && mounted) {
+        // Send confirmation
+        await viewModel.sendPasswordChangeConfirmation();
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Password changed successfully'),
@@ -94,12 +109,29 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 });
               }
 
+              // Show success message if any
+              if (viewModel.successMessage != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(viewModel.successMessage!),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                  viewModel.clearSuccess();
+                });
+              }
+
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(20.0),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     children: [
+                      // Security Info
+                      _buildSecurityInfo(context),
+                      const SizedBox(height: 24),
+
                       // Current Password
                       _buildPasswordField(
                         context,
@@ -114,9 +146,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your current password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
                           }
                           return null;
                         },
@@ -138,13 +167,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter a new password';
                           }
-                          if (value.length < 8) {
-                            return 'Password must be at least 8 characters';
-                          }
-                          return null;
+                          return _validatePasswordStrength(value);
                         },
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 8),
+
+                      // Password Strength Indicator
+                      _buildPasswordStrengthIndicator(_newPasswordController.text),
+                      const SizedBox(height: 12),
 
                       // Confirm New Password
                       _buildPasswordField(
@@ -171,48 +201,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
                       // Change Password Button
                       viewModel.isLoading
-                          ? const Center(child: CircularProgressIndicator())
+                          ? _buildLoadingButton()
                           : _buildSaveButton(context),
 
                       const SizedBox(height: 20),
 
                       // Password Requirements
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.getCardBackground(context),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.08),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Password Requirements:',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.getTextColor(context),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '• At least 8 characters long\n• Include uppercase and lowercase letters\n• Include numbers and special characters',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AppColors.getSecondaryTextColor(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildPasswordRequirements(context),
                     ],
                   ),
                 ),
@@ -224,7 +219,115 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
-  /// Builds password field with show/hide functionality matching EditProfilePage
+  Widget _buildSecurityInfo(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.info.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.info.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.security, color: AppColors.info, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'For security, you will be logged out of other devices after changing your password.',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.getTextColor(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordStrengthIndicator(String password) {
+    final strength = _calculatePasswordStrength(password);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Password Strength: ${strength['label']}',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: strength['color'],
+          ),
+        ),
+        const SizedBox(height: 4),
+        LinearProgressIndicator(
+          value: strength['value'],
+          backgroundColor: AppColors.getSecondaryTextColor(context).withOpacity(0.2),
+          valueColor: AlwaysStoppedAnimation<Color>(strength['color']),
+          minHeight: 4,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ],
+    );
+  }
+
+  Map<String, dynamic> _calculatePasswordStrength(String password) {
+    if (password.isEmpty) {
+      return {'label': 'None', 'value': 0.0, 'color': Colors.grey};
+    }
+
+    double strength = 0.0;
+
+    // Length
+    if (password.length >= 8) strength += 0.2;
+    if (password.length >= 12) strength += 0.1;
+
+    // Character variety
+    if (RegExp(r'[A-Z]').hasMatch(password)) strength += 0.2;
+    if (RegExp(r'[a-z]').hasMatch(password)) strength += 0.2;
+    if (RegExp(r'[0-9]').hasMatch(password)) strength += 0.2;
+    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength += 0.2;
+
+    String label;
+    Color color;
+
+    if (strength < 0.4) {
+      label = 'Weak';
+      color = AppColors.error;
+    } else if (strength < 0.7) {
+      label = 'Fair';
+      color = Colors.orange;
+    } else if (strength < 0.9) {
+      label = 'Good';
+      color = Colors.blue;
+    } else {
+      label = 'Strong';
+      color = AppColors.success;
+    }
+
+    return {'label': label, 'value': strength, 'color': color};
+  }
+
+  String? _validatePasswordStrength(String password) {
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      return 'Include at least one uppercase letter';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(password)) {
+      return 'Include at least one lowercase letter';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      return 'Include at least one number';
+    }
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) {
+      return 'Include at least one special character';
+    }
+    return null;
+  }
+
   Widget _buildPasswordField(
       BuildContext context, {
         required String label,
@@ -261,6 +364,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             controller: controller,
             obscureText: obscureText,
             validator: validator,
+            onChanged: (value) {
+              setState(() {});
+            },
             style: GoogleFonts.inter(
               fontSize: 16,
               color: AppColors.getTextColor(context),
@@ -287,7 +393,40 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
-  /// Builds the save button matching EditProfilePage style
+  Widget _buildLoadingButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.getPrimaryColor(context).withOpacity(0.6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Changing Password...',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSaveButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -306,6 +445,45 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           'Change Password',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordRequirements(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.getCardBackground(context),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Password Requirements:',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '• At least 8 characters long\n• Include uppercase and lowercase letters\n• Include numbers and special characters\n• Not a commonly used password',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: AppColors.getSecondaryTextColor(context),
+            ),
+          ),
+        ],
       ),
     );
   }

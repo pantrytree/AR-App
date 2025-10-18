@@ -3,12 +3,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:roomantics/models/favorite.dart';
+import 'package:Roomantics/models/favorite.dart';
 import '../../models/furniture_item.dart';
 import '../../services/furniture_service.dart';
 import '../../services/favorites_service.dart';
 import '../../utils/colors.dart';
 import '/views/pages/roomielab_screen.dart';
+import 'catalogue_item_page.dart';
 
 class FurnitureCataloguePage extends StatefulWidget {
   final String? initialRoom;
@@ -57,9 +58,26 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     print('Initial room: ${widget.initialRoom}');
     print('Initial type: ${widget.initialType}');
     print('Selected room: $_selectedRoom');
+    print('Selected type: "$_selectedType"');
 
     _loadFurnitureItems();
     _loadFavorites();
+
+    // if (widget.initialRoom != null && widget.initialRoom != 'All') {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     if (mounted) {
+    //       setState(() {
+    //         _selectedRoom = widget.initialRoom!;
+    //       });
+    //       // Re-apply filters after data is loaded
+    //       Future.delayed(const Duration(milliseconds: 500), () {
+    //         if (mounted) {
+    //           _applyFilters();
+    //         }
+    //       });
+    //     }
+    //   });
+    // }
   }
 
   Future<void> _loadFurnitureItems() async {
@@ -120,18 +138,44 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
   void _applyFilters() {
     print('Applying filters...');
     print('All items count: ${_allFurnitureItems.length}');
-    print('Room filter: $_selectedRoom');
-    print('Type filter: $_selectedType');
+    print('Room filter: "$_selectedRoom"');
+    print('Type filter: "$_selectedType"');
 
     setState(() {
       _filteredItems = _allFurnitureItems.where((item) {
         // Room filter
-        bool roomMatch = _selectedRoom == 'All' ||
-            item.roomType.toLowerCase() == _selectedRoom.toLowerCase();
+        bool roomMatch = _selectedRoom == 'All';
+        if (!roomMatch) {
+          final selectedRoomLower = _selectedRoom.toLowerCase();
+          final itemRoomLower = item.roomType.toLowerCase();
 
-        // Type filter
-        bool typeMatch = _selectedType == 'All' ||
-            item.category.toLowerCase() == _selectedType.toLowerCase();
+          // Handle different room type formats
+          roomMatch = itemRoomLower == selectedRoomLower ||
+              itemRoomLower.contains(selectedRoomLower) ||
+              selectedRoomLower.contains(itemRoomLower);
+
+          // Special cases for room type matching
+          if (selectedRoomLower == 'living_room' && itemRoomLower.contains('living')) {
+            roomMatch = true;
+          }
+          if (selectedRoomLower == 'dining_room' && itemRoomLower.contains('dining')) {
+            roomMatch = true;
+          }
+          if (selectedRoomLower == 'bedroom' && itemRoomLower.contains('bed')) {
+            roomMatch = true;
+          }
+        }
+
+        // Type filter - handle category filtering
+        bool typeMatch = _selectedType == 'All';
+        if (!typeMatch) {
+          final selectedTypeLower = _selectedType.toLowerCase();
+          final itemCategoryLower = item.category.toLowerCase();
+
+          typeMatch = itemCategoryLower == selectedTypeLower ||
+              itemCategoryLower.contains(selectedTypeLower) ||
+              selectedTypeLower.contains(itemCategoryLower);
+        }
 
         // Color filter
         bool colorMatch = _selectedColor == 'All' ||
@@ -142,7 +186,9 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
             item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             (item.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
 
-        return roomMatch && typeMatch && colorMatch && searchMatch;
+        final shouldInclude = roomMatch && typeMatch && colorMatch && searchMatch;
+
+        return shouldInclude;
       }).toList();
     });
 
@@ -277,11 +323,14 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
   }
 
   String _getAppBarTitle() {
+    if (_selectedRoom != 'All' && _selectedType != 'All') {
+      return '$_selectedRoom $_selectedType';
+    }
     if (_selectedRoom != 'All') {
       return '$_selectedRoom Furniture';
     }
     if (_selectedType != 'All') {
-      return '${_selectedType[0].toUpperCase()}${_selectedType.substring(1)} Furniture';
+      return '${_selectedType[0].toUpperCase()}${_selectedType.substring(1)}s';
     }
     if (widget.itemToShowDetails != null) {
       return 'Furniture Details';
@@ -358,8 +407,8 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
             });
           }),
           const SizedBox(width: 8),
-          _buildFilterChip('Type', _selectedType, [
-            _FilterOption('All', 'All Types'),
+          _buildFilterChip('Category', _selectedType, [
+            _FilterOption('All', 'All Categories'),
             _FilterOption('Chair', 'Chairs'),
             _FilterOption('Sofa', 'Sofas'),
             _FilterOption('Table', 'Tables'),
@@ -859,19 +908,29 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
               ),
             ),
           ),
-          if (furniture.arModelUrl != null)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _navigateToARView(context, furniture);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryLightPurple,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('View in AR'),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _navigateToItemDetails(context, furniture);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryLightPurple,
+              foregroundColor: Colors.white,
             ),
+            child: const Text('See More Details'),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToItemDetails(BuildContext context, FurnitureItem furniture) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CatalogueItemPage(
+          productId: furniture.id,
+        ),
       ),
     );
   }
@@ -880,8 +939,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => RoomieLabScreen(
-        ),
+        builder: (_) => RoomieLabScreen(),
       ),
     );
   }

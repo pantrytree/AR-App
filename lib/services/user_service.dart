@@ -2,7 +2,7 @@ import '/services/api_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:roomantics/models/user.dart' as models;
+import 'package:Roomantics/models/user.dart' as models;
 
 class UserService {
   final ApiService _apiService = ApiService();
@@ -55,7 +55,7 @@ class UserService {
   // Endpoint: PUT /api/users/profile
   Future<void> updateUserProfile({
     String? displayName,
-    String? profileImageUrl,
+    String? photoUrl,
     Map<String, dynamic>? preferences,
   }) async {
     try {
@@ -64,7 +64,7 @@ class UserService {
 
       final updates = <String, dynamic>{};
       if (displayName != null) updates['displayName'] = displayName;
-      if (profileImageUrl != null) updates['profileImageUrl'] = profileImageUrl;
+      if (photoUrl != null) updates['photoUrl'] = photoUrl;
       if (preferences != null) updates['preferences'] = preferences;
       updates['updatedAt'] = FieldValue.serverTimestamp();
 

@@ -20,6 +20,8 @@ class RoomieLabPage extends StatefulWidget {
 }
 
 class _RoomieLabPageState extends State<RoomieLabPage> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -27,6 +29,12 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
       final viewModel = Provider.of<RoomieLabViewModel>(context, listen: false);
       viewModel.loadProjects();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -117,7 +125,7 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
       return _buildEmptyState(context);
     }
 
-    return _buildProjectsGrid(context, viewModel);
+    return _buildProjectsList(context, viewModel);
   }
 
   Widget _buildLoadingState(BuildContext context) {
@@ -195,27 +203,20 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
     );
   }
 
-  Widget _buildProjectsGrid(BuildContext context, RoomieLabViewModel viewModel) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: GridView.builder(
-        key: const ValueKey('projectGrid'),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.9,
-        ),
-        itemCount: viewModel.projects.length,
-        itemBuilder: (context, index) {
-          final project = viewModel.projects[index];
-          return _AnimatedProjectCard(
-            key: ValueKey(project.id),
-            project: project,
-            viewModel: viewModel,
-          );
-        },
-      ),
+  Widget _buildProjectsList(BuildContext context, RoomieLabViewModel viewModel) {
+    return ListView.builder(
+      key: const ValueKey('projectList'),
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      itemCount: viewModel.projects.length,
+      itemBuilder: (context, index) {
+        final project = viewModel.projects[index];
+        return _AnimatedProjectCard(
+          key: ValueKey(project.id),
+          project: project,
+          viewModel: viewModel,
+        );
+      },
     );
   }
 }
@@ -239,6 +240,8 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
   late AnimationController _controller;
   late Animation<double> _scale;
   late Animation<double> _fade;
+  bool _isLiked = false;
+  int _likeCount = 0;
 
   @override
   void initState() {
@@ -259,6 +262,9 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
       curve: Curves.easeIn,
     );
 
+    _isLiked = widget.project.isLiked ?? false;
+    _likeCount = widget.project.likeCount ?? 0;
+
     _controller.forward();
   }
 
@@ -268,54 +274,168 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     super.dispose();
   }
 
+  void _toggleLike() async {
+    setState(() {
+      if (_isLiked) {
+        _likeCount--;
+      } else {
+        _likeCount++;
+      }
+      _isLiked = !_isLiked;
+    });
+
+    final success = await widget.viewModel.toggleProjectLike(widget.project.id);
+    if (!success && mounted) {
+      // Revert if failed
+      setState(() {
+        if (_isLiked) {
+          _likeCount--;
+        } else {
+          _likeCount++;
+        }
+        _isLiked = !_isLiked;
+      });
+    }
+  }
+
+  void _showCollaboratorsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _CollaboratorsDialog(
+        project: widget.project,
+        viewModel: widget.viewModel,
+      ),
+    );
+  }
+
+  void _showEditNameDialog() {
+    TextEditingController nameController = TextEditingController(text: widget.project.name);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.getCardBackground(context),
+        title: Text(
+          'Edit Project Name',
+          style: TextStyle(
+            color: AppColors.getTextColor(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            hintText: 'Enter project name',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          maxLength: 50,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (nameController.text.trim().isNotEmpty) {
+                Navigator.pop(context);
+                final success = await widget.viewModel.updateProjectName(
+                  widget.project.id,
+                  nameController.text.trim(),
+                );
+                if (success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Project name updated'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(
+              'Save',
+              style: TextStyle(
+                color: AppColors.primaryPurple,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final project = widget.project;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return ScaleTransition(
       scale: _scale,
       child: FadeTransition(
         opacity: _fade,
-        child: Stack(
-          children: [
-            // Project Card
-            GestureDetector(
-              onTap: () => _navigateToFullScreen(context, project),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.getCardBackground(context),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: _buildProjectImage(context, project),
-                    ),
-                    _buildProjectInfo(context, project),
-                  ],
-                ),
-              ),
-            ),
+        child: Container(
+          height: screenHeight * 0.7, // 70% of screen height
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Stack(
+            children: [
+              // Main Project Card
+              GestureDetector(
+                onTap: () => _navigateToFullScreen(context, project),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.getCardBackground(context),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Project Image
+                      Expanded(
+                        flex: 3,
+                        child: _buildProjectImage(context, project),
+                      ),
 
-            Positioned(
-              top: 8,
-              right: 8,
-              child: ProjectOptionsMenu(
-                projectId: project.id,
-                onViewFullScreen: () => _navigateToFullScreen(context, project),
-                onEditProject: () => _navigateToEditProject(context, project),
-                onDeleteProject: () => _confirmDelete(context, project),
+                      // Project Info and Actions
+                      Expanded(
+                        flex: 1,
+                        child: _buildProjectInfoAndActions(context, project),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+
+              // Top Right Options Menu
+              Positioned(
+                top: 12,
+                right: 12,
+                child: ProjectOptionsMenu(
+                  projectId: project.id,
+                  onViewFullScreen: () => _navigateToFullScreen(context, project),
+                  onEditProject: () => _navigateToEditProject(context, project),
+                  onEditName: _showEditNameDialog,
+                  onManageCollaborators: _showCollaboratorsDialog,
+                  onDeleteProject: () => _confirmDelete(context, project),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -324,25 +444,44 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
   Widget _buildProjectImage(BuildContext context, Project project) {
     if (project.imageUrl != null && project.imageUrl!.isNotEmpty) {
       return ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        child: Image.network(
-          project.imageUrl!,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildPlaceholderImage();
-          },
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                    loadingProgress.expectedTotalBytes!
-                    : null,
-                color: AppColors.primaryPurple,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: Stack(
+          children: [
+            Image.network(
+              project.imageUrl!,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildPlaceholderImage();
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                        : null,
+                    color: AppColors.primaryPurple,
+                  ),
+                );
+              },
+            ),
+
+            // Gradient overlay for better text readability
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.3),
+                  ],
+                ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       );
     }
@@ -356,49 +495,120 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
       child: Center(
         child: Icon(
           Icons.image_not_supported,
-          size: 40,
+          size: 60,
           color: Colors.grey[400],
         ),
       ),
     );
   }
 
-  Widget _buildProjectInfo(BuildContext context, Project project) {
+  Widget _buildProjectInfoAndActions(BuildContext context, Project project) {
     return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.primaryPurple.withOpacity(0.1),
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(16),
-        ),
-      ),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            project.name,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: AppColors.getTextColor(context),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          // Project Name and Date
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: AppColors.getTextColor(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${project.roomType} • ${_formatDate(project.createdAt)}',
+                      style: TextStyle(
+                        color: AppColors.getSecondaryTextColor(context),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
+
+          const SizedBox(height: 12),
+
+          // Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // Like Button
+              _buildActionButton(
+                icon: _isLiked ? Icons.favorite : Icons.favorite_border,
+                label: '$_likeCount',
+                color: _isLiked ? Colors.red : AppColors.getSecondaryTextColor(context),
+                onTap: _toggleLike,
+              ),
+
+              // Collaborators Button
+              _buildActionButton(
+                icon: Icons.people_outline,
+                label: '${project.collaborators?.length ?? 0}',
+                color: AppColors.getSecondaryTextColor(context),
+                onTap: _showCollaboratorsDialog,
+              ),
+
+              // Share Button
+              _buildActionButton(
+                icon: Icons.share_outlined,
+                label: 'Share',
+                color: AppColors.getSecondaryTextColor(context),
+                onTap: () => _shareProject(context, project),
+              ),
+
+              // Edit Button
+              _buildActionButton(
+                icon: Icons.edit_outlined,
+                label: 'Edit',
+                color: AppColors.getSecondaryTextColor(context),
+                onTap: () => _navigateToEditProject(context, project),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 4),
           Text(
-            project.roomType,
+            label,
             style: TextStyle(
-              color: AppColors.getSecondaryTextColor(context),
               fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            _formatDate(project.createdAt),
-            style: TextStyle(
-              color: AppColors.getSecondaryTextColor(context),
-              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -426,6 +636,53 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
           furnitureItemId: project.items.isNotEmpty ? project.items.first : '',
           furnitureName: project.name,
         ),
+      ),
+    );
+  }
+
+  void _shareProject(BuildContext context, Project project) {
+    // Implement share functionality
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.getCardBackground(context),
+        title: Text(
+          'Share Project',
+          style: TextStyle(
+            color: AppColors.getTextColor(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Share "${project.name}" with others via link or invite collaborators.',
+          style: TextStyle(
+            color: AppColors.getSecondaryTextColor(context),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showCollaboratorsDialog();
+            },
+            child: Text(
+              'Invite Collaborators',
+              style: TextStyle(
+                color: AppColors.primaryPurple,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -503,5 +760,149 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+}
+
+class _CollaboratorsDialog extends StatefulWidget {
+  final Project project;
+  final RoomieLabViewModel viewModel;
+
+  const _CollaboratorsDialog({
+    required this.project,
+    required this.viewModel,
+  });
+
+  @override
+  State<_CollaboratorsDialog> createState() => _CollaboratorsDialogState();
+}
+
+class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
+  final TextEditingController _emailController = TextEditingController();
+  List<String> collaborators = [];
+
+  @override
+  void initState() {
+    super.initState();
+    collaborators = widget.project.collaborators ?? [];
+  }
+
+  void _addCollaborator() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) return;
+
+    final success = await widget.viewModel.addCollaborator(
+      widget.project.id,
+      email,
+    );
+
+    if (success && mounted) {
+      setState(() {
+        collaborators.add(email);
+        _emailController.clear();
+      });
+    }
+  }
+
+  void _removeCollaborator(String email) async {
+    final success = await widget.viewModel.removeCollaborator(
+      widget.project.id,
+      email,
+    );
+
+    if (success && mounted) {
+      setState(() {
+        collaborators.remove(email);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.getCardBackground(context),
+      title: Text(
+        'Project Collaborators',
+        style: TextStyle(
+          color: AppColors.getTextColor(context),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Add collaborator input
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter email address',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onSubmitted: (_) => _addCollaborator(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(Icons.add, color: AppColors.primaryPurple),
+                onPressed: _addCollaborator,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Collaborators list
+          if (collaborators.isNotEmpty) ...[
+            Text(
+              'Current Collaborators:',
+              style: TextStyle(
+                color: AppColors.getTextColor(context),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...collaborators.map((email) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundColor: AppColors.primaryPurple.withOpacity(0.1),
+                child: Icon(Icons.person, color: AppColors.primaryPurple),
+              ),
+              title: Text(
+                email,
+                style: TextStyle(
+                  color: AppColors.getTextColor(context),
+                ),
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.remove_circle, color: Colors.red),
+                onPressed: () => _removeCollaborator(email),
+              ),
+            )).toList(),
+          ] else ...[
+            Text(
+              'No collaborators yet',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Close',
+            style: TextStyle(
+              color: AppColors.getSecondaryTextColor(context),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

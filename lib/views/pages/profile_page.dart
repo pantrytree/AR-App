@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:roomantics/views/pages/privacy_policy_page.dart';
+import 'package:Roomantics/views/pages/privacy_policy_page.dart';
 import '../../viewmodels/profile_page_viewmodel.dart';
 import '/utils/colors.dart';
-import '/viewmodels/profile_page_viewmodel.dart';
 import '/views/pages/edit_profile_page.dart';
 import '/views/pages/help_page.dart';
 import '/views/pages/settings_page.dart';
@@ -17,13 +16,14 @@ class AccountHubPage extends StatefulWidget {
   State<AccountHubPage> createState() => _AccountHubPageState();
 }
 
-class _AccountHubPageState extends State<AccountHubPage> {
+class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObserver {
   late AccountHubViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
     _viewModel = AccountHubViewModel();
+    WidgetsBinding.instance.addObserver(this);
 
     // Load user data on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -31,20 +31,20 @@ class _AccountHubPageState extends State<AccountHubPage> {
     });
   }
 
-  /// Refresh when returning from other pages
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Only refresh if not loading
-    if (!_viewModel.isLoading) {
-      _viewModel.refreshUserData();
-    }
-  }
-
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _viewModel.dispose();
     super.dispose();
+  }
+
+  /// Listen for app state changes
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh when app comes to foreground
+      _viewModel.forceRefreshUserData();
+    }
   }
 
   @override
@@ -53,41 +53,18 @@ class _AccountHubPageState extends State<AccountHubPage> {
       value: _viewModel,
       child: Consumer<AccountHubViewModel>(
         builder: (context, viewModel, child) {
-          // Show error messages
-          if (viewModel.errorMessage != null) {
+          if (viewModel.navigateToRoute != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(viewModel.errorMessage!),
-                    backgroundColor: Colors.red,
-                    action: SnackBarAction(
-                      label: 'Dismiss',
-                      textColor: Colors.white,
-                      onPressed: () => viewModel.clearError(),
-                    ),
-                  ),
-                );
-                viewModel.clearError();
-              }
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                viewModel.navigateToRoute!,
+                    (route) => false,
+              ).then((_) => viewModel.clearNavigation());
             });
           }
 
-          // Show success messages
-          if (viewModel.successMessage != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(viewModel.successMessage!),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                viewModel.clearSuccess();
-              }
-            });
-          }
-
+          // Handle messages
+          _handleMessages(context, viewModel);
           return Scaffold(
             backgroundColor: AppColors.getBackgroundColor(context),
             appBar: AppBar(
@@ -118,6 +95,14 @@ class _AccountHubPageState extends State<AccountHubPage> {
                   ),
                   onPressed: () => viewModel.refreshUserData(),
                 ),
+                // Sync button
+                IconButton(
+                  icon: Icon(
+                    Icons.sync,
+                    color: AppColors.getAppBarForeground(context),
+                  ),
+                  onPressed: () => viewModel.syncWithBackend(),
+                ),
               ],
             ),
             body: viewModel.isLoading
@@ -130,6 +115,10 @@ class _AccountHubPageState extends State<AccountHubPage> {
                 child: Column(
                   children: [
                     _buildProfileHeader(context, viewModel),
+                    const SizedBox(height: 20),
+
+                    // User Statistics
+                    _buildUserStatistics(context, viewModel),
                     const SizedBox(height: 30),
 
                     // Menu Options
@@ -192,7 +181,7 @@ class _AccountHubPageState extends State<AccountHubPage> {
                       text: "Log Out",
                       icon: Icons.logout,
                       isLogout: true,
-                      onTap: () => _viewModel.logout(context),
+                      onTap: () => viewModel.logout(context),
                     ),
                   ],
                 ),
@@ -202,6 +191,43 @@ class _AccountHubPageState extends State<AccountHubPage> {
         },
       ),
     );
+  }
+
+  void _handleMessages(BuildContext context, AccountHubViewModel viewModel) {
+    // Show error messages
+    if (viewModel.errorMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(viewModel.errorMessage!),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Dismiss',
+                textColor: Colors.white,
+                onPressed: () => viewModel.clearError(),
+              ),
+            ),
+          );
+          viewModel.clearError();
+        }
+      });
+    }
+
+    // Show success messages
+    if (viewModel.successMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(viewModel.successMessage!),
+              backgroundColor: Colors.green,
+            ),
+          );
+          viewModel.clearSuccess();
+        }
+      });
+    }
   }
 
   Widget _buildLoadingState(BuildContext context) {
@@ -227,7 +253,7 @@ class _AccountHubPageState extends State<AccountHubPage> {
   Widget _buildProfileHeader(BuildContext context, AccountHubViewModel viewModel) {
     return Column(
       children: [
-        // Profile Image
+        // Profile Image with cache busting
         Container(
           width: 120,
           height: 120,
@@ -246,39 +272,17 @@ class _AccountHubPageState extends State<AccountHubPage> {
             ],
           ),
           child: ClipOval(
-            child: viewModel.profileImageUrl != null
+            child: viewModel.profileImageUrlWithCacheBusting != null
                 ? Image.network(
-              viewModel.profileImageUrl!,
+              viewModel.profileImageUrlWithCacheBusting!,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AppColors.getPrimaryColor(context).withOpacity(0.1),
-                child: Icon(
-                  Icons.person,
-                  size: 60,
-                  color: AppColors.getPrimaryColor(context),
-                ),
-              ),
+              errorBuilder: (_, __, ___) => _buildProfilePlaceholder(context),
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
-                return Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                        : null,
-                    color: AppColors.getPrimaryColor(context),
-                  ),
-                );
+                return _buildProfilePlaceholder(context);
               },
             )
-                : Container(
-              color: AppColors.getPrimaryColor(context).withOpacity(0.1),
-              child: Icon(
-                Icons.person,
-                size: 60,
-                color: AppColors.getPrimaryColor(context),
-              ),
-            ),
+                : _buildProfilePlaceholder(context),
           ),
         ),
 
@@ -305,6 +309,100 @@ class _AccountHubPageState extends State<AccountHubPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildUserStatistics(BuildContext context, AccountHubViewModel viewModel) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.getCardBackground(context),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              context,
+              count: viewModel.projectsCount,
+              label: 'Projects',
+              icon: Icons.work_outline,
+            ),
+            _buildStatItem(
+              context,
+              count: viewModel.designsCount,
+              label: 'Designs',
+              icon: Icons.design_services,
+            ),
+            _buildStatItem(
+              context,
+              count: viewModel.favoritesCount,
+              label: 'Favorites',
+              icon: Icons.favorite_outline,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(BuildContext context, {
+    required int count,
+    required String label,
+    required IconData icon,
+  }) {
+    return Column(
+      children: [
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: AppColors.getPrimaryColor(context).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: AppColors.getPrimaryColor(context),
+            size: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          count.toString(),
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextColor(context),
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: AppColors.getSecondaryTextColor(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfilePlaceholder(BuildContext context) {
+    return Container(
+      color: AppColors.getPrimaryColor(context).withOpacity(0.1),
+      child: Icon(
+        Icons.person,
+        size: 60,
+        color: AppColors.getPrimaryColor(context),
+      ),
     );
   }
 

@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
-import 'package:roomantics/services/user_service.dart';
+import 'package:Roomantics/services/user_service.dart';
 import '/services/auth_service.dart';
 import '/utils/text_components.dart';
 
 class ForgotPasswordViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
+
   // State variables
   bool _isLoading = false;
   bool _hasError = false;
@@ -38,10 +39,6 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     _clearErrors();
   }
 
-  // ======================
-  // BACKEND INTEGRATION
-  // ======================
-
   /// Step 1: Request password reset
   Future<void> sendPasswordResetEmail() async {
     if (!_validateEmailStep()) {
@@ -55,19 +52,17 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // First check if email exists in our user database
       final userExists = await _userService.getUserByEmail(_email);
 
       if (userExists == null) {
         throw Exception('No account found with this email address. Please check the email or sign up for a new account.');
       }
 
-      // If email exists, send reset password email via Firebase Auth
       final result = await _authService.resetPassword(_email);
 
       if (result['success'] == true) {
         _successMessage = "Password reset link sent to $_email\n\nPlease check your email and click the link to reset your password. Don't forget to check your spam folder!";
-        _currentStep = 1; // Move to verification step
+        _currentStep = 1;
         _isLoading = false;
         notifyListeners();
       } else {
@@ -80,7 +75,6 @@ class ForgotPasswordViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 
   Future<void> verifyResetCompletion() async {
     _isLoading = true;
@@ -112,10 +106,6 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     }
   }
 
-  // ======================
-  // VALIDATION METHODS
-  // ======================
-
   bool _validateEmailStep() {
     if (_email.isEmpty) {
       _hasError = true;
@@ -138,10 +128,6 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     return emailRegex.hasMatch(email);
   }
-
-  // ======================
-  // UI STATE MANAGEMENT
-  // ======================
 
   void goToPreviousStep() {
     if (_currentStep > 0) {
@@ -183,15 +169,11 @@ class ForgotPasswordViewModel extends ChangeNotifier {
       case 0:
         return 'Send Reset Link';
       case 1:
-        return 'Return to Login';
+        return 'I\'ve Reset My Password';
       default:
         return 'Continue';
     }
   }
-
-  // ======================
-  // NAVIGATION METHODS
-  // ======================
 
   void navigateToLogin() {
     _navigateToRoute = '/login';
@@ -206,10 +188,6 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     _navigateToRoute = null;
     _navigationArguments = null;
   }
-
-  // ======================
-  // HELPER METHODS
-  // ======================
 
   void _clearErrors() {
     if (_hasError) {

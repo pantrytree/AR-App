@@ -2,9 +2,9 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:roomantics/models/design.dart'; // Make sure this import is correct
-import 'package:roomantics/views/pages/roomielab_gallery.dart';
-import 'package:roomantics/views/pages/roomielab_page.dart';
+import 'package:Roomantics/models/design.dart';
+import 'package:Roomantics/views/pages/roomielab_gallery.dart';
+import 'package:Roomantics/views/pages/roomielab_page.dart';
 import '../../models/design_object.dart';
 import '/utils/colors.dart';
 
@@ -28,8 +28,16 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRecentDesigns();
-    _loadCategories();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    setState(() => _isLoading = true);
+    await Future.wait([
+      _loadRecentDesigns(),
+      _loadCategories(),
+    ]);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
@@ -41,63 +49,89 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
   Future<void> _loadRecentDesigns() async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        setState(() {
+          _isLoading = false;
+          _recentDesigns = [];
+        });
+        return;
+      }
+
+      print('Loading recent designs for user: ${user.uid}');
 
       final querySnapshot = await _firestore
           .collection('designs')
           .where('userId', isEqualTo: user.uid)
-          .orderBy('createdAt', descending: true)
-          .limit(4)
+          .orderBy('lastViewed', descending: true)
+          .limit(6)
           .get();
 
-      final designs = querySnapshot.docs.map((doc) {
-        return Design.fromFirestore(doc);
-      }).toList();
+      print('Found ${querySnapshot.docs.length} design documents');
 
-      setState(() {
-        _recentDesigns = designs;
-      });
+      final designs = <Design>[];
+      for (final doc in querySnapshot.docs) {
+        try {
+          final design = Design.fromFirestore(doc);
+          designs.add(design);
+        } catch (e) {
+          print('Error parsing design ${doc.id}: $e');
+        }
+      }
+
+      final recentDesigns = designs.take(4).toList();
+
+      if (mounted) {
+        setState(() {
+          _recentDesigns = recentDesigns;
+          _isLoading = false;
+        });
+      }
+
+      print('Loaded ${_recentDesigns.length} recent designs');
     } catch (e) {
       print('Error loading recent designs: $e');
-      _loadRecentDesignsAlternative();
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _recentDesigns = [];
+        });
+      }
     }
   }
 
-  Future<void> _loadRecentDesignsAlternative() async {
+  Future<Design?> _parseDesignFromDoc(DocumentSnapshot doc) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+      final data = doc.data() as Map<String, dynamic>?;
+      if (data == null) return null;
 
-      final querySnapshot = await _firestore
-          .collection('designs')
-          .where('userId', isEqualTo: user.uid)
-          .orderBy('createdAt', descending: true)
-          .limit(4)
-          .get();
+      Timestamp? createdAt;
+      Timestamp? updatedAt;
+      Timestamp? lastViewed;
 
-      final designs = querySnapshot.docs.map((doc) {
-        final data = doc.data();
-        return Design(
-          id: doc.id,
-          userId: data['userId'] ?? '',
-          projectId: data['projectId'] ?? '',
-          name: data['name'] ?? 'Untitled Design',
-          objects: _parseDesignObjects(data['objects']),
-          imageUrl: data['imageUrl'],
-          createdAt: (data['createdAt'] as Timestamp).toDate(),
-          updatedAt: (data['updatedAt'] as Timestamp).toDate(),
-        );
-      }).toList();
+      try {
+        createdAt = data['createdAt'] as Timestamp?;
+        updatedAt = data['updatedAt'] as Timestamp?;
+        lastViewed = data['lastViewed'] as Timestamp?;
+      } catch (e) {
+        print('Error parsing timestamps for design ${doc.id}: $e');
+      }
 
-      setState(() {
-        _recentDesigns = designs;
-      });
+      final lastViewedTime = lastViewed?.toDate() ?? DateTime.now();
+
+      return Design(
+        id: doc.id,
+        userId: data['userId']?.toString() ?? '',
+        projectId: data['projectId']?.toString() ?? '',
+        name: data['name']?.toString() ?? 'Untitled Design',
+        objects: _parseDesignObjects(data['objects']),
+        imageUrl: data['imageUrl']?.toString(),
+        createdAt: createdAt?.toDate() ?? DateTime.now(),
+        updatedAt: updatedAt?.toDate() ?? DateTime.now(),
+        lastViewed: lastViewedTime,
+      );
     } catch (e) {
-      print('Error in alternative design loading: $e');
+      print('Failed to parse design ${doc.id}: $e');
+      return null;
     }
   }
 
@@ -105,34 +139,55 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     if (objectsData == null) return [];
     if (objectsData is! List) return [];
 
-    return objectsData.map((obj) {
+    final objects = <DesignObject>[];
+    for (final obj in objectsData) {
       if (obj is Map<String, dynamic>) {
-        return DesignObject(
-          itemId: obj['itemId'] ?? '',
-          position: Position(
-            x: (obj['position']?['x'] ?? 0).toDouble(),
-            y: (obj['position']?['y'] ?? 0).toDouble(),
-            z: (obj['position']?['z'] ?? 0).toDouble(),
-          ),
-          rotation: Rotation(
-            x: (obj['rotation']?['x'] ?? 0).toDouble(),
-            y: (obj['rotation']?['y'] ?? 0).toDouble(),
-            z: (obj['rotation']?['z'] ?? 0).toDouble(),
-          ),
-          scale: Scale(
-            x: (obj['scale']?['x'] ?? 1.0).toDouble(),
-            y: (obj['scale']?['y'] ?? 1.0).toDouble(),
-            z: (obj['scale']?['z'] ?? 1.0).toDouble(),
-          ),
-        );
+        try {
+          final designObject = DesignObject(
+            itemId: obj['itemId']?.toString() ?? '',
+            position: Position(
+              x: _parseDouble(obj['position']?['x']) ?? 0.0,
+              y: _parseDouble(obj['position']?['y']) ?? 0.0,
+              z: _parseDouble(obj['position']?['z']) ?? 0.0,
+            ),
+            rotation: Rotation(
+              x: _parseDouble(obj['rotation']?['x']) ?? 0.0,
+              y: _parseDouble(obj['rotation']?['y']) ?? 0.0,
+              z: _parseDouble(obj['rotation']?['z']) ?? 0.0,
+            ),
+            scale: Scale(
+              x: _parseDouble(obj['scale']?['x']) ?? 1.0,
+              y: _parseDouble(obj['scale']?['y']) ?? 1.0,
+              z: _parseDouble(obj['scale']?['z']) ?? 1.0,
+            ),
+          );
+          objects.add(designObject);
+        } catch (e) {
+          print('Error parsing design object: $e');
+        }
       }
-      return DesignObject(
-        itemId: '',
-        position: Position(x: 0, y: 0, z: 0),
-        rotation: Rotation(x: 0, y: 0, z: 0),
-        scale: Scale(x: 1.0, y: 1.0, z: 1.0),
-      );
-    }).toList();
+    }
+    return objects;
+  }
+
+  double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  // Track when a design is viewed
+  Future<void> _trackDesignView(String designId) async {
+    try {
+      await _firestore.collection('designs').doc(designId).update({
+        'lastViewed': FieldValue.serverTimestamp(),
+      });
+      print('Tracked view for design: $designId');
+    } catch (e) {
+      print('Error tracking design view: $e');
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -142,18 +197,57 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
           .orderBy('name')
           .get();
 
-      setState(() {
-        _categories = querySnapshot.docs.map((doc) => doc['name'] as String).toList();
-      });
-    } catch (e) {
-      print('Error loading categories: $e');
-      // Fallback categories
-      _categories = ['Living Room', 'Bedroom', 'Kitchen', 'Office', 'Dining Room', 'Bathroom'];
+      final names = <String>[];
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        final dynamic n = data['name'];
+
+        if (n is String && n.trim().isNotEmpty) {
+          names.add(n.trim());
+        } else {
+          final altName = data['category'] ?? data['title'] ?? data['label'];
+          if (altName is String && altName.trim().isNotEmpty) {
+            names.add(altName.trim());
+          } else {
+            print('Category doc ${doc.id} has invalid or missing name: $data');
+          }
+        }
+      }
+
+      if (names.isEmpty) {
+        names.addAll(['Living Room', 'Bedroom', 'Kitchen', 'Office', 'Dining Room', 'Bathroom']);
+      }
+
+      if (mounted) {
+        setState(() {
+          _categories = names;
+        });
+      }
+      print('Loaded ${names.length} categories from Firestore.');
+    } catch (e, st) {
+      print('Error loading categories: $e\n$st');
+      if (mounted) {
+        setState(() {
+          _categories = ['Living Room', 'Bedroom', 'Kitchen', 'Office', 'Dining Room', 'Bathroom'];
+        });
+      }
     }
   }
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _formatTimeAgo(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    if (difference.inDays < 30) return '${(difference.inDays / 7).floor()}w ago';
+    return '${(difference.inDays / 30).floor()}mo ago';
   }
 
   String _getDesignCategory(Design design) {
@@ -199,19 +293,12 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           _buildHeader(),
           const SizedBox(height: 20),
-
-          // Quick Actions
           _buildQuickActions(),
           const SizedBox(height: 20),
-
-          // Furniture Categories
           _buildCategories(),
           const SizedBox(height: 20),
-
-          // Recent Designs
           _buildRecentDesigns(),
         ],
       ),
@@ -253,7 +340,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
           Wrap(
             spacing: 8,
             children: [
-              _buildStatChip('${_recentDesigns.length} Designs', Icons.photo_library),
+              _buildStatChip('${_recentDesigns.length} Recent Designs', Icons.photo_library),
               _buildStatChip('${_categories.length} Categories', Icons.category),
             ],
           ),
@@ -296,7 +383,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
                 context,
                 icon: Icons.view_in_ar,
                 title: 'AR Studio',
-                subtitle: 'Manage projects',
+                subtitle: 'Create new designs',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -313,7 +400,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
                 context,
                 icon: Icons.photo_library,
                 title: 'Design Gallery',
-                subtitle: 'View saved designs',
+                subtitle: 'View all designs',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -366,7 +453,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Recent Designs',
+              'Recently Viewed Designs',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -445,7 +532,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.85,
       ),
       itemCount: _recentDesigns.length,
       itemBuilder: (context, index) {
@@ -461,13 +548,18 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     return Card(
       elevation: 2,
       child: InkWell(
-        onTap: () => _showDesignOptions(design),
+        onTap: () {
+          // Track the design view and navigate
+          _trackDesignView(design.id);
+          _showDesignOptions(design);
+        },
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Design Image
               Container(
                 height: 100,
                 width: double.infinity,
@@ -490,6 +582,8 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
                     : null,
               ),
               const SizedBox(height: 8),
+
+              // Design Name
               Text(
                 design.name,
                 style: TextStyle(
@@ -499,6 +593,8 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+
+              // Category
               Text(
                 _getDesignCategory(design),
                 style: TextStyle(
@@ -506,21 +602,25 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
                   color: AppColors.getSecondaryTextColor(context),
                 ),
               ),
-              const SizedBox(height: 4),
+
+              // Last Viewed Time
               Text(
-                _formatDate(design.createdAt),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.getSecondaryTextColor(context),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${design.objects.length} items',
+                _formatTimeAgo(design.lastViewed),
                 style: TextStyle(
                   fontSize: 10,
                   color: AppColors.primaryLightPurple,
                   fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              // Items Count
+              Text(
+                '${design.objects.length} items',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.getSecondaryTextColor(context),
                 ),
               ),
             ],
@@ -542,7 +642,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No designs yet',
+            'No recent designs',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -551,7 +651,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Create your first AR design to see it here!',
+            'Create or view designs to see them here!',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.getSecondaryTextColor(context),
@@ -560,7 +660,12 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              Navigator.pushNamed(context, '/camera-page');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RoomieLabPage(),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryLightPurple,
@@ -604,6 +709,20 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => RoomieLabPage(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.refresh, color: AppColors.primaryLightPurple),
+                title: Text('Mark as Viewed'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _trackDesignView(design.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Design marked as viewed'),
+                      duration: Duration(seconds: 2),
                     ),
                   );
                 },

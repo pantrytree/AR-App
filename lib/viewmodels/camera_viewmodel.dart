@@ -1,18 +1,17 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:roomantics/viewmodels/roomielab_viewmodel.dart';
-import 'package:roomantics/services/furniture_service.dart';
-import 'package:roomantics/models/design_object.dart' as design_models;
-import 'package:roomantics/models/furniture_item.dart';
-
-import 'home_viewmodel.dart';
+import 'package:Roomantics/viewmodels/roomielab_viewmodel.dart';
+import 'package:Roomantics/services/furniture_service.dart';
+import 'package:Roomantics/models/design.dart';
+import 'package:Roomantics/models/design_object.dart';
+import 'package:Roomantics/models/furniture_item.dart';
 
 class CameraViewModel extends ChangeNotifier {
-
-  final HomeViewModel _homeViewModel = HomeViewModel.instance;
   CameraController? _controller;
   bool _isCameraReady = false;
   bool _isLoading = false;
@@ -21,34 +20,31 @@ class CameraViewModel extends ChangeNotifier {
 
   // AR state
   bool _isObjectPlaced = false;
-  String _selectedObject = 'Sofa';
-  List<FurnitureItem> _availableFurnitureItems = [];
+  bool _isFurnitureSelectionVisible = false;
   FurnitureItem? _selectedFurnitureItem;
+  List<FurnitureItem> _availableFurnitureItems = [];
 
   // Capture state
   String? _capturedImagePath;
-  List<design_models.DesignObject> _placedObjects = [];
+  List<DesignObject> _placedObjects = [];
 
   // Getters
   bool get isCameraReady => _isCameraReady;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isObjectPlaced => _isObjectPlaced;
-  String get selectedObject => _selectedObject;
-  List<FurnitureItem> get availableFurnitureItems => _availableFurnitureItems;
+  bool get isFurnitureSelectionVisible => _isFurnitureSelectionVisible;
   FurnitureItem? get selectedFurnitureItem => _selectedFurnitureItem;
+  List<FurnitureItem> get availableFurnitureItems => _availableFurnitureItems;
   CameraController? get controller => _controller;
   String? get capturedImagePath => _capturedImagePath;
   bool get hasCapturedImage => _capturedImagePath != null;
-  List<design_models.DesignObject> get placedObjects => _placedObjects;
-
-  // ADDED: availableObjects getter for backward compatibility
-  List<String> get availableObjects => _availableFurnitureItems.map((item) => item.name).toList();
+  List<DesignObject> get placedObjects => _placedObjects;
 
   final FurnitureService _furnitureService = FurnitureService();
 
   // ===========================================================
-  // INITIALIZATION
+  // CAMERA INITIALIZATION
   // ===========================================================
   Future<void> initializeCamera() async {
     _isLoading = true;
@@ -56,10 +52,10 @@ class CameraViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Load furniture items from Firestore
+      // Load furniture items
       await _loadFurnitureItems();
 
-      // Initialize camera
+      // Check camera permission
       final status = await Permission.camera.request();
       if (!status.isGranted) {
         _error = 'Camera permission denied';
@@ -68,6 +64,7 @@ class CameraViewModel extends ChangeNotifier {
         return;
       }
 
+      // Get available cameras
       _cameras = await availableCameras();
       if (_cameras == null || _cameras!.isEmpty) {
         _error = 'No cameras available';
@@ -76,9 +73,10 @@ class CameraViewModel extends ChangeNotifier {
         return;
       }
 
+      // Initialize camera controller
       _controller = CameraController(
         _cameras!.first,
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
         enableAudio: false,
       );
 
@@ -98,104 +96,121 @@ class CameraViewModel extends ChangeNotifier {
   Future<void> _loadFurnitureItems() async {
     try {
       _availableFurnitureItems = await _furnitureService.getFurnitureItems();
+
+      // Filter items that have 3D models (GLB files)
+      _availableFurnitureItems = _availableFurnitureItems.where((item) {
+        return item.arModelUrl != null && item.arModelUrl!.isNotEmpty;
+      }).toList();
+
       if (_availableFurnitureItems.isNotEmpty) {
         _selectedFurnitureItem = _availableFurnitureItems.first;
-        _selectedObject = _selectedFurnitureItem!.name;
       }
     } catch (e) {
       print('Error loading furniture items: $e');
-      // Fallback to basic items if Firestore fails
-      _availableFurnitureItems = [
-        FurnitureItem(
-          id: 'default_sofa',
-          name: 'Sofa',
-          description: 'Comfortable sofa',
-          category: 'Furniture',
-          roomType: 'Living Room',
-          imageUrl: null,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        FurnitureItem(
-          id: 'default_chair',
-          name: 'Chair',
-          description: 'Comfortable chair',
-          category: 'Furniture',
-          roomType: 'Living Room',
-          imageUrl: null,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        FurnitureItem(
-          id: 'default_table',
-          name: 'Table',
-          description: 'Dining table',
-          category: 'Furniture',
-          roomType: 'Dining Room',
-          imageUrl: null,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        FurnitureItem(
-          id: 'default_bed',
-          name: 'Bed',
-          description: 'Comfortable bed',
-          category: 'Furniture',
-          roomType: 'Bedroom',
-          imageUrl: null,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        FurnitureItem(
-          id: 'default_lamp',
-          name: 'Lamp',
-          description: 'Table lamp',
-          category: 'Lighting',
-          roomType: 'Living Room',
-          imageUrl: null,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      ];
+      // Fallback to demo items with 3D models
+      _availableFurnitureItems = _getDemoFurnitureItems();
       _selectedFurnitureItem = _availableFurnitureItems.first;
     }
   }
 
+  List<FurnitureItem> _getDemoFurnitureItems() {
+    return [
+      FurnitureItem(
+        id: 'sofa_001',
+        name: 'Modern Sofa',
+        description: '3-seater modern sofa',
+        category: 'Sofa',
+        roomType: 'Living Room',
+        imageUrl: null,
+        arModelUrl: 'assets/models/sofa.glb', // Path to GLB file
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      FurnitureItem(
+        id: 'chair_001',
+        name: 'Dining Chair',
+        description: 'Modern dining chair',
+        category: 'Chair',
+        roomType: 'Dining Room',
+        imageUrl: null,
+        arModelUrl: 'assets/models/chair.glb',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      FurnitureItem(
+        id: 'table_001',
+        name: 'Coffee Table',
+        description: 'Round coffee table',
+        category: 'Table',
+        roomType: 'Living Room',
+        imageUrl: null,
+        arModelUrl: 'assets/models/table.glb',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      FurnitureItem(
+        id: 'bed_001',
+        name: 'Double Bed',
+        description: 'Queen size bed',
+        category: 'Bed',
+        roomType: 'Bedroom',
+        imageUrl: null,
+        arModelUrl: 'assets/models/bed.glb',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      FurnitureItem(
+        id: 'lamp_001',
+        name: 'Floor Lamp',
+        description: 'Modern floor lamp',
+        category: 'Lighting',
+        roomType: 'Living Room',
+        imageUrl: null,
+        arModelUrl: 'assets/models/lamp.glb',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    ];
+  }
+
   // ===========================================================
-  // AR OBJECT MANAGEMENT
+  // FURNITURE SELECTION UI
   // ===========================================================
-  void selectObject(String objectName) {
-    _selectedObject = objectName;
-    _selectedFurnitureItem = _availableFurnitureItems.firstWhere(
-          (item) => item.name == objectName,
-      orElse: () => _availableFurnitureItems.first,
-    );
+  void toggleFurnitureSelection() {
+    _isFurnitureSelectionVisible = !_isFurnitureSelectionVisible;
+    notifyListeners();
+  }
+
+  void hideFurnitureSelection() {
+    _isFurnitureSelectionVisible = false;
     notifyListeners();
   }
 
   void selectFurnitureItem(FurnitureItem item) {
     _selectedFurnitureItem = item;
-    _selectedObject = item.name;
     notifyListeners();
   }
 
+  // ===========================================================
+  // AR OBJECT MANAGEMENT
+  // ===========================================================
   void placeObject(Offset position, double scale, double rotation) {
     if (_selectedFurnitureItem == null) return;
 
-    // Create a design object with the placement data
-    final designObject = design_models.DesignObject(
+    final designObject = DesignObject(
       itemId: _selectedFurnitureItem!.id,
-      position: design_models.Position(
+      position: Position(
         x: position.dx,
         y: position.dy,
         z: 0.0,
       ),
-      rotation: design_models.Rotation(
+      rotation: Rotation(
         x: 0.0,
         y: 0.0,
         z: rotation,
       ),
-      scale: design_models.Scale.uniform(scale),
+      scale: Scale.uniform(scale),
+      arModelUrl: _selectedFurnitureItem!.arModelUrl, // Store GLB path
     );
 
     _placedObjects.add(designObject);
@@ -218,7 +233,7 @@ class CameraViewModel extends ChangeNotifier {
   }
 
   // ===========================================================
-  // CAPTURE & SAVE TO BACKEND
+  // CAPTURE & SAVE
   // ===========================================================
   Future<void> captureImage(BuildContext context) async {
     if (_controller == null || !_controller!.value.isInitialized) {
@@ -232,10 +247,7 @@ class CameraViewModel extends ChangeNotifier {
 
     try {
       final XFile image = await _controller!.takePicture();
-
-      // Store the captured image path for preview
       _capturedImagePath = image.path;
-
       print('Image captured: ${image.path}');
       print('Placed objects: ${_placedObjects.length}');
     } catch (e) {
@@ -259,25 +271,50 @@ class CameraViewModel extends ChangeNotifier {
     try {
       final roomieLabViewModel = Provider.of<RoomieLabViewModel>(context, listen: false);
 
-      // Generate project name based on objects placed
-      final projectName = _generateProjectName();
-      final roomType = _determineRoomType();
+      // Create a design with all placed objects
+      final design = Design(
+        id: '', // Will be generated by Firestore
+        userId: 'current_user_id', // You'll need to get this from auth
+        projectId: '', // Will be set after project creation
+        name: _generateProjectName(),
+        objects: _placedObjects,
+        imageUrl: _capturedImagePath!,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        lastViewed: DateTime.now(),
+      );
 
-      // Save project to backend
+      // First create the project
       final projectId = await roomieLabViewModel.createProject(
-        name: projectName,
-        roomType: roomType,
-        imagePath: _capturedImagePath!,
-        designObjects: _placedObjects,
+        name: design.name,
+        roomType: _determineRoomType(),
+        imageUrl: _capturedImagePath!,
+        items: _placedObjects.map((obj) => obj.itemId).toList(),
+        description: 'AR design with ${_placedObjects.length} objects',
       );
 
       if (projectId != null) {
-        print('Project saved successfully with ID: $projectId');
-        return true;
-      } else {
-        _error = 'Failed to save project to RoomieLab';
-        return false;
+        // Now create the design with the project ID
+        final designId = await roomieLabViewModel.createDesign(
+          projectId: projectId,
+          name: design.name,
+          objects: _placedObjects,
+          imageUrl: _capturedImagePath!,
+        );
+
+        if (designId != null) {
+          print('Project and design saved successfully');
+          print('Project ID: $projectId, Design ID: $designId');
+          print('Saved ${_placedObjects.length} 3D objects');
+
+          // Reset for next capture
+          resetCapture();
+          return true;
+        }
       }
+
+      _error = 'Failed to save project to RoomieLab';
+      return false;
     } catch (e) {
       _error = 'Failed to save project: $e';
       return false;
@@ -292,25 +329,34 @@ class CameraViewModel extends ChangeNotifier {
       return 'AR Design ${DateTime.now().toString().substring(0, 16)}';
     }
 
-    final mainObject = _placedObjects.first;
-    final furnitureItem = _availableFurnitureItems.firstWhere(
-          (item) => item.id == mainObject.itemId,
-      orElse: () => _availableFurnitureItems.first,
-    );
-    return '${furnitureItem.name} Design ${DateTime.now().toString().substring(0, 16)}';
+    final objectNames = _placedObjects.map((obj) {
+      final furniture = _availableFurnitureItems.firstWhere(
+            (item) => item.id == obj.itemId,
+        orElse: () => _availableFurnitureItems.first,
+      );
+      return furniture.name;
+    }).toList();
+
+    final mainObject = objectNames.first;
+    if (objectNames.length == 1) {
+      return '$mainObject Design';
+    } else {
+      return '$mainObject +${objectNames.length - 1} more';
+    }
   }
 
   String _determineRoomType() {
     if (_placedObjects.isEmpty) return 'Living Room';
 
-    final objectIds = _placedObjects.map((obj) => obj.itemId).toSet();
+    final roomTypes = _placedObjects.map((obj) {
+      final furniture = _availableFurnitureItems.firstWhere(
+            (item) => item.id == obj.itemId,
+        orElse: () => _availableFurnitureItems.first,
+      );
+      return furniture.roomType;
+    }).toSet();
 
-    // Get room types from placed furniture items
-    final roomTypes = _availableFurnitureItems
-        .where((item) => objectIds.contains(item.id))
-        .map((item) => item.roomType)
-        .toSet();
-
+    // Return the most common room type, or default to Living Room
     if (roomTypes.contains('Bedroom')) return 'Bedroom';
     if (roomTypes.contains('Living Room')) return 'Living Room';
     if (roomTypes.contains('Dining Room')) return 'Dining Room';
@@ -323,22 +369,12 @@ class CameraViewModel extends ChangeNotifier {
     _capturedImagePath = null;
     _placedObjects.clear();
     _isObjectPlaced = false;
-    notifyListeners();
-  }
-
-  void resetAll() {
-    _capturedImagePath = null;
-    _placedObjects.clear();
-    _isObjectPlaced = false;
-    if (_availableFurnitureItems.isNotEmpty) {
-      _selectedFurnitureItem = _availableFurnitureItems.first;
-      _selectedObject = _selectedFurnitureItem!.name;
-    }
+    _isFurnitureSelectionVisible = false;
     notifyListeners();
   }
 
   // ===========================================================
-  // SWITCH CAMERA
+  // CAMERA CONTROLS
   // ===========================================================
   Future<void> switchCamera() async {
     if (_cameras == null || _cameras!.length < 2) return;
@@ -357,10 +393,6 @@ class CameraViewModel extends ChangeNotifier {
 
     await _controller!.initialize();
     notifyListeners();
-  }
-
-  void onBottomNavigationTapped(int index) {
-    _homeViewModel.onTabSelected(index);
   }
 
   @override

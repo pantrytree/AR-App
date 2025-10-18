@@ -8,6 +8,7 @@ class FilterOption {
 }
 
 class FilterOptions {
+
   // Room filter options
   static final List<FilterOption> roomOptions = [
     FilterOption('All', 'All Rooms'),

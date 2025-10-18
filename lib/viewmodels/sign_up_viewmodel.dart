@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:roomantics/services/auth_service.dart';
+import 'package:Roomantics/services/auth_service.dart';
 
 class SignUpViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -64,11 +64,37 @@ class SignUpViewModel extends ChangeNotifier {
     return null;
   }
 
-  String? passwordValidator(String? v) =>
-      (v == null || v.length < 6) ? 'Password min 6 characters' : null;
+  String? passwordValidator(String? v) {
+    if (v == null || v.isEmpty) return 'Password required';
 
-  String? confirmPasswordValidator(String? v) =>
-      (v != password) ? 'Passwords do not match' : null;
+    if (v.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(v)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+
+    if (!RegExp(r'[a-z]').hasMatch(v)) {
+      return 'Password must contain at least one lowercase letter';
+    }
+
+    if (!RegExp(r'[0-9]').hasMatch(v)) {
+      return 'Password must contain at least one number';
+    }
+
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) {
+      return 'Password must contain at least one special character';
+    }
+
+    return null;
+  }
+
+  String? confirmPasswordValidator(String? v) {
+    if (v == null || v.isEmpty) return 'Please confirm your password';
+    if (v != password) return 'Passwords do not match';
+    return null;
+  }
 
   void onSignInTapped() {
     navigateToRoute = '/login';

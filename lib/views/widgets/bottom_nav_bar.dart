@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/utils/colors.dart';
 import '../../theme/theme.dart';
-import 'package:roomantics/viewmodels/home_viewmodel.dart';
+import 'package:Roomantics/viewmodels/home_viewmodel.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;

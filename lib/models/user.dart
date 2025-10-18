@@ -4,7 +4,7 @@ class User {
   final String uid;
   final String email;
   final String displayName;
-  final String? profileImageUrl;
+  final String? photoUrl;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final DateTime? lastLogin;
@@ -14,7 +14,7 @@ class User {
     required this.uid,
     required this.email,
     required this.displayName,
-    this.profileImageUrl,
+    this.photoUrl,
     required this.createdAt,
     this.updatedAt,
     this.lastLogin,
@@ -27,7 +27,7 @@ class User {
       uid: json['uid'] as String,
       email: json['email'] as String,
       displayName: json['displayName'] as String,
-      profileImageUrl: json['profileImageUrl'] as String?,
+      photoUrl: json['photoUrl'] as String?,
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: json['updatedAt'] != null
           ? _parseDateTime(json['updatedAt'])
@@ -46,7 +46,7 @@ class User {
       uid: doc.id,
       email: data['email'] as String,
       displayName: data['displayName'] as String,
-      profileImageUrl: data['profileImageUrl'] as String?,
+      photoUrl: data['photoUrl'] as String?,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
@@ -64,7 +64,7 @@ class User {
       uid: data['uid'] as String? ?? '',
       email: data['email'] as String? ?? '',
       displayName: data['displayName'] as String? ?? '',
-      profileImageUrl: data['profileImageUrl'] as String?,
+      photoUrl: data['photoUrl'] as String?,
       createdAt: (data['createdAt'] is Timestamp)
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -84,7 +84,7 @@ class User {
       'uid': uid,
       'email': email,
       'displayName': displayName,
-      'profileImageUrl': profileImageUrl,
+      'photoUrl': photoUrl,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'lastLogin': lastLogin?.toIso8601String(),
@@ -98,7 +98,7 @@ class User {
       'uid': uid,
       'email': email,
       'displayName': displayName,
-      'profileImageUrl': profileImageUrl,
+      'photoUrl': photoUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'lastLogin': lastLogin != null ? Timestamp.fromDate(lastLogin!) : null,
@@ -122,7 +122,7 @@ class User {
     String? uid,
     String? email,
     String? displayName,
-    String? profileImageUrl,
+    String? photoUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastLogin,
@@ -132,7 +132,7 @@ class User {
       uid: uid ?? this.uid,
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastLogin: lastLogin ?? this.lastLogin,

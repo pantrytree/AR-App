@@ -7,7 +7,6 @@ import '../../views/widgets/bottom_nav_bar.dart';
 import '../../views/pages/faq_page.dart';
 import '../../views/pages/guides_page.dart';
 
-
 class HelpPage extends StatelessWidget {
   const HelpPage({super.key});
 
@@ -53,7 +52,7 @@ class HelpPage extends StatelessWidget {
                 children: [
                   _buildSearchBar(viewModel),
                   const SizedBox(height: 24),
-                  _buildMainOptions(viewModel, context), // pass context
+                  _buildMainOptions(viewModel, context),
                   const SizedBox(height: 32),
                   _buildDynamicSections(viewModel),
                 ],
@@ -61,17 +60,53 @@ class HelpPage extends StatelessWidget {
             ),
             bottomNavigationBar: BottomNavBar(
               currentIndex: 4,
-              onTap: (index) {
-                // Example navigation logic
-                // TODO(Shae) : Replace with real routes
-                if (index == 0) Navigator.pushNamed(context, '/home');
-                if (index == 1) Navigator.pushNamed(context, '/my-likes');
-              },
+              onTap: (index) => _handleBottomNavTap(context, index),
             ),
           );
         },
       ),
     );
+  }
+
+  // Complete bottom navigation handler
+  void _handleBottomNavTap(BuildContext context, int index) {
+    switch (index) {
+      case 0: // Home
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+              (route) => false,
+        );
+        break;
+      case 1: // Likes
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/my-likes',
+              (route) => false,
+        );
+        break;
+      case 2: // AR View
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/camera-page',
+              (route) => false,
+        );
+        break;
+      case 3: // Catalogue
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/catalogue',
+              (route) => false,
+        );
+        break;
+      case 4: // Profile (Account Hub)
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/account-hub',
+              (route) => false,
+        );
+        break;
+    }
   }
 
   // Search Bar
@@ -131,7 +166,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 
-  // Guides & FAQ cards(buttons-now navigate to pages)
+  // Guides & FAQ cards
   Widget _buildMainOptions(HelpPageViewModel viewModel, BuildContext context) {
     return Row(
       children: [
@@ -141,7 +176,7 @@ class HelpPage extends StatelessWidget {
             label: 'Guides',
             onTap: () {
               Navigator.push(
-                context, // use builder context
+                context,
                 MaterialPageRoute(builder: (_) => GuidesPage()),
               );
             },
@@ -154,7 +189,7 @@ class HelpPage extends StatelessWidget {
             label: 'FAQ',
             onTap: () {
               Navigator.push(
-                context, // use builder context
+                context,
                 MaterialPageRoute(builder: (_) => const FAQPage()),
               );
             },
@@ -231,7 +266,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 
-  // --- Individual expandable item ---
+  // Individual expandable item
   Widget _buildExpandableItem({
     required String title,
     required bool isExpanded,

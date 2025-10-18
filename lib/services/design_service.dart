@@ -118,6 +118,7 @@ class DesignService {
   imageUrl: imageUrl,
   createdAt: now,
   updatedAt: now,
+    lastViewed: now,
   );
 
   final docRef = await _firestore

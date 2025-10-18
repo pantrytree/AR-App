@@ -73,10 +73,10 @@ class SideMenu extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: AppColors.primaryLightPurple.withOpacity(0.2),
               ),
-              child: viewModel.profileImageUrl != null
+              child: viewModel.photoUrl != null
                   ? ClipOval(
                 child: Image.network(
-                  viewModel.profileImageUrl!,
+                  viewModel.photoUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Icon(
                     Icons.person,
