@@ -60,12 +60,12 @@ class ForgotPasswordPage extends StatelessWidget {
 
   Widget _buildBody(BuildContext context, ForgotPasswordViewModel viewModel) {
     return SafeArea(
-      child: SizedBox(
-        width: double.infinity,
+      child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 32),
 
@@ -73,34 +73,13 @@ class ForgotPasswordPage extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              Text(
-                viewModel.currentStepTitle,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.getTextColor(context),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              if (viewModel.currentStep == 1)
-                _buildEmailDescription(context, viewModel)
-              else
-                Text(
-                  viewModel.currentStepDescription,
-                  style: TextStyle(
-                    color: AppColors.getSecondaryTextColor(context),
-                    fontSize: 16,
-                    height: 1.5,
-                  ),
-                ),
+              // Title section
+              _buildTitleSection(context, viewModel),
 
               const SizedBox(height: 32),
 
-              Expanded(
-                child: _buildCurrentStepForm(context, viewModel),
-              ),
+              // Form section
+              _buildCurrentStepForm(context, viewModel),
 
               const SizedBox(height: 24),
 
@@ -117,6 +96,37 @@ class ForgotPasswordPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTitleSection(BuildContext context, ForgotPasswordViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          viewModel.currentStepTitle,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextColor(context),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        if (viewModel.currentStep == 1)
+          _buildEmailDescription(context, viewModel)
+        else
+          Text(
+            viewModel.currentStepDescription,
+            style: TextStyle(
+              color: AppColors.getSecondaryTextColor(context),
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+      ],
     );
   }
 
@@ -161,6 +171,7 @@ class ForgotPasswordPage extends StatelessWidget {
     final isCompleted = step < currentStep;
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 32,
@@ -220,7 +231,7 @@ class ForgotPasswordPage extends StatelessWidget {
   }
 
   Widget _buildEmailStep(BuildContext context, ForgotPasswordViewModel viewModel) {
-    return SingleChildScrollView(
+    return Container(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -285,39 +296,45 @@ class ForgotPasswordPage extends StatelessWidget {
   }
 
   Widget _buildLinkSentStep(BuildContext context, ForgotPasswordViewModel viewModel) {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        Icon(
-          Icons.mark_email_read_outlined,
-          size: 80,
-          color: AppColors.getPrimaryColor(context),
-        ),
-        const SizedBox(height: 20),
-        GestureDetector(
-          onTap: viewModel.isLoading ? null : () => viewModel.resendResetLink(),
-          child: Text(
-            "Didn't receive the link? Resend",
-            style: TextStyle(
-              color: AppColors.getPrimaryColor(context),
-              fontWeight: FontWeight.w500,
-              fontSize: 16,
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 20),
+          Icon(
+            Icons.mark_email_read_outlined,
+            size: 80,
+            color: AppColors.getPrimaryColor(context),
+          ),
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: viewModel.isLoading ? null : () => viewModel.resendResetLink(),
+            child: Text(
+              "Didn't receive the link? Resend",
+              style: TextStyle(
+                color: AppColors.getPrimaryColor(context),
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: () => _navigateToLogin(context, viewModel.email),
-          child: Text(
-            "Return to Login",
-            style: TextStyle(
-              color: AppColors.getSecondaryTextColor(context),
-              fontWeight: FontWeight.w500,
-              fontSize: 16,
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () => _navigateToLogin(context, viewModel.email),
+            child: Text(
+              "Return to Login",
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

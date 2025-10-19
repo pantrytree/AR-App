@@ -16,8 +16,29 @@ import '/views/pages/about_page.dart';
 import '/views/pages/roomielab_screen.dart';
 import '/models/furniture_item.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  bool _isInitialLoad = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize data when the page first loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+      homeViewModel.refreshHomePage().then((_) {
+        setState(() {
+          _isInitialLoad = false;
+        });
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,18 +53,12 @@ class HomePage extends StatelessWidget {
         builder: (context, themeManager, child) {
           return Consumer<HomeViewModel>(
             builder: (context, homeViewModel, child) {
-              // Handle navigation only once
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (ModalRoute.of(context)?.isCurrent ?? false) {
-                  homeViewModel.resetToHome();
-                }
-              });
+              // Handle navigation
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (homeViewModel.navigateToRoute != null) {
                   final route = homeViewModel.navigateToRoute!;
                   final arguments = homeViewModel.navigationArguments;
 
-                  // Clear navigation BEFORE navigating to prevent multiple triggers
                   homeViewModel.clearNavigation();
 
                   Navigator.pushNamed(
@@ -53,6 +68,11 @@ class HomePage extends StatelessWidget {
                   );
                 }
               });
+
+              // Show loading only on initial load
+              if (_isInitialLoad && homeViewModel.isLoading) {
+                return _buildLoadingScaffold(context);
+              }
 
               return Scaffold(
                 backgroundColor: AppColors.getBackgroundColor(context),
@@ -92,8 +112,45 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  Widget _buildLoadingScaffold(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.getBackgroundColor(context),
+      appBar: AppBar(
+        backgroundColor: AppColors.getAppBarBackground(context),
+        title: Text(
+          TextComponents.homePageTitle,
+          style: TextStyle(
+            color: AppColors.getAppBarForeground(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 0,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppColors.getPrimaryColor(context),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading your data...',
+              style: TextStyle(
+                color: AppColors.getTextColor(context),
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBody(BuildContext context, HomeViewModel homeViewModel) {
-    if (homeViewModel.isLoading) {
+    if (homeViewModel.isLoading && !_isInitialLoad) {
       return _buildLoadingState(context);
     }
 

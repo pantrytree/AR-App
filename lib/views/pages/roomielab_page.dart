@@ -204,17 +204,25 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
   }
 
   Widget _buildProjectsList(BuildContext context, RoomieLabViewModel viewModel) {
-    return ListView.builder(
-      key: const ValueKey('projectList'),
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      itemCount: viewModel.projects.length,
-      itemBuilder: (context, index) {
-        final project = viewModel.projects[index];
-        return _AnimatedProjectCard(
-          key: ValueKey(project.id),
-          project: project,
-          viewModel: viewModel,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate dynamic height based on screen size
+        final cardHeight = constraints.maxHeight * 0.65; // 65% of available height
+
+        return ListView.builder(
+          key: const ValueKey('projectList'),
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          itemCount: viewModel.projects.length,
+          itemBuilder: (context, index) {
+            final project = viewModel.projects[index];
+            return _AnimatedProjectCard(
+              key: ValueKey(project.id),
+              project: project,
+              viewModel: viewModel,
+              cardHeight: cardHeight,
+            );
+          },
         );
       },
     );
@@ -224,11 +232,13 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
 class _AnimatedProjectCard extends StatefulWidget {
   final Project project;
   final RoomieLabViewModel viewModel;
+  final double cardHeight;
 
   const _AnimatedProjectCard({
     super.key,
     required this.project,
     required this.viewModel,
+    required this.cardHeight,
   });
 
   @override
@@ -376,14 +386,13 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
   @override
   Widget build(BuildContext context) {
     final project = widget.project;
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return ScaleTransition(
       scale: _scale,
       child: FadeTransition(
         opacity: _fade,
         child: Container(
-          height: screenHeight * 0.7, // 70% of screen height
+          height: widget.cardHeight,
           margin: const EdgeInsets.only(bottom: 16),
           child: Stack(
             children: [
@@ -405,13 +414,13 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Project Image
+                      // Project Image - Dynamic height
                       Expanded(
                         flex: 3,
                         child: _buildProjectImage(context, project),
                       ),
 
-                      // Project Info and Actions
+                      // Project Info and Actions - Dynamic height
                       Expanded(
                         flex: 1,
                         child: _buildProjectInfoAndActions(context, project),
@@ -503,83 +512,101 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
   }
 
   Widget _buildProjectInfoAndActions(BuildContext context, Project project) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Project Name and Date
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+
+        return Container(
+          padding: EdgeInsets.all(availableHeight * 0.1), // Dynamic padding based on available height
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
+              // Project Name and Date - Dynamic sizing
+              Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      project.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: AppColors.getTextColor(context),
+                    Flexible(
+                      child: Text(
+                        project.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: _calculateTitleFontSize(availableHeight),
+                          color: AppColors.getTextColor(context),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: availableHeight * 0.05),
                     Text(
                       '${project.roomType} • ${_formatDate(project.createdAt)}',
                       style: TextStyle(
                         color: AppColors.getSecondaryTextColor(context),
-                        fontSize: 14,
+                        fontSize: _calculateSubtitleFontSize(availableHeight),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+
+              // Action Buttons - Dynamic sizing
+              SizedBox(height: availableHeight * 0.1),
+              _buildActionButtons(context, availableHeight),
             ],
           ),
+        );
+      },
+    );
+  }
 
-          const SizedBox(height: 12),
+  Widget _buildActionButtons(BuildContext context, double availableHeight) {
+    final project = widget.project;
+    final buttonSize = availableHeight * 0.4; // Dynamic button size
 
-          // Action Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              // Like Button
-              _buildActionButton(
-                icon: _isLiked ? Icons.favorite : Icons.favorite_border,
-                label: '$_likeCount',
-                color: _isLiked ? Colors.red : AppColors.getSecondaryTextColor(context),
-                onTap: _toggleLike,
-              ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        // Like Button
+        _buildActionButton(
+          icon: _isLiked ? Icons.favorite : Icons.favorite_border,
+          label: '$_likeCount',
+          color: _isLiked ? Colors.red : AppColors.getSecondaryTextColor(context),
+          onTap: _toggleLike,
+          size: buttonSize,
+        ),
 
-              // Collaborators Button
-              _buildActionButton(
-                icon: Icons.people_outline,
-                label: '${project.collaborators?.length ?? 0}',
-                color: AppColors.getSecondaryTextColor(context),
-                onTap: _showCollaboratorsDialog,
-              ),
+        // Collaborators Button
+        _buildActionButton(
+          icon: Icons.people_outline,
+          label: '${project.collaborators?.length ?? 0}',
+          color: AppColors.getSecondaryTextColor(context),
+          onTap: _showCollaboratorsDialog,
+          size: buttonSize,
+        ),
 
-              // Share Button
-              _buildActionButton(
-                icon: Icons.share_outlined,
-                label: 'Share',
-                color: AppColors.getSecondaryTextColor(context),
-                onTap: () => _shareProject(context, project),
-              ),
+        // Share Button
+        _buildActionButton(
+          icon: Icons.share_outlined,
+          label: 'Share',
+          color: AppColors.getSecondaryTextColor(context),
+          onTap: () => _shareProject(context, project),
+          size: buttonSize,
+        ),
 
-              // Edit Button
-              _buildActionButton(
-                icon: Icons.edit_outlined,
-                label: 'Edit',
-                color: AppColors.getSecondaryTextColor(context),
-                onTap: () => _navigateToEditProject(context, project),
-              ),
-            ],
-          ),
-        ],
-      ),
+        // Edit Button
+        _buildActionButton(
+          icon: Icons.edit_outlined,
+          label: 'Edit',
+          color: AppColors.getSecondaryTextColor(context),
+          onTap: () => _navigateToEditProject(context, project),
+          size: buttonSize,
+        ),
+      ],
     );
   }
 
@@ -588,32 +615,56 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     required String label,
     required Color color,
     required VoidCallback onTap,
+    required double size,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
+            child: Icon(
+              icon,
               color: color,
-              fontWeight: FontWeight.w500,
+              size: size * 0.45, // Dynamic icon size
+            ),
+          ),
+          SizedBox(height: size * 0.1),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: _calculateButtonFontSize(size),
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
     );
+  }
+
+  // Dynamic font size calculations
+  double _calculateTitleFontSize(double availableHeight) {
+    // Base size for normal screens, scales with available height
+    return 16.0 + (availableHeight * 0.01);
+  }
+
+  double _calculateSubtitleFontSize(double availableHeight) {
+    return 12.0 + (availableHeight * 0.005);
+  }
+
+  double _calculateButtonFontSize(double buttonSize) {
+    return 10.0 + (buttonSize * 0.02);
   }
 
   void _navigateToFullScreen(BuildContext context, Project project) {
@@ -641,7 +692,6 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
   }
 
   void _shareProject(BuildContext context, Project project) {
-    // Implement share functionality
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -818,91 +868,126 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return Dialog(
       backgroundColor: AppColors.getCardBackground(context),
-      title: Text(
-        'Project Collaborators',
-        style: TextStyle(
-          color: AppColors.getTextColor(context),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Add collaborator input
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    hintText: 'Enter email address',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onSubmitted: (_) => _addCollaborator(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(Icons.add, color: AppColors.primaryPurple),
-                onPressed: _addCollaborator,
-              ),
-            ],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7, // 70% of screen height
           ),
-
-          const SizedBox(height: 16),
-
-          // Collaborators list
-          if (collaborators.isNotEmpty) ...[
-            Text(
-              'Current Collaborators:',
-              style: TextStyle(
-                color: AppColors.getTextColor(context),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...collaborators.map((email) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundColor: AppColors.primaryPurple.withOpacity(0.1),
-                child: Icon(Icons.person, color: AppColors.primaryPurple),
-              ),
-              title: Text(
-                email,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Project Collaborators',
                 style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                   color: AppColors.getTextColor(context),
                 ),
               ),
-              trailing: IconButton(
-                icon: Icon(Icons.remove_circle, color: Colors.red),
-                onPressed: () => _removeCollaborator(email),
+              const SizedBox(height: 16),
+
+              // Add collaborator input
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter email address',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      onSubmitted: (_) => _addCollaborator(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(Icons.add, color: AppColors.primaryPurple),
+                    onPressed: _addCollaborator,
+                  ),
+                ],
               ),
-            )).toList(),
-          ] else ...[
-            Text(
-              'No collaborators yet',
-              style: TextStyle(
-                color: AppColors.getSecondaryTextColor(context),
+
+              const SizedBox(height: 16),
+
+              // Collaborators list
+              if (collaborators.isNotEmpty) ...[
+                Text(
+                  'Current Collaborators:',
+                  style: TextStyle(
+                    color: AppColors.getTextColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: collaborators.length,
+                    itemBuilder: (context, index) {
+                      final email = collaborators[index];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.primaryPurple.withOpacity(0.1),
+                          radius: 20,
+                          child: Icon(Icons.person, color: AppColors.primaryPurple, size: 16),
+                        ),
+                        title: Text(
+                          email,
+                          style: TextStyle(
+                            color: AppColors.getTextColor(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.remove_circle, color: Colors.red, size: 20),
+                          onPressed: () => _removeCollaborator(email),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ] else ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    'No collaborators yet',
+                    style: TextStyle(
+                      color: AppColors.getSecondaryTextColor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              // Close button
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryPurple,
+                  foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Close'),
               ),
-            ),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Close',
-            style: TextStyle(
-              color: AppColors.getSecondaryTextColor(context),
-            ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

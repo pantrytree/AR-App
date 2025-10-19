@@ -260,7 +260,7 @@ class SignUpPage extends StatelessWidget {
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
-                              onTap: () => Navigator.pop(context),
+                              onTap: () => Navigator.pushReplacementNamed(context, '/splash2'),
                               child: const Padding(
                                 padding: EdgeInsets.all(8.0),
                                 child: Icon(Icons.close, color: Colors.black, size: 28),

@@ -1,15 +1,16 @@
-import 'dart:ui';
-
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
-import 'package:Roomantics/viewmodels/roomielab_viewmodel.dart';
+import 'package:Roomantics/services/design_service.dart';
+import 'package:Roomantics/services/project_service.dart';
 import 'package:Roomantics/services/furniture_service.dart';
-import 'package:Roomantics/models/design.dart';
-import 'package:Roomantics/models/design_object.dart';
+import 'package:Roomantics/services/cloudinary_service.dart';
 import 'package:Roomantics/models/furniture_item.dart';
+import 'package:Roomantics/models/design_object.dart';
+import 'package:Roomantics/models/design.dart';
 
 class CameraViewModel extends ChangeNotifier {
   CameraController? _controller;
@@ -17,48 +18,52 @@ class CameraViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   List<CameraDescription>? _cameras;
+  CameraLensDirection _currentLens = CameraLensDirection.back;
 
-  // AR state
-  bool _isObjectPlaced = false;
+  // Furniture selection state
   bool _isFurnitureSelectionVisible = false;
   FurnitureItem? _selectedFurnitureItem;
   List<FurnitureItem> _availableFurnitureItems = [];
 
-  // Capture state
-  String? _capturedImagePath;
+  // AR state
   List<DesignObject> _placedObjects = [];
+  String? _capturedImagePath;
+
+  // Services
+  final FurnitureService _furnitureService = FurnitureService();
+  final DesignService _designService = DesignService();
+  final ProjectService _projectService = ProjectService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Getters
   bool get isCameraReady => _isCameraReady;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isObjectPlaced => _isObjectPlaced;
   bool get isFurnitureSelectionVisible => _isFurnitureSelectionVisible;
   FurnitureItem? get selectedFurnitureItem => _selectedFurnitureItem;
   List<FurnitureItem> get availableFurnitureItems => _availableFurnitureItems;
   CameraController? get controller => _controller;
-  String? get capturedImagePath => _capturedImagePath;
-  bool get hasCapturedImage => _capturedImagePath != null;
   List<DesignObject> get placedObjects => _placedObjects;
+  String? get capturedImagePath => _capturedImagePath;
+  bool get hasPlacedObjects => _placedObjects.isNotEmpty;
 
-  final FurnitureService _furnitureService = FurnitureService();
-
-  // ===========================================================
-  // CAMERA INITIALIZATION
-  // ===========================================================
+  // Initialize camera
   Future<void> initializeCamera() async {
+    if (_isLoading) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Load furniture items
-      await _loadFurnitureItems();
+      // Dispose existing controller
+      await _disposeCamera();
 
       // Check camera permission
       final status = await Permission.camera.request();
       if (!status.isGranted) {
-        _error = 'Camera permission denied';
+        _error = 'Camera permission denied. Please enable camera access in settings.';
         _isLoading = false;
         notifyListeners();
         return;
@@ -67,25 +72,35 @@ class CameraViewModel extends ChangeNotifier {
       // Get available cameras
       _cameras = await availableCameras();
       if (_cameras == null || _cameras!.isEmpty) {
-        _error = 'No cameras available';
+        _error = 'No cameras available on this device';
         _isLoading = false;
         notifyListeners();
         return;
       }
 
+      // Find back camera first, fallback to first available
+      final backCamera = _cameras!.firstWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.back,
+        orElse: () => _cameras!.first,
+      );
+
+      _currentLens = backCamera.lensDirection;
+
       // Initialize camera controller
       _controller = CameraController(
-        _cameras!.first,
+        backCamera,
         ResolutionPreset.high,
         enableAudio: false,
       );
 
       await _controller!.initialize();
-
       _isCameraReady = true;
-      _error = null;
+
+      // Load furniture items
+      await _loadFurnitureItems();
+
     } catch (e) {
-      _error = 'Failed to initialize camera: $e';
+      _error = 'Failed to initialize camera: ${e.toString()}';
       _isCameraReady = false;
     } finally {
       _isLoading = false;
@@ -93,108 +108,118 @@ class CameraViewModel extends ChangeNotifier {
     }
   }
 
+  // Load furniture items with AR models
   Future<void> _loadFurnitureItems() async {
     try {
       _availableFurnitureItems = await _furnitureService.getFurnitureItems();
 
-      // Filter items that have 3D models (GLB files)
+      // Filter items that have AR models
       _availableFurnitureItems = _availableFurnitureItems.where((item) {
         return item.arModelUrl != null && item.arModelUrl!.isNotEmpty;
       }).toList();
 
+      // If no AR models found, create demo items
+      if (_availableFurnitureItems.isEmpty) {
+        _availableFurnitureItems = _createDemoFurnitureItems();
+      }
+
+      // Select first item by default
       if (_availableFurnitureItems.isNotEmpty) {
         _selectedFurnitureItem = _availableFurnitureItems.first;
       }
     } catch (e) {
-      print('Error loading furniture items: $e');
-      // Fallback to demo items with 3D models
-      _availableFurnitureItems = _getDemoFurnitureItems();
+      _availableFurnitureItems = _createDemoFurnitureItems();
       _selectedFurnitureItem = _availableFurnitureItems.first;
     }
+    notifyListeners();
   }
 
-  List<FurnitureItem> _getDemoFurnitureItems() {
+  List<FurnitureItem> _createDemoFurnitureItems() {
     return [
       FurnitureItem(
         id: 'sofa_001',
         name: 'Modern Sofa',
-        description: '3-seater modern sofa',
+        description: '3-seater modern sofa with AR model',
         category: 'Sofa',
         roomType: 'Living Room',
         imageUrl: null,
-        arModelUrl: 'assets/models/sofa.glb', // Path to GLB file
+        arModelUrl: 'https://example.com/models/sofa.glb',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       ),
       FurnitureItem(
         id: 'chair_001',
         name: 'Dining Chair',
-        description: 'Modern dining chair',
+        description: 'Modern dining chair with AR model',
         category: 'Chair',
         roomType: 'Dining Room',
         imageUrl: null,
-        arModelUrl: 'assets/models/chair.glb',
+        arModelUrl: 'https://example.com/models/chair.glb',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       ),
       FurnitureItem(
         id: 'table_001',
         name: 'Coffee Table',
-        description: 'Round coffee table',
+        description: 'Round coffee table with AR model',
         category: 'Table',
         roomType: 'Living Room',
         imageUrl: null,
-        arModelUrl: 'assets/models/table.glb',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      FurnitureItem(
-        id: 'bed_001',
-        name: 'Double Bed',
-        description: 'Queen size bed',
-        category: 'Bed',
-        roomType: 'Bedroom',
-        imageUrl: null,
-        arModelUrl: 'assets/models/bed.glb',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      FurnitureItem(
-        id: 'lamp_001',
-        name: 'Floor Lamp',
-        description: 'Modern floor lamp',
-        category: 'Lighting',
-        roomType: 'Living Room',
-        imageUrl: null,
-        arModelUrl: 'assets/models/lamp.glb',
+        arModelUrl: 'https://example.com/models/table.glb',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       ),
     ];
   }
 
-  // ===========================================================
-  // FURNITURE SELECTION UI
-  // ===========================================================
+  // Switch between front and back camera
+  Future<void> switchCamera() async {
+    if (_cameras == null || _cameras!.length < 2) return;
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _disposeCamera();
+
+      // Find next camera
+      final nextCamera = _cameras!.firstWhere(
+            (camera) => camera.lensDirection != _currentLens,
+        orElse: () => _cameras!.first,
+      );
+
+      _currentLens = nextCamera.lensDirection;
+
+      _controller = CameraController(
+        nextCamera,
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+
+      await _controller!.initialize();
+      _isCameraReady = true;
+    } catch (e) {
+      _error = 'Failed to switch camera: ${e.toString()}';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Furniture selection methods
   void toggleFurnitureSelection() {
     _isFurnitureSelectionVisible = !_isFurnitureSelectionVisible;
     notifyListeners();
   }
 
-  void hideFurnitureSelection() {
+  void selectFurnitureItem(FurnitureItem item) {
+    _selectedFurnitureItem = item;
     _isFurnitureSelectionVisible = false;
     notifyListeners();
   }
 
-  void selectFurnitureItem(FurnitureItem item) {
-    _selectedFurnitureItem = item;
-    notifyListeners();
-  }
-
-  // ===========================================================
-  // AR OBJECT MANAGEMENT
-  // ===========================================================
-  void placeObject(Offset position, double scale, double rotation) {
+  // AR object placement (simplified - without actual 3D rendering)
+  void placeObject(Offset position) {
     if (_selectedFurnitureItem == null) return;
 
     final designObject = DesignObject(
@@ -204,38 +229,28 @@ class CameraViewModel extends ChangeNotifier {
         y: position.dy,
         z: 0.0,
       ),
-      rotation: Rotation(
-        x: 0.0,
-        y: 0.0,
-        z: rotation,
-      ),
-      scale: Scale.uniform(scale),
-      arModelUrl: _selectedFurnitureItem!.arModelUrl, // Store GLB path
+      rotation: Rotation(x: 0.0, y: 0.0, z: 0.0),
+      scale: Scale.uniform(1.0),
     );
 
     _placedObjects.add(designObject);
-    _isObjectPlaced = true;
     notifyListeners();
   }
 
-  void removeObject() {
+  void removeLastObject() {
     if (_placedObjects.isNotEmpty) {
       _placedObjects.removeLast();
+      notifyListeners();
     }
-    _isObjectPlaced = _placedObjects.isNotEmpty;
-    notifyListeners();
   }
 
   void clearAllObjects() {
     _placedObjects.clear();
-    _isObjectPlaced = false;
     notifyListeners();
   }
 
-  // ===========================================================
-  // CAPTURE & SAVE
-  // ===========================================================
-  Future<void> captureImage(BuildContext context) async {
+  // Capture image
+  Future<void> captureImage() async {
     if (_controller == null || !_controller!.value.isInitialized) {
       _error = 'Camera not ready';
       notifyListeners();
@@ -246,19 +261,38 @@ class CameraViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final XFile image = await _controller!.takePicture();
-      _capturedImagePath = image.path;
-      print('Image captured: ${image.path}');
-      print('Placed objects: ${_placedObjects.length}');
+      final XFile imageFile = await _controller!.takePicture();
+      _capturedImagePath = imageFile.path;
+      print('Image captured: ${imageFile.path}');
     } catch (e) {
-      _error = 'Failed to capture image: $e';
+      _error = 'Failed to capture image: ${e.toString()}';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<bool> saveProjectToRoomieLab(BuildContext context) async {
+  // REAL Cloudinary upload implementation
+  Future<String> _uploadToCloudinary(File imageFile) async {
+    try {
+      print('Starting Cloudinary upload for camera design...');
+
+      // Generate unique design ID for the upload
+      final designId = 'camera_design_${DateTime.now().millisecondsSinceEpoch}';
+
+      // Use the design image upload method from CloudinaryService
+      final imageUrl = await _cloudinaryService.uploadDesignImage(imageFile, designId);
+
+      print('Cloudinary upload successful: $imageUrl');
+      return imageUrl;
+    } catch (e) {
+      print('Cloudinary upload failed: $e');
+      throw Exception('Failed to upload image to Cloudinary: $e');
+    }
+  }
+
+  // Save design to RoomieLab
+  Future<bool> saveDesignToRoomieLab(String designName) async {
     if (_capturedImagePath == null) {
       _error = 'No image captured';
       notifyListeners();
@@ -269,79 +303,43 @@ class CameraViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final roomieLabViewModel = Provider.of<RoomieLabViewModel>(context, listen: false);
-
-      // Create a design with all placed objects
-      final design = Design(
-        id: '', // Will be generated by Firestore
-        userId: 'current_user_id', // You'll need to get this from auth
-        projectId: '', // Will be set after project creation
-        name: _generateProjectName(),
-        objects: _placedObjects,
-        imageUrl: _capturedImagePath!,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        lastViewed: DateTime.now(),
-      );
-
-      // First create the project
-      final projectId = await roomieLabViewModel.createProject(
-        name: design.name,
-        roomType: _determineRoomType(),
-        imageUrl: _capturedImagePath!,
-        items: _placedObjects.map((obj) => obj.itemId).toList(),
-        description: 'AR design with ${_placedObjects.length} objects',
-      );
-
-      if (projectId != null) {
-        // Now create the design with the project ID
-        final designId = await roomieLabViewModel.createDesign(
-          projectId: projectId,
-          name: design.name,
-          objects: _placedObjects,
-          imageUrl: _capturedImagePath!,
-        );
-
-        if (designId != null) {
-          print('Project and design saved successfully');
-          print('Project ID: $projectId, Design ID: $designId');
-          print('Saved ${_placedObjects.length} 3D objects');
-
-          // Reset for next capture
-          resetCapture();
-          return true;
-        }
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('User not authenticated');
       }
 
-      _error = 'Failed to save project to RoomieLab';
-      return false;
+      // Upload image to Cloudinary using the real implementation
+      final imageFile = File(_capturedImagePath!);
+      final imageUrl = await _uploadToCloudinary(imageFile);
+
+      // Create a project for this design
+      final projectId = await _projectService.createProject(
+        name: '$designName Project',
+        roomType: _determineRoomType(),
+        description: 'AR design created with camera',
+        imageUrl: imageUrl,
+      );
+
+      // Create the design with placed objects
+      final designId = await _designService.createDesign(
+        name: designName,
+        projectId: projectId,
+        objects: _placedObjects,
+        imageUrl: imageUrl,
+      );
+
+      print('Design saved successfully: $designId');
+      print('Image URL: $imageUrl');
+      print('Objects placed: ${_placedObjects.length}');
+
+      return true;
     } catch (e) {
-      _error = 'Failed to save project: $e';
+      _error = 'Failed to save design: ${e.toString()}';
+      print('Save design error: $e');
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
-    }
-  }
-
-  String _generateProjectName() {
-    if (_placedObjects.isEmpty) {
-      return 'AR Design ${DateTime.now().toString().substring(0, 16)}';
-    }
-
-    final objectNames = _placedObjects.map((obj) {
-      final furniture = _availableFurnitureItems.firstWhere(
-            (item) => item.id == obj.itemId,
-        orElse: () => _availableFurnitureItems.first,
-      );
-      return furniture.name;
-    }).toList();
-
-    final mainObject = objectNames.first;
-    if (objectNames.length == 1) {
-      return '$mainObject Design';
-    } else {
-      return '$mainObject +${objectNames.length - 1} more';
     }
   }
 
@@ -356,48 +354,39 @@ class CameraViewModel extends ChangeNotifier {
       return furniture.roomType;
     }).toSet();
 
-    // Return the most common room type, or default to Living Room
-    if (roomTypes.contains('Bedroom')) return 'Bedroom';
+    // Return most common room type or default
     if (roomTypes.contains('Living Room')) return 'Living Room';
+    if (roomTypes.contains('Bedroom')) return 'Bedroom';
     if (roomTypes.contains('Dining Room')) return 'Dining Room';
     if (roomTypes.contains('Office')) return 'Office';
 
     return 'Living Room';
   }
 
+  // Reset after capture
   void resetCapture() {
     _capturedImagePath = null;
     _placedObjects.clear();
-    _isObjectPlaced = false;
     _isFurnitureSelectionVisible = false;
     notifyListeners();
   }
 
-  // ===========================================================
-  // CAMERA CONTROLS
-  // ===========================================================
-  Future<void> switchCamera() async {
-    if (_cameras == null || _cameras!.length < 2) return;
+  // Dispose camera
+  Future<void> _disposeCamera() async {
+    if (_controller != null) {
+      await _controller!.dispose();
+      _controller = null;
+    }
+    _isCameraReady = false;
+  }
 
-    final newCamera = _controller!.description == _cameras!.first
-        ? _cameras!.last
-        : _cameras!.first;
-
-    await _controller!.dispose();
-
-    _controller = CameraController(
-      newCamera,
-      ResolutionPreset.high,
-      enableAudio: false,
-    );
-
-    await _controller!.initialize();
-    notifyListeners();
+  void disposeCamera() {
+    _disposeCamera();
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _disposeCamera();
     super.dispose();
   }
 }

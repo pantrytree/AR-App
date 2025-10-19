@@ -18,7 +18,7 @@ class RoomieLabGallery extends StatefulWidget {
 class _RoomieLabGalleryState extends State<RoomieLabGallery> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final DesignService _designService = DesignService();
 
   List<Design> _designs = [];
   String _selectedCategory = 'All';
@@ -33,36 +33,22 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     'Uncategorized',
   ];
   bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    _loadDesignsFromFirebase();
+    _loadDesigns();
   }
 
-  Future<void> _loadDesignsFromFirebase() async {
+  Future<void> _loadDesigns() async {
     setState(() {
       _isLoading = true;
+      _hasError = false;
     });
 
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final querySnapshot = await _firestore
-          .collection('designs')
-          .where('userId', isEqualTo: user.uid)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      final designs = querySnapshot.docs.map((doc) {
-        return Design.fromFirestore(doc);
-      }).toList();
+      final designs = await _designService.getDesigns();
 
       setState(() {
         _designs = designs;
@@ -71,9 +57,10 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
 
       print('Loaded ${designs.length} designs from Firebase');
     } catch (e) {
-      print('Error loading designs from Firebase: $e');
+      print('Error loading designs: $e');
       setState(() {
         _isLoading = false;
+        _hasError = true;
       });
     }
   }
@@ -87,36 +74,35 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
   }
 
   String _getDesignCategory(Design design) {
+    // Try to get category from design name or objects
     final name = design.name.toLowerCase();
-    if (name.contains('living') || name.contains('sofa')) return 'Living Room';
-    if (name.contains('bed') || name.contains('bedroom')) return 'Bedroom';
-    if (name.contains('kitchen')) return 'Kitchen';
-    if (name.contains('office') || name.contains('desk')) return 'Office';
-    if (name.contains('dining') || name.contains('table')) return 'Dining Room';
-    if (name.contains('bath')) return 'Bathroom';
+
+    if (name.contains('living') || name.contains('sofa') || name.contains('tv'))
+      return 'Living Room';
+    if (name.contains('bed') || name.contains('bedroom') || name.contains('mattress'))
+      return 'Bedroom';
+    if (name.contains('kitchen') || name.contains('cabinets') || name.contains('counter'))
+      return 'Kitchen';
+    if (name.contains('office') || name.contains('desk') || name.contains('workspace'))
+      return 'Office';
+    if (name.contains('dining') || name.contains('table') || name.contains('chair'))
+      return 'Dining Room';
+    if (name.contains('bath') || name.contains('toilet') || name.contains('shower'))
+      return 'Bathroom';
+
     return 'Uncategorized';
   }
 
   bool _hasImage(Design design) {
-    return design.imageUrl != null && design.imageUrl!.isNotEmpty;
+    return design.imageUrl != null &&
+        design.imageUrl!.isNotEmpty &&
+        design.imageUrl!.startsWith('http');
   }
 
-  Future<void> _deleteDesignFromFirebase(Design design) async {
+  Future<void> _deleteDesign(Design design) async {
     try {
-      // Delete from Firestore
-      await _firestore.collection('designs').doc(design.id).delete();
-
-      // Delete image from Storage if exists
-      if (design.imageUrl != null && design.imageUrl!.contains('firebasestorage')) {
-        try {
-          final ref = _storage.refFromURL(design.imageUrl!);
-          await ref.delete();
-        } catch (e) {
-          print('Error deleting image from storage: $e');
-        }
-      }
-
-      await _loadDesignsFromFirebase();
+      await _designService.deleteDesign(design.id);
+      await _loadDesigns(); // Refresh the list
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +117,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting design: $e'),
+            content: Text('Error deleting design: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -149,18 +135,48 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadDesignsFromFirebase,
+            onPressed: _loadDesigns,
+            tooltip: 'Refresh',
           ),
         ],
       ),
       body: _isLoading
           ? _buildLoadingState()
+          : _hasError
+          ? _buildErrorState()
           : Column(
         children: [
           // Category Filter
-          Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          _buildCategoryFilter(),
+
+          // Designs Grid
+          Expanded(
+            child: _filteredDesigns.isEmpty
+                ? _buildEmptyState()
+                : _buildDesignsGrid(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilter() {
+    return Container(
+      height: 70,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Filter by Category:',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.getSecondaryTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _categories.length,
@@ -168,7 +184,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
                 final category = _categories[index];
                 final isSelected = _selectedCategory == category;
                 return Padding(
-                  padding: const EdgeInsets.only(right: 8, top: 16, bottom: 16),
+                  padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
                     label: Text(category),
                     selected: isSelected,
@@ -182,33 +198,143 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.white : AppColors.getTextColor(context),
                     ),
+                    checkmarkColor: Colors.white,
                   ),
                 );
               },
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-          // Designs Grid
-          Expanded(
-            child: _filteredDesigns.isEmpty
-                ? _buildEmptyState()
-                : Padding(
-              padding: const EdgeInsets.all(16),
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.8,
+  Widget _buildDesignsGrid() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.8,
+        ),
+        itemCount: _filteredDesigns.length,
+        itemBuilder: (context, index) {
+          return _buildDesignCard(_filteredDesigns[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildDesignCard(Design design) {
+    final hasImage = _hasImage(design);
+    final category = _getDesignCategory(design);
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _showDesignDetails(design),
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Design Image/Thumbnail
+                Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLightPurple.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                    image: hasImage
+                        ? DecorationImage(
+                      image: NetworkImage(design.imageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                        : null,
+                  ),
+                  child: !hasImage
+                      ? Center(
+                    child: Icon(
+                      Icons.photo_library,
+                      size: 50,
+                      color: AppColors.primaryLightPurple.withOpacity(0.5),
+                    ),
+                  )
+                      : null,
                 ),
-                itemCount: _filteredDesigns.length,
-                itemBuilder: (context, index) {
-                  return _buildDesignCard(_filteredDesigns[index]);
-                },
+
+                // Design Info
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        design.name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.getTextColor(context),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${design.objects.length} items',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.getSecondaryTextColor(context),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        category,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primaryLightPurple,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatDate(design.createdAt),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.getSecondaryTextColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // Delete button
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white),
+                  onPressed: () => _confirmDeleteDesign(design),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -233,80 +359,43 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
-  Widget _buildDesignCard(Design design) {
-    final hasImage = _hasImage(design);
-
-    return Card(
-      elevation: 3,
-      child: InkWell(
-        onTap: () => _showDesignDetails(design),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Design Image/Thumbnail
-              Container(
-                height: 120,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLightPurple.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  image: hasImage
-                      ? DecorationImage(
-                    image: NetworkImage(design.imageUrl!),
-                    fit: BoxFit.cover,
-                  )
-                      : null,
-                ),
-                child: !hasImage
-                    ? Center(
-                  child: Icon(
-                    Icons.photo,
-                    size: 50,
-                    color: AppColors.primaryLightPurple,
-                  ),
-                )
-                    : null,
-              ),
-
-              const SizedBox(height: 12),
-
-              // Design Info
-              Text(
-                design.name,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.getTextColor(context),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              const SizedBox(height: 4),
-
-              Text(
-                '${design.objects.length} items • ${_getDesignCategory(design)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.getSecondaryTextColor(context),
-                ),
-              ),
-
-              const SizedBox(height: 4),
-
-              Text(
-                '${design.createdAt.day}/${design.createdAt.month}/${design.createdAt.year}',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.getSecondaryTextColor(context),
-                ),
-              ),
-            ],
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: AppColors.getSecondaryTextColor(context),
           ),
-        ),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load designs',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Please check your internet connection and try again',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.getSecondaryTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _loadDesigns,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryLightPurple,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Try Again'),
+          ),
+        ],
       ),
     );
   }
@@ -334,7 +423,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
           Text(
             _selectedCategory == 'All'
                 ? 'Create your first design to get started!'
-                : 'No designs in the ${_selectedCategory} category',
+                : 'No designs in the $_selectedCategory category',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.getSecondaryTextColor(context),
@@ -358,7 +447,12 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
                   _selectedCategory = 'All';
                 });
               },
-              child: const Text('View All Designs'),
+              child: Text(
+                'View All Designs',
+                style: TextStyle(
+                  color: AppColors.primaryLightPurple,
+                ),
+              ),
             ),
         ],
       ),
@@ -366,8 +460,6 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
   }
 
   void _showDesignDetails(Design design) {
-    final hasImage = _hasImage(design);
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -377,55 +469,9 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Category: ${_getDesignCategory(design)}'),
-              Text('Project ID: ${design.projectId}'),
-              Text('User ID: ${design.userId}'),
-              Text('Date Created: ${_formatDate(design.createdAt)}'),
-              Text('Last Updated: ${_formatDate(design.updatedAt)}'),
-              Text('Objects: ${design.objects.length}'),
+              _buildDesignImage(design, height: 200),
               const SizedBox(height: 16),
-
-              // Display the actual saved image
-              Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLightPurple.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  image: hasImage
-                      ? DecorationImage(
-                    image: NetworkImage(design.imageUrl!),
-                    fit: BoxFit.cover,
-                  )
-                      : null,
-                ),
-                child: !hasImage
-                    ? Center(
-                  child: Icon(
-                    Icons.photo,
-                    size: 60,
-                    color: AppColors.primaryLightPurple,
-                  ),
-                )
-                    : null,
-              ),
-
-              const SizedBox(height: 16),
-              if (design.objects.isNotEmpty) ...[
-                Text(
-                  'Objects in this design:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.getTextColor(context),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...design.objects.take(3).map((obj) =>
-                    Text('• Item ID: ${obj.itemId}')
-                ).toList(),
-                if (design.objects.length > 3)
-                  Text('... and ${design.objects.length - 3} more'),
-              ],
+              _buildDesignInfo(design),
             ],
           ),
         ),
@@ -437,41 +483,138 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _viewDesign(design);
+              _viewDesignFullScreen(design);
             },
-            child: const Text('View Design'),
-          ),
-          IconButton(
-            onPressed: () {
-              _deleteDesign(design);
-            },
-            icon: const Icon(Icons.delete, color: Colors.red),
+            child: const Text('View Full Screen'),
           ),
         ],
       ),
     );
   }
 
-  void _viewDesign(Design design) {
+  Widget _buildDesignImage(Design design, {double height = 120}) {
+    final hasImage = _hasImage(design);
+
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.primaryLightPurple.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        image: hasImage
+            ? DecorationImage(
+          image: NetworkImage(design.imageUrl!),
+          fit: BoxFit.cover,
+        )
+            : null,
+      ),
+      child: !hasImage
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.photo_library,
+              size: height * 0.3,
+              color: AppColors.primaryLightPurple.withOpacity(0.5),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No Image',
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ],
+        ),
+      )
+          : null,
+    );
+  }
+
+  Widget _buildDesignInfo(Design design) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInfoRow('Category:', _getDesignCategory(design)),
+        _buildInfoRow('Project ID:', design.projectId),
+        _buildInfoRow('Date Created:', _formatDate(design.createdAt)),
+        _buildInfoRow('Last Updated:', _formatDate(design.updatedAt)),
+        _buildInfoRow('Objects:', '${design.objects.length} items'),
+
+        if (design.objects.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Objects in this design:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.getTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...design.objects.take(5).map((obj) =>
+              Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 2),
+                child: Text('• Item ID: ${obj.itemId}'),
+              )
+          ).toList(),
+          if (design.objects.length > 5)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text('... and ${design.objects.length - 5} more'),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: AppColors.getTextColor(context),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: AppColors.getSecondaryTextColor(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _viewDesignFullScreen(Design design) {
     final hasImage = _hasImage(design);
 
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
         child: Container(
           width: double.infinity,
           height: MediaQuery.of(context).size.height * 0.8,
-          decoration: hasImage
-              ? BoxDecoration(
-            image: DecorationImage(
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(12),
+            image: hasImage
+                ? DecorationImage(
               image: NetworkImage(design.imageUrl!),
               fit: BoxFit.contain,
-            ),
-          )
-              : BoxDecoration(
-            color: AppColors.primaryLightPurple.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            )
+                : null,
           ),
           child: Stack(
             children: [
@@ -481,56 +624,65 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
                 right: 16,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withOpacity(0.7),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 24),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
               ),
 
               // Design info overlay
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        design.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+              if (hasImage)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.9),
+                          Colors.black.withOpacity(0.1),
+                          Colors.transparent,
+                        ],
                       ),
-                      Text(
-                        '${design.objects.length} items • ${_getDesignCategory(design)}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          design.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Created: ${_formatDate(design.createdAt)}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
+                        const SizedBox(height: 4),
+                        Text(
+                          '${design.objects.length} items • ${_getDesignCategory(design)}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                    ],
+                        Text(
+                          'Created: ${_formatDate(design.createdAt)}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
               // Fallback if no image
               if (!hasImage)
@@ -539,7 +691,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.photo,
+                        Icons.photo_library,
                         size: 80,
                         color: AppColors.primaryLightPurple,
                       ),
@@ -561,7 +713,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
-  void _deleteDesign(Design design) {
+  void _confirmDeleteDesign(Design design) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -575,7 +727,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _deleteDesignFromFirebase(design);
+              await _deleteDesign(design);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),
@@ -586,6 +738,6 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

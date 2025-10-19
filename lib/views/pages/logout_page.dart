@@ -79,8 +79,7 @@ class LogoutPage extends StatelessWidget {
                           // Add Another Account Button
                           TextButton(
                             onPressed: () {
-                              Navigator.pushNamedAndRemoveUntil(
-                                  context, '/signup', (route) => false);
+                              Navigator.pushReplacementNamed(context, '/signup');
                             },
                             child: Text(
                               TextComponents.addAnotherAccount,
