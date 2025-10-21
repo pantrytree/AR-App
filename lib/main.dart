@@ -40,6 +40,7 @@ import 'views/pages/splash_screen_page.dart';
 import 'views/pages/splash_screen_2_page.dart';
 import 'views/pages/sign_up_page.dart';
 
+
 // Import all ViewModels
 import 'viewmodels/camera_viewmodel.dart';
 import 'viewmodels/home_viewmodel.dart';
