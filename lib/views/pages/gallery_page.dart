@@ -7,6 +7,7 @@ import 'package:Roomantics/viewmodels/roomielab_viewmodel.dart';
 import 'package:Roomantics/views/widgets/project_options_menu.dart';
 import 'package:Roomantics/views/pages/project_full_screen_page.dart';
 import 'package:Roomantics/views/pages/project_edit_page.dart';
+import '../../viewmodels/camera_viewmodel.dart';
 import '/models/project.dart';
 
 class GalleryPage extends StatefulWidget {
@@ -20,7 +21,6 @@ class _GalleryPageState extends State<GalleryPage> {
   @override
   void initState() {
     super.initState();
-    // Load projects when the page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<RoomieLabViewModel>(context, listen: false);
       viewModel.loadProjects();
@@ -79,7 +79,7 @@ class _GalleryPageState extends State<GalleryPage> {
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 0.9,
+                    childAspectRatio: 0.8,
                   ),
                   itemCount: viewModel.projects.length,
                   itemBuilder: (context, index) {
@@ -239,31 +239,31 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
       scale: _scale,
       child: FadeTransition(
         opacity: _fade,
-        child: Stack(
-          children: [
-            // Project Card
-            GestureDetector(
-              onTap: () => _navigateToFullScreen(context, project),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.getCardBackground(context),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: _buildProjectImage(imageUrl),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardBackground(context),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: _buildProjectImage(imageUrl),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: AppColors.primaryPurple.withOpacity(0.1),
                         borderRadius: const BorderRadius.vertical(
@@ -272,84 +272,91 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          // Project name
                           Text(
                             projectName,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
+                              height: 1.2,
                             ),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _formatDate(project.createdAt),
-                            style: TextStyle(
-                              color: AppColors.getSecondaryTextColor(context),
-                              fontSize: 11,
-                            ),
-                          ),
-                          if (project.roomType.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              project.roomType,
-                              style: TextStyle(
-                                color: AppColors.getSecondaryTextColor(context),
-                                fontSize: 10,
-                                fontStyle: FontStyle.italic,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _formatDate(project.createdAt),
+                                style: TextStyle(
+                                  color: AppColors.getSecondaryTextColor(context),
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                          ],
+                              if (project.roomType.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  project.roomType,
+                                  style: TextStyle(
+                                    color: AppColors.getSecondaryTextColor(context),
+                                    fontSize: 11,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
 
-            // 3-Dot Options Menu Button
-            Positioned(
-              top: 8,
-              right: 8,
-              child: ProjectOptionsMenu(
-                projectId: project.id,
-                onViewFullScreen: () => _navigateToFullScreen(context, project),
-                onEditProject: () => _navigateToEditProject(context, project),
-                onDeleteProject: () => _deleteProject(context, project),
-              ),
-            ),
-
-            // Items count badge
-            if (project.items.isNotEmpty)
               Positioned(
                 top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryPurple,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '${project.items.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                right: 8,
+                child: ProjectOptionsMenu(
+                  projectId: project.id,
+                  onViewFullScreen: () => _navigateToFullScreen(context, project),
+                  onEditProject: () => _navigateToEditProject(context, project),
+                  onDeleteProject: () => _deleteProject(context, project),
+                ),
+              ),
+
+              // Items count badge
+              if (project.items.isNotEmpty)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryPurple,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${project.items.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildProjectImage(String? imageUrl) {
-    // Check if we have a Cloudinary URL or local file path
     final isCloudinaryUrl = imageUrl?.contains('cloudinary.com') ?? false;
     final isLocalFile = imageUrl?.startsWith('/') ?? false;
 
@@ -364,6 +371,8 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
         child: Image.network(
           imageUrl,
           fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
@@ -389,6 +398,8 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
         child: Image.file(
           File(imageUrl),
           fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
           errorBuilder: (context, error, stackTrace) {
             return _buildPlaceholderImage(Icons.broken_image, 'File error');
           },
@@ -407,7 +418,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: Colors.grey),
+            Icon(icon, size: 36, color: Colors.grey),
             const SizedBox(height: 4),
             Text(
               text,
@@ -415,6 +426,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
                 fontSize: 12,
                 color: Colors.grey,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -427,7 +439,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
       context,
       MaterialPageRoute(
         builder: (context) => ProjectFullScreenPage(
-          projectId: project.id, // CORRECT: Pass projectId instead of full project
+          projectId: project.id,
         ),
       ),
     );
@@ -437,10 +449,12 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProjectEditPage(
-          projectId: project.id,
-          furnitureItemId: project.items.isNotEmpty ? project.items.first : '',
-          furnitureName: project.name,
+        builder: (context) => ChangeNotifierProvider.value(
+          value: Provider.of<CameraViewModel>(context, listen: false),
+          child: ProjectEditPage(
+            projectId: project.id,
+            initialDesignId: null,
+          ),
         ),
       ),
     );
