@@ -12,16 +12,6 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:Roomantics/services/auth_service.dart';
-import 'package:Roomantics/services/cloudinary_service.dart';
-import 'package:Roomantics/services/favorites_service.dart';
-import 'package:Roomantics/services/furniture_service.dart';
-import 'package:Roomantics/services/project_service.dart';
-import 'package:Roomantics/services/room_service.dart';
-import 'package:Roomantics/viewmodels/change_password_viewmodel.dart';
-import 'package:Roomantics/viewmodels/guides_page_viewmodel.dart';
-import 'package:Roomantics/viewmodels/notifications_viewmodel.dart';
-import 'package:Roomantics/viewmodels/roomielab_viewmodel.dart';
 import 'package:Roomantics/views/pages/about_page.dart';
 import 'package:Roomantics/views/pages/active_sessions_page.dart';
 import 'package:Roomantics/views/pages/change_passwords_page.dart';
@@ -87,6 +77,9 @@ void main() async {
   runApp(MyApp(themeManager: themeManager));
 }
 
+class NoOpHeroController extends NavigatorObserver {
+}
+
 class MyApp extends StatelessWidget {
   final ThemeManager? themeManager;
 
@@ -138,6 +131,8 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
           return MaterialApp(
+            navigatorObservers: [
+            ],
             debugShowCheckedModeBanner: false,
             title: 'Roomantic',
             theme: ThemeData(
@@ -181,20 +176,13 @@ class MyApp extends StatelessWidget {
             themeMode: themeManager.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             initialRoute: '/splash',
             routes: {
-              // Splash screens
               '/splash': (context) => SplashScreenPage(),
               '/splash2': (context) => SplashScreen2Page(),
-
-              // Authentication routes
               '/login': (context) => LoginPage(),
               '/signup': (context) => SignUpPage(),
               '/forgot-password': (context) => const ForgotPasswordPage(),
-
-              // Main app routes
               '/': (context) => const HomePage(),
               '/home': (context) => const HomePage(),
-
-              // Side menu routes
               '/catalogue': (context) => const CataloguePage(),
               '/furniture-catalogue': (context) => const FurnitureCataloguePage(),
               '/my-likes': (context) => const MyLikesPage(),
@@ -204,15 +192,12 @@ class MyApp extends StatelessWidget {
               '/help': (context) => const HelpPage(),
               '/account-hub': (context) => const AccountHubPage(),
               '/edit-profile': (context) => const EditProfilePage(),
-
-              // Other pages
               '/logout': (context) => const LogoutPage(),
               '/catalogue-item': (context) => const CatalogueItemPage(),
-              '/camera-page': (context) => const CameraPage(),
+              '/camera-page': (context) =>  CameraPage(),
               '/language': (context) => const LanguagePage(),
               '/notifications': (context) => const NotificationsPage(),
               '/about': (context) => const AboutPage(),
-
               '/change-password': (context) => ChangePasswordPage(),
               '/two-factor-auth': (context) => TwoFactorAuthPage(),
               '/active-sessions': (context) => ActiveSessionsPage(),
@@ -275,98 +260,5 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
-  }
-}
-
-// Placeholder widget for unimplemented pages
-class PlaceholderWidget extends StatelessWidget {
-  final String title;
-  const PlaceholderWidget({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.getBackgroundColor(context),
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: TextStyle(
-            color: AppColors.getAppBarForeground(context),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: AppColors.getAppBarBackground(context),
-        foregroundColor: AppColors.getAppBarForeground(context),
-        elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.getAppBarForeground(context)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _getPlaceholderIcon(title),
-              size: 80,
-              color: AppColors.getPrimaryColor(context),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              '$title - Coming Soon',
-              style: TextStyle(
-                fontSize: 18,
-                color: AppColors.getTextColor(context),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'This page is under development and will be available soon.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.getSecondaryTextColor(context),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.getPrimaryColor(context),
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: const Text('Go Back'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getPlaceholderIcon(String title) {
-    switch (title.toLowerCase()) {
-      case 'ar view':
-        return Icons.view_in_ar;
-      case 'cart':
-        return Icons.shopping_cart;
-      case 'camera/ar view':
-        return Icons.camera_alt;
-      case 'search':
-        return Icons.search;
-      case 'language settings':
-        return Icons.language;
-      case 'notifications':
-        return Icons.notifications;
-      case 'about app':
-        return Icons.info;
-      default:
-        return Icons.construction;
-    }
   }
 }
