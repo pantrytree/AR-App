@@ -1,226 +1,417 @@
-import 'dart:io';
-import 'package:camera/camera.dart';
+import 'dart:typed_data';
+import 'package:Roomantics/utils/colors.dart';
+import 'package:ar_flutter_plugin/managers/ar_location_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:Roomantics/viewmodels/camera_viewmodel.dart';
-import 'package:Roomantics/models/furniture_item.dart';
-
-import '../../models/design_object.dart';
+import 'package:ar_flutter_plugin/ar_flutter_plugin.dart';
+import 'package:ar_flutter_plugin/managers/ar_session_manager.dart';
+import 'package:ar_flutter_plugin/managers/ar_object_manager.dart';
+import 'package:ar_flutter_plugin/managers/ar_anchor_manager.dart';
+import '../../viewmodels/camera_viewmodel.dart';
+import 'dart:math' as math;
 
 class CameraPage extends StatefulWidget {
-  const CameraPage({super.key});
-
   @override
-  State<CameraPage> createState() => _CameraPageState();
+  _CameraPageState createState() => _CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
-  String _designName = 'My AR Design';
-
+class _CameraPageState extends State<CameraPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _initializeCamera();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    final viewModel = Provider.of<CameraViewModel>(context, listen: false);
-    if (state == AppLifecycleState.inactive) {
-      viewModel.disposeCamera();
-    } else if (state == AppLifecycleState.resumed) {
-      _initializeCamera();
-    }
-  }
-
-  void _initializeCamera() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = Provider.of<CameraViewModel>(context, listen: false);
-      viewModel.initializeCamera();
-    });
+    // Make status bar transparent
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Consumer<CameraViewModel>(
+    return ChangeNotifierProvider(
+      create: (_) => CameraViewModel()..loadFurnitureItems(),
+      child: Consumer<CameraViewModel>(
         builder: (context, viewModel, child) {
-          return Stack(
-            children: [
-              // Camera Preview - Full screen
-              Positioned.fill(
-                child: _buildCameraPreview(viewModel),
+          return Scaffold(
+            backgroundColor: Colors.black,
+            extendBodyBehindAppBar: true,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              systemOverlayStyle: SystemUiOverlayStyle.light,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
               ),
+              title: Text(
+                'AR Furniture',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              centerTitle: true,
+            ),
+            body: Stack(
+              children: [
+                // AR View
+                ARView(
+                  onARViewCreated: (
+                      ARSessionManager sessionManager,
+                      ARObjectManager objectManager,
+                      ARAnchorManager anchorManager,
+                      ARLocationManager locationManager,
+                      ) {
+                    viewModel.onARViewCreated(
+                      sessionManager,
+                      objectManager,
+                      anchorManager,
+                      locationManager,
+                    );
+                  },
+                ),
 
-              // Object placement overlay (simulated AR objects)
-              if (viewModel.hasPlacedObjects) _buildObjectOverlay(viewModel),
+                // Selected furniture info banner
+                if (viewModel.selectedFurnitureItem != null)
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 60,
+                    left: 20,
+                    right: 20,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLightPurple.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.chair,
+                              color: AppColors.primaryLightPurple,
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  viewModel.selectedFurnitureItem!.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                if (!viewModel.isObjectPlaced)
+                                  Text(
+                                    'Tap "Place" to add',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
-              // Top App Bar
-              _buildAppBar(viewModel),
+                // Error message
+                if (viewModel.error != null)
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 140,
+                    left: 20,
+                    right: 20,
+                    child: Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red.shade700),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              viewModel.error!,
+                              style: TextStyle(color: Colors.red.shade900),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close, color: Colors.red.shade700),
+                            onPressed: () {
+                              viewModel.resetFurniture();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
-              // Bottom Controls
-              _buildBottomControls(viewModel),
+                // Bottom controls
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      bottom: MediaQuery.of(context).padding.bottom + 20,
+                      top: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.8),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Movement controls when object is placed
+                        if (viewModel.isObjectPlaced) ...[
+                          _buildMovementControls(viewModel),
+                          SizedBox(height: 16),
 
-              // Furniture Selection Panel
-              if (viewModel.isFurnitureSelectionVisible)
-                _buildFurnitureSelection(viewModel),
+                          Column(
+                            children: [
+                              // Rotation controls
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildControlButton(
+                                    icon: Icons.rotate_left,
+                                    label: 'Rotate L',
+                                    onPressed: () => viewModel.rotateFurniture(-math.pi / 4),
+                                  ),
+                                  SizedBox(width: 16),
+                                  _buildControlButton(
+                                    icon: Icons.rotate_right,
+                                    label: 'Rotate R',
+                                    onPressed: () => viewModel.rotateFurniture(math.pi / 4),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
 
-              // Loading Overlay
-              if (viewModel.isLoading) _buildLoadingOverlay(),
+                              // Scale controls
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildControlButton(
+                                    icon: Icons.remove_circle_outline,
+                                    label: 'Smaller',
+                                    onPressed: () => viewModel.scaleFurniture(-0.1),
+                                  ),
+                                  SizedBox(width: 12),
+                                  // Scale indicator
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                    ),
+                                    child: Text(
+                                      '${(viewModel.currentScale * 100).toInt()}%',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  _buildControlButton(
+                                    icon: Icons.add_circle_outline,
+                                    label: 'Bigger',
+                                    onPressed: () => viewModel.scaleFurniture(0.1),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
 
-              // Error Overlay
-              if (viewModel.error != null) _buildErrorOverlay(viewModel),
-            ],
+                              // Screenshot control
+                              _buildControlButton(
+                                icon: Icons.camera_alt,
+                                label: 'Photo',
+                                onPressed: () async {
+                                  await viewModel.captureScreenshot();
+
+                                  if (viewModel.lastScreenshot != null) {
+                                    _showScreenshotPreview(
+                                      context,
+                                      viewModel.lastScreenshot!,
+                                      viewModel,
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16),
+                        ],
+
+                        // Main action buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Select Furniture button
+                            _buildActionButton(
+                              icon: Icons.list,
+                              label: 'Select',
+                              isPrimary: false,
+                              onPressed: () {
+                                _showFurnitureSelectionBottomSheet(context, viewModel);
+                              },
+                            ),
+
+                            SizedBox(width: 16),
+
+                            // Place/Remove button
+                            _buildActionButton(
+                              icon: viewModel.isObjectPlaced ? Icons.delete : Icons.add_circle,
+                              label: viewModel.isObjectPlaced ? 'Remove' : 'Place',
+                              isPrimary: true,
+                              isDestructive: viewModel.isObjectPlaced,
+                              onPressed: viewModel.isLoading
+                                  ? null
+                                  : () => viewModel.placeOrRemoveFurniture(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Loading indicator
+                if (viewModel.isLoading)
+                  Container(
+                    color: Colors.black54,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: AppColors.primaryLightPurple),
+                          SizedBox(height: 16),
+                          Text(
+                            'Loading...',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildCameraPreview(CameraViewModel viewModel) {
-    if (viewModel.controller == null || !viewModel.isCameraReady) {
-      return Container(
-        color: Colors.black,
-        child: Center(
-          child: Column(
+  Widget _buildMovementControls(CameraViewModel viewModel) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Move Furniture',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 8),
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: Colors.white),
-              SizedBox(height: 16),
-              Text(
-                'Initializing Camera...',
-                style: TextStyle(color: Colors.white),
+              Column(
+                children: [
+                  _buildDirectionalButton(
+                    icon: Icons.arrow_upward,
+                    onPressed: () => viewModel.moveFurniture(0, 0, -0.3),
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildDirectionalButton(
+                        icon: Icons.arrow_back,
+                        onPressed: () => viewModel.moveFurniture(-0.3, 0, 0),
+                      ),
+                      SizedBox(width: 60),
+                      _buildDirectionalButton(
+                        icon: Icons.arrow_forward,
+                        onPressed: () => viewModel.moveFurniture(0.3, 0, 0),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  _buildDirectionalButton(
+                    icon: Icons.arrow_downward,
+                    onPressed: () => viewModel.moveFurniture(0, 0, 0.3),
+                  ),
+                ],
               ),
             ],
-          ),
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onTapDown: (details) {
-        // Place object where user taps
-        final renderBox = context.findRenderObject() as RenderBox;
-        final localPosition = renderBox.globalToLocal(details.globalPosition);
-        viewModel.placeObject(localPosition);
-      },
-      child: CameraPreview(viewModel.controller!),
-    );
-  }
-
-  Widget _buildObjectOverlay(CameraViewModel viewModel) {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: CustomPaint(
-          painter: ObjectOverlayPainter(viewModel.placedObjects),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(CameraViewModel viewModel) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top,
-      left: 0,
-      right: 0,
-      child: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'AR Camera',
-          style: TextStyle(color: Colors.white),
-        ),
-        actions: [
-          if (viewModel.hasPlacedObjects)
-            IconButton(
-              icon: Icon(Icons.delete_sweep, color: Colors.white),
-              onPressed: viewModel.clearAllObjects,
-              tooltip: 'Clear All Objects',
-            ),
-          IconButton(
-            icon: Icon(Icons.flip_camera_ios, color: Colors.white),
-            onPressed: viewModel.switchCamera,
-            tooltip: 'Switch Camera',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomControls(CameraViewModel viewModel) {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).padding.bottom + 16,
-          top: 16,
-          left: 16,
-          right: 16,
-        ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              Colors.black.withOpacity(0.9),
-              Colors.black.withOpacity(0.3),
-              Colors.transparent,
-            ],
+  Widget _buildDirectionalButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Delete Button
-            _buildControlButton(
-              icon: Icons.delete,
-              label: 'Delete',
-              onPressed: viewModel.removeLastObject,
-              isActive: viewModel.hasPlacedObjects,
-            ),
-
-            // Add Furniture Button
-            _buildControlButton(
-              icon: Icons.add,
-              label: 'Add',
-              onPressed: viewModel.toggleFurnitureSelection,
-              isActive: true,
-            ),
-
-            // Capture Button (Center)
-            _buildCaptureButton(viewModel),
-
-            // Switch Camera Button
-            _buildControlButton(
-              icon: Icons.flip_camera_ios,
-              label: 'Switch',
-              onPressed: viewModel.switchCamera,
-              isActive: true,
-            ),
-
-            // Info Button
-            _buildControlButton(
-              icon: Icons.help_outline,
-              label: 'Help',
-              onPressed: _showHelpDialog,
-              isActive: true,
-            ),
-          ],
-        ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: AppColors.primaryLightPurple),
+        iconSize: 24,
+        onPressed: onPressed,
+        padding: EdgeInsets.all(8),
       ),
     );
   }
@@ -229,86 +420,231 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
-    required bool isActive,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          icon: Icon(icon, color: isActive ? Colors.white : Colors.white54),
-          onPressed: isActive ? onPressed : null,
-          iconSize: 28,
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withOpacity(0.3)),
+          ),
+          child: IconButton(
+            icon: Icon(icon, color: Colors.white),
+            iconSize: 24,
+            onPressed: onPressed,
+          ),
         ),
+        SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            color: isActive ? Colors.white : Colors.white54,
-            fontSize: 12,
+            color: Colors.white,
+            fontSize: 11,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCaptureButton(CameraViewModel viewModel) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: () => _captureImage(viewModel),
-          child: Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-              color: Colors.transparent,
-            ),
-            child: Icon(
-              Icons.camera_alt,
-              color: Colors.white,
-              size: 32,
-            ),
-          ),
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required bool isPrimary,
+    bool isDestructive = false,
+    VoidCallback? onPressed,
+  }) {
+    final Color backgroundColor = isDestructive
+        ? Colors.red.shade600
+        : isPrimary
+        ? AppColors.primaryLightPurple
+        : Colors.white;
+
+    final Color foregroundColor = isPrimary || isDestructive ? Colors.white : Color(0xFF6750A4);
+
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: foregroundColor,
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
         ),
-        SizedBox(height: 8),
-        Text(
-          'Capture',
-          style: TextStyle(color: Colors.white, fontSize: 12),
+        elevation: 8,
+        shadowColor: backgroundColor.withOpacity(0.5),
+      ),
+      icon: Icon(icon, size: 24),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
         ),
-      ],
+      ),
+      onPressed: onPressed,
     );
   }
 
-  Widget _buildFurnitureSelection(CameraViewModel viewModel) {
-    return Positioned(
-      bottom: 140, // Position above bottom controls
-      left: 0,
-      right: 0,
-      child: Container(
-        height: 100,
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+  void _showFurnitureSelectionBottomSheet(BuildContext context, CameraViewModel viewModel) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: EdgeInsets.only(left: 8, bottom: 4),
-              child: Text(
-                'Select Furniture:',
-                style: TextStyle(color: Colors.white, fontSize: 12),
+            // Handle bar
+            Container(
+              margin: EdgeInsets.symmetric(vertical: 10),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
+
+            // Title
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Select Furniture',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryLightPurple,
+                ),
+              ),
+            ),
+
+            // Furniture list
             Expanded(
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
+              child: viewModel.isLoading
+                  ? Center(child: CircularProgressIndicator(color: AppColors.primaryLightPurple))
+                  : viewModel.availableFurnitureItems.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.chair_outlined, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'No furniture items available',
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  ],
+                ),
+              )
+                  : ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 itemCount: viewModel.availableFurnitureItems.length,
                 itemBuilder: (context, index) {
-                  final furniture = viewModel.availableFurnitureItems[index];
-                  return _buildFurnitureItem(furniture, viewModel);
+                  final item = viewModel.availableFurnitureItems[index];
+                  final isSelected = viewModel.selectedFurnitureItem?.id == item.id;
+
+                  return Card(
+                    margin: EdgeInsets.only(bottom: 12),
+                    elevation: isSelected ? 4 : 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected ? AppColors.primaryLightPurple : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.all(12),
+                      leading: item.imageUrl != null
+                          ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          item.imageUrl!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryLightPurple.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(Icons.chair, size: 30, color: AppColors.primaryLightPurple),
+                              ),
+                        ),
+                      )
+                          : Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLightPurple.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.chair, size: 30, color: AppColors.primaryLightPurple),
+                      ),
+                      title: Text(
+                        item.name,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: 4),
+                          Text(
+                            item.category,
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                          if (item.arModelUrl != null)
+                            Row(
+                              children: [
+                                Icon(Icons.view_in_ar, size: 12, color: Colors.green),
+                                SizedBox(width: 4),
+                                Text(
+                                  'AR Ready',
+                                  style: TextStyle(fontSize: 10, color: Colors.green),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                      trailing: isSelected
+                          ? Icon(Icons.check_circle, color: AppColors.primaryLightPurple, size: 28)
+                          : Icon(Icons.circle_outlined, color: Colors.grey[300], size: 28),
+                      onTap: () {
+                        viewModel.selectFurnitureItem(item);
+                        Navigator.pop(context);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.white),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text('${item.name} selected!'),
+                                ),
+                              ],
+                            ),
+                            duration: Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: AppColors.primaryLightPurple,
+                          ),
+                        );
+                      },
+                    ),
+                  );
                 },
               ),
             ),
@@ -318,319 +654,282 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildFurnitureItem(FurnitureItem furniture, CameraViewModel viewModel) {
-    final isSelected = viewModel.selectedFurnitureItem?.id == furniture.id;
-
-    return Container(
-      width: 80,
-      margin: EdgeInsets.symmetric(horizontal: 4),
-      child: GestureDetector(
-        onTap: () => viewModel.selectFurnitureItem(furniture),
-        child: Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.blue : Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? Colors.blue : Colors.transparent,
-              width: 2,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                _getFurnitureIcon(furniture.category),
-                color: isSelected ? Colors.white : Colors.grey,
-                size: 24,
-              ),
-              SizedBox(height: 4),
-              Text(
-                furniture.name,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.7),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Colors.white),
-            SizedBox(height: 16),
-            Text(
-              'Processing...',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorOverlay(CameraViewModel viewModel) {
-    return Container(
-      color: Colors.black.withOpacity(0.8),
-      child: Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error, color: Colors.red, size: 64),
-              SizedBox(height: 16),
-              Text(
-                'Camera Error',
-                style: TextStyle(color: Colors.white, fontSize: 20),
-              ),
-              SizedBox(height: 8),
-              Text(
-                viewModel.error!,
-                style: TextStyle(color: Colors.white54),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: viewModel.initializeCamera,
-                child: Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  IconData _getFurnitureIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'sofa':
-      case 'couch':
-        return Icons.weekend;
-      case 'chair':
-        return Icons.chair;
-      case 'table':
-        return Icons.table_restaurant;
-      case 'bed':
-        return Icons.bed;
-      case 'lamp':
-      case 'lighting':
-        return Icons.lightbulb;
-      case 'storage':
-        return Icons.shelves;
-      default:
-        return Icons.architecture;
-    }
-  }
-
-  Future<void> _captureImage(CameraViewModel viewModel) async {
-    await viewModel.captureImage();
-
-    if (viewModel.capturedImagePath != null) {
-      _showSaveDialog(viewModel);
-    }
-  }
-
-  void _showSaveDialog(CameraViewModel viewModel) {
+  void _showScreenshotPreview(
+      BuildContext context,
+      Uint8List imageBytes,
+      CameraViewModel viewModel,
+      ) {
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: Text(
-          'Save to RoomieLab',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (viewModel.capturedImagePath != null)
-                Container(
-                  height: 200,
-                  width: 200,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: FileImage(File(viewModel.capturedImagePath!)),
-                      fit: BoxFit.cover,
+              // Header
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLightPurple,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.photo_camera, color: Colors.white),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Screenshot Preview',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Image Preview
+              Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.5,
+                ),
+                padding: EdgeInsets.all(16),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(
+                    imageBytes,
+                    fit: BoxFit.contain,
                   ),
                 ),
-              SizedBox(height: 16),
-              Text(
-                'Save this AR design to RoomieLab?',
-                style: TextStyle(color: Colors.white54),
               ),
-              SizedBox(height: 8),
-              Text(
-                'Objects placed: ${viewModel.placedObjects.length}',
-                style: TextStyle(color: Colors.white54),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Design Name',
-                  labelStyle: TextStyle(color: Colors.white54),
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[900],
+
+              // Action Buttons
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Save to RoomieLab button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryLightPurple,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        icon: Icon(Icons.workspace_premium),
+                        label: Text(
+                          'Save to RoomieLab',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(context);
+
+                          // Show design name dialog
+                          final designName = await _showDesignNameDialog(context);
+
+                          if (designName != null && designName.isNotEmpty) {
+                            final success = await viewModel.saveDesign(designName);
+
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(Icons.check_circle, color: Colors.white),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text('Design "$designName" saved to RoomieLab!'),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                            } else if (viewModel.error != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(Icons.error_outline, color: Colors.white),
+                                      SizedBox(width: 12),
+                                      Expanded(child: Text(viewModel.error!)),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+
+                    SizedBox(height: 12),
+
+                    // Save to Gallery button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primaryLightPurple,
+                          side: BorderSide(color: AppColors.primaryLightPurple, width: 2),
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: Icon(Icons.photo_library),
+                        label: Text(
+                          'Save to Gallery',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(context);
+
+                          final success = await viewModel.saveToGallery();
+
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: Colors.white),
+                                    SizedBox(width: 12),
+                                    Text('Saved to gallery!'),
+                                  ],
+                                ),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          } else if (viewModel.error != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(Icons.error_outline, color: Colors.white),
+                                    SizedBox(width: 12),
+                                    Expanded(child: Text(viewModel.error!)),
+                                  ],
+                                ),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                style: TextStyle(color: Colors.white),
-                onChanged: (value) {
-                  setState(() {
-                    _designName = value.isNotEmpty ? value : 'My AR Design';
-                  });
-                },
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<String?> _showDesignNameDialog(BuildContext context) async {
+    final nameController = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Save Design',
+          style: TextStyle(
+            color: AppColors.primaryPurple,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Design Name *', style: TextStyle(fontWeight: FontWeight.w600)),
+            SizedBox(height: 8),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                hintText: 'e.g., My Living Room Design',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryPurple, width: 2),
+                ),
+              ),
+              autofocus: true,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Room type will be determined automatically based on selected furniture.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () {
-              viewModel.resetCapture();
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context, null),
             child: Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final success = await viewModel.saveDesignToRoomieLab(_designName);
-
-              if (success) {
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.splashScreenBackground,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              if (nameController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Design saved successfully to RoomieLab!'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-                Navigator.pop(context);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to save design: ${viewModel.error}'),
+                    content: Text('Please enter a design name'),
                     backgroundColor: Colors.red,
-                    duration: Duration(seconds: 3),
                   ),
                 );
+                return;
               }
+
+              Navigator.pop(context, nameController.text);
             },
-            child: Text('Save to RoomieLab', style: TextStyle(color: Colors.blue)),
+            child: Text('Save'),
           ),
         ],
       ),
     );
   }
-
-  void _showHelpDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('AR Camera Help'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHelpItem('Add Furniture', 'Tap the Add button to select furniture, then tap on screen to place it'),
-              _buildHelpItem('Place Objects', 'Tap anywhere on the screen to place the selected furniture'),
-              _buildHelpItem('Delete Objects', 'Use Delete button to remove the last placed object'),
-              _buildHelpItem('Clear All', 'Use the clear button in top bar to remove all objects'),
-              _buildHelpItem('Capture', 'Take a photo of your AR design and save to RoomieLab'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHelpItem(String title, String description) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 2),
-          Text(
-            description,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Custom painter to simulate AR object overlay
-class ObjectOverlayPainter extends CustomPainter {
-  final List<DesignObject> objects;
-
-  ObjectOverlayPainter(this.objects);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue.withOpacity(0.6)
-      ..style = PaintingStyle.fill;
-
-    final borderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    for (final obj in objects) {
-      final center = Offset(obj.position.x, obj.position.y);
-      final radius = 20.0 * obj.scale.x;
-
-      // Draw circle representing the object
-      canvas.drawCircle(center, radius, paint);
-      canvas.drawCircle(center, radius, borderPaint);
-
-      // Draw a simple icon in the center
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: '📦', // Placeholder icon
-          style: TextStyle(fontSize: 16),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        center - Offset(textPainter.width / 2, textPainter.height / 2),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
