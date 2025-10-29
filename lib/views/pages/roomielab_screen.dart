@@ -297,8 +297,6 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
           const SizedBox(height: 20),
           _buildQuickActions(),
           const SizedBox(height: 20),
-          _buildCategories(),
-          const SizedBox(height: 20),
           _buildRecentDesigns(),
         ],
       ),
@@ -417,34 +415,6 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
-  Widget _buildCategories() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Room Categories',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.getTextColor(context),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: _categories.map((category) {
-            return Chip(
-              label: Text(category),
-              backgroundColor: AppColors.primaryLightPurple.withOpacity(0.1),
-              labelStyle: TextStyle(color: AppColors.primaryLightPurple),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
   Widget _buildRecentDesigns() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,7 +502,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
+        childAspectRatio: 0.9,
       ),
       itemCount: _recentDesigns.length,
       itemBuilder: (context, index) {
@@ -549,7 +519,6 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
       elevation: 2,
       child: InkWell(
         onTap: () {
-          // Track the design view and navigate
           _trackDesignView(design.id);
           _showDesignOptions(design);
         },
@@ -558,10 +527,10 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Design Image
               Container(
-                height: 100,
+                height: 90,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: AppColors.primaryLightPurple.withOpacity(0.2),
@@ -576,52 +545,60 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
                 child: !hasImage
                     ? Icon(
                   Icons.photo,
-                  size: 40,
+                  size: 36,
                   color: AppColors.primaryLightPurple,
                 )
                     : null,
               ),
               const SizedBox(height: 8),
 
-              // Design Name
               Text(
                 design.name,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 13,
                   color: AppColors.getTextColor(context),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
 
-              // Category
-              Text(
-                _getDesignCategory(design),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.getSecondaryTextColor(context),
-                ),
+              const SizedBox(height: 2),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _getDesignCategory(design),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.getSecondaryTextColor(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    ' • ${design.objects.length} items',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppColors.getSecondaryTextColor(context),
+                    ),
+                  ),
+                ],
               ),
 
-              // Last Viewed Time
+              const SizedBox(height: 2),
+
               Text(
                 _formatTimeAgo(design.lastViewed),
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 9,
                   color: AppColors.primaryLightPurple,
                   fontWeight: FontWeight.w500,
                 ),
-              ),
-
-              const SizedBox(height: 4),
-
-              // Items Count
-              Text(
-                '${design.objects.length} items',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.getSecondaryTextColor(context),
-                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
