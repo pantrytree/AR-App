@@ -74,7 +74,6 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
   }
 
   String _getDesignCategory(Design design) {
-    // Try to get category from design name or objects
     final name = design.name.toLowerCase();
 
     if (name.contains('living') || name.contains('sofa') || name.contains('tv'))
@@ -729,7 +728,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
               Navigator.pop(context);
               await _deleteDesign(design);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
