@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
@@ -9,6 +10,186 @@ class CloudinaryService {
   static const String apiSecret = 'ZILVNK-tNZvNoApvyCCP36S7MzM';
   static const String cloudName = 'dwvcvysdl';
   static const String uploadPreset = 'AR-App';
+
+  // ADDED: Build AR model URL from public ID
+  String buildArModelUrl(String publicId) {
+    print('=== BUILD AR MODEL URL ===');
+    print('Input public ID: $publicId');
+
+    // Check if publicId already has extension
+    String finalPublicId;
+    if (publicId.endsWith('.glb') || publicId.endsWith('.gltf')) {
+      finalPublicId = publicId;
+      print('Public ID already has extension');
+    } else {
+      // Add .glb extension
+      finalPublicId = '$publicId.glb';
+      print('Added .glb extension');
+    }
+
+    // Construct the raw URL
+    final url = 'https://res.cloudinary.com/$cloudName/raw/upload/$finalPublicId';
+
+    print('Final URL: $url');
+    return url;
+  }
+
+  // ADDED: Build AR model URL with version
+  String buildArModelUrlWithVersion(String publicId, {int? version}) {
+    final publicIdWithExtension = publicId.endsWith('.glb') ? publicId : '$publicId.glb';
+
+    if (version != null) {
+      final url = 'https://res.cloudinary.com/$cloudName/raw/upload/v$version/$publicIdWithExtension';
+      print('Built versioned AR model URL: $url');
+      return url;
+    }
+
+    return buildArModelUrl(publicId);
+  }
+
+  // ADDED: Convert Cloudinary image URL to raw URL for 3D models
+  String convertToRawUrl(String url) {
+    if (!url.contains('cloudinary.com')) {
+      return url; // Not a Cloudinary URL, return as-is
+    }
+
+    // Replace /image/upload/ with /raw/upload/
+    if (url.contains('/image/upload/')) {
+      return url.replaceAll('/image/upload/', '/raw/upload/');
+    }
+
+    // Replace /video/upload/ with /raw/upload/ (if needed)
+    if (url.contains('/video/upload/')) {
+      return url.replaceAll('/video/upload/', '/raw/upload/');
+    }
+
+    return url;
+  }
+
+  // MODIFIED: Get AR-ready URL (handles both full URLs and public IDs)
+  String getArModelUrl(String urlOrPublicId) {
+    print('=== GET AR MODEL URL ===');
+    print('Input: $urlOrPublicId');
+
+    // Check if it's a full URL or just a public ID
+    if (urlOrPublicId.startsWith('http://') || urlOrPublicId.startsWith('https://')) {
+      // It's a full URL - convert to raw
+      print('Input is a full URL');
+      final cleanUrl = urlOrPublicId.split('?').first;
+      final rawUrl = convertToRawUrl(cleanUrl);
+
+      if (!rawUrl.toLowerCase().endsWith('.glb')) {
+        print('WARNING: AR model URL does not end with .glb: $rawUrl');
+      }
+
+      print('Output: $rawUrl');
+      return rawUrl;
+    } else {
+      // It's a public ID - build the URL
+      print('Input is a public ID');
+      final url = buildArModelUrl(urlOrPublicId);
+      print('Output: $url');
+      return url;
+    }
+  }
+
+  // ADDED: Extract public ID from full Cloudinary URL
+  String? extractPublicIdFromUrl(String url) {
+    if (!url.contains('cloudinary.com')) return null;
+
+    try {
+      final cleanUrl = url.split('?').first;
+      final uri = Uri.parse(cleanUrl);
+      final pathSegments = uri.pathSegments;
+
+      // Find 'upload' in path
+      final uploadIndex = pathSegments.indexWhere((segment) =>
+      segment == 'upload' || segment == 'image' || segment == 'raw' || segment == 'video'
+      );
+
+      if (uploadIndex != -1) {
+        // Everything after upload/v{version}/ is the public ID
+        final startIndex = uploadIndex + 1;
+
+        // Skip version if present (e.g., v1234567890)
+        final firstSegment = pathSegments[startIndex];
+        final actualStartIndex = firstSegment.startsWith('v') &&
+            int.tryParse(firstSegment.substring(1)) != null
+            ? startIndex + 1
+            : startIndex;
+
+        // Join remaining segments
+        final publicIdParts = pathSegments.sublist(actualStartIndex);
+        final publicId = publicIdParts.join('/');
+
+        print('Extracted public ID: $publicId from URL: $url');
+        return publicId;
+      }
+    } catch (e) {
+      print('Error extracting public ID from URL: $e');
+    }
+
+    return null;
+  }
+
+  // ADDED: Upload 3D model file (GLB) and return public ID
+  Future<String> upload3DModel(File modelFile, String furnitureId) async {
+    try {
+      _validate3DModel(modelFile);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniquePublicId = '3D/models/furniture_3d_${furnitureId}_$timestamp';
+
+      final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/raw/upload');
+
+      final request = http.MultipartRequest('POST', url)
+        ..fields['upload_preset'] = uploadPreset
+        ..fields['public_id'] = uniquePublicId
+        ..fields['timestamp'] = timestamp.toString()
+        ..fields['resource_type'] = 'raw' // IMPORTANT: Specify raw resource type
+        ..files.add(await http.MultipartFile.fromPath(
+          'file',
+          modelFile.path,
+        ));
+
+      print('Uploading 3D model to Cloudinary...');
+      print('Public ID: $uniquePublicId');
+
+      final response = await request.send();
+      final responseData = await response.stream.toBytes();
+      final responseString = String.fromCharCodes(responseData);
+      final jsonResponse = json.decode(responseString);
+
+      if (response.statusCode == 200) {
+        final returnedPublicId = jsonResponse['public_id'];
+        print('3D model uploaded successfully!');
+        print('Public ID: $returnedPublicId');
+
+        // Return just the public ID (not the full URL)
+        return returnedPublicId;
+      } else {
+        throw Exception('Upload failed: ${jsonResponse['error']['message']}');
+      }
+    } catch (e) {
+      print('Upload error: $e');
+      throw Exception('Failed to upload 3D model: $e');
+    }
+  }
+
+  // ADDED: Validate 3D model file
+  void _validate3DModel(File file) {
+    if (!file.existsSync()) throw Exception('File does not exist');
+
+    final extension = path.extension(file.path).toLowerCase();
+    const allowed = ['.glb', '.gltf'];
+    if (!allowed.contains(extension)) {
+      throw Exception('Invalid 3D model type. Allowed: ${allowed.join(', ')}');
+    }
+
+    final fileSize = file.lengthSync();
+    const maxSize = 50 * 1024 * 1024; // 50MB max for 3D models
+    if (fileSize > maxSize) throw Exception('File too large (max 50MB)');
+    if (fileSize == 0) throw Exception('File is empty');
+  }
 
   Future<String> uploadProfileImageUnsigned(File imageFile, String userId) async {
     try {
@@ -21,7 +202,7 @@ class CloudinaryService {
         ..fields['upload_preset'] = uploadPreset
         ..fields['folder'] = 'profile_images'
         ..fields['public_id'] = uniquePublicId
-        ..fields['timestamp'] = timestamp.toString() // Add timestamp as field
+        ..fields['timestamp'] = timestamp.toString()
         ..files.add(await http.MultipartFile.fromPath(
           'file',
           imageFile.path,
@@ -37,7 +218,6 @@ class CloudinaryService {
         final imageUrl = jsonResponse['secure_url'];
         print('Upload successful: $imageUrl');
 
-        // Add cache busting parameter to the URL
         final cacheBustedUrl = '$imageUrl?t=$timestamp';
         return cacheBustedUrl;
       } else {
@@ -49,7 +229,51 @@ class CloudinaryService {
     }
   }
 
-  /// Upload project/design image with timestamp
+  Future<String> uploadScreenshot(Uint8List imageBytes, String fileName) async {
+    print('=== UPLOADING SCREENSHOT TO CLOUDINARY ===');
+    print('File name: $fileName');
+    print('Image size: ${imageBytes.length} bytes');
+
+    try {
+      final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+
+      // Convert bytes to base64
+      final base64Image = base64Encode(imageBytes);
+      final imageData = 'data:image/png;base64,$base64Image';
+
+      // Create multipart request
+      final request = http.MultipartRequest('POST', url);
+
+      request.fields['file'] = imageData;
+      request.fields['upload_preset'] = uploadPreset;
+      request.fields['folder'] = 'roomilab/screenshots';
+      request.fields['public_id'] = fileName;
+
+      print('Sending upload request...');
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+
+      print('Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(responseData);
+        final secureUrl = jsonResponse['secure_url'] as String;
+
+        print('✓ Upload successful!');
+        print('URL: $secureUrl');
+
+        return secureUrl;
+      } else {
+        print('✗ Upload failed');
+        print('Response: $responseData');
+        throw Exception('Failed to upload to Cloudinary: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('✗ Error uploading to Cloudinary: $e');
+      rethrow;
+    }
+  }
+
   Future<String> uploadProjectImage(File imageFile, String projectId) async {
     try {
       _validateImage(imageFile);
@@ -87,7 +311,6 @@ class CloudinaryService {
     }
   }
 
-  /// Upload design/furniture image with timestamp
   Future<String> uploadDesignImage(File imageFile, String designId) async {
     try {
       _validateImage(imageFile);
@@ -125,7 +348,6 @@ class CloudinaryService {
     }
   }
 
-  /// Upload furniture item image with timestamp
   Future<String> uploadFurnitureImage(File imageFile, String furnitureId) async {
     try {
       _validateImage(imageFile);
@@ -163,7 +385,6 @@ class CloudinaryService {
     }
   }
 
-  /// Generic image upload method with timestamp
   Future<String?> uploadImage({
     required String filePath,
     required String folder,
@@ -207,12 +428,10 @@ class CloudinaryService {
     }
   }
 
-  /// Delete image from Cloudinary
   Future<void> deleteImage(String publicId) async {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-      // Create signature for deletion
       final signature = _generateSignature(
         timestamp: timestamp,
         publicId: publicId,
@@ -240,17 +459,13 @@ class CloudinaryService {
     }
   }
 
-  /// Generate optimized image URL for display with cache busting
   String getOptimizedImageUrl(String originalUrl, {int width = 300, int height = 300}) {
     if (!originalUrl.contains('cloudinary.com')) {
-      // Add cache busting to non-Cloudinary URLs too
       return '$originalUrl?t=${DateTime.now().millisecondsSinceEpoch}';
     }
 
-    // Remove existing cache busting parameter if present
     final cleanUrl = originalUrl.split('?').first;
 
-    // Cloudinary URL transformation with cache busting
     final transformedUrl = cleanUrl.replaceFirst(
       '/upload/',
       '/upload/w_$width,h_$height,c_fill,q_auto,f_auto/',
@@ -259,13 +474,11 @@ class CloudinaryService {
     return '$transformedUrl?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Generate thumbnail URL with cache busting
   String getThumbnailUrl(String originalUrl, {int size = 150}) {
     if (!originalUrl.contains('cloudinary.com')) {
       return '$originalUrl?t=${DateTime.now().millisecondsSinceEpoch}';
     }
 
-    // Remove existing cache busting parameter
     final cleanUrl = originalUrl.split('?').first;
 
     final thumbnailUrl = cleanUrl.replaceFirst(
@@ -276,7 +489,6 @@ class CloudinaryService {
     return '$thumbnailUrl?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Generate signature for authenticated requests
   String _generateSignature({
     required int timestamp,
     String? publicId,
@@ -288,13 +500,11 @@ class CloudinaryService {
       if (folder != null) 'folder': folder,
     };
 
-    // Sort parameters alphabetically
     final sortedParams = params.keys.toList()..sort();
     final paramString = sortedParams
         .map((key) => '$key=${params[key]}')
         .join('&');
 
-    // Create signature
     final signatureString = '$paramString$apiSecret';
     final bytes = utf8.encode(signatureString);
     final digest = sha1.convert(bytes);
@@ -302,7 +512,6 @@ class CloudinaryService {
     return digest.toString();
   }
 
-  /// Validate image file
   void _validateImage(File file) {
     if (!file.existsSync()) throw Exception('File does not exist');
 
@@ -318,30 +527,10 @@ class CloudinaryService {
     if (fileSize == 0) throw Exception('File is empty');
   }
 
-  /// Extract public ID from Cloudinary URL (handles URLs with cache busting)
   String? extractPublicId(String imageUrl) {
-    if (!imageUrl.contains('cloudinary.com')) return null;
-
-    try {
-      // Remove cache busting parameter
-      final cleanUrl = imageUrl.split('?').first;
-      final uri = Uri.parse(cleanUrl);
-      final pathSegments = uri.pathSegments;
-
-      final uploadIndex = pathSegments.indexOf('upload');
-      if (uploadIndex != -1 && uploadIndex + 1 < pathSegments.length) {
-        final publicIdWithExtension = pathSegments.last;
-        final publicId = publicIdWithExtension.split('.').first;
-        return publicId;
-      }
-    } catch (e) {
-      print('Error extracting public ID: $e');
-    }
-
-    return null;
+    return extractPublicIdFromUrl(imageUrl);
   }
 
-  /// Upload multiple images with unique timestamps
   Future<List<String>> uploadMultipleImages({
     required List<String> filePaths,
     required String folder,
@@ -371,7 +560,6 @@ class CloudinaryService {
     return uploadedUrls;
   }
 
-  /// Helper method to add cache busting to any URL
   String addCacheBusting(String url) {
     if (url.contains('?')) {
       return '$url&t=${DateTime.now().millisecondsSinceEpoch}';
@@ -380,7 +568,6 @@ class CloudinaryService {
     }
   }
 
-  /// Override existing image (force update)
   Future<String> overrideProfileImage(File imageFile, String userId) async {
     try {
       final basePublicId = 'profile_$userId';
@@ -391,7 +578,6 @@ class CloudinaryService {
         print('Deleted existing image: $existingPublicId');
       }
 
-      // Upload new image
       return await uploadProfileImageUnsigned(imageFile, userId);
     } catch (e) {
       print('Error overriding profile image: $e');
