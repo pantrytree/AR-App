@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../../viewmodels/camera_viewmodel.dart';
 import '/theme/theme.dart';
 import '/utils/colors.dart';
 import '/viewmodels/roomielab_viewmodel.dart';
@@ -204,25 +205,17 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
   }
 
   Widget _buildProjectsList(BuildContext context, RoomieLabViewModel viewModel) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate dynamic height based on screen size
-        final cardHeight = constraints.maxHeight * 0.65; // 65% of available height
-
-        return ListView.builder(
-          key: const ValueKey('projectList'),
-          controller: _scrollController,
-          padding: const EdgeInsets.all(16),
-          itemCount: viewModel.projects.length,
-          itemBuilder: (context, index) {
-            final project = viewModel.projects[index];
-            return _AnimatedProjectCard(
-              key: ValueKey(project.id),
-              project: project,
-              viewModel: viewModel,
-              cardHeight: cardHeight,
-            );
-          },
+    return ListView.builder(
+      key: const ValueKey('projectList'),
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      itemCount: viewModel.projects.length,
+      itemBuilder: (context, index) {
+        final project = viewModel.projects[index];
+        return _AnimatedProjectCard(
+          key: ValueKey(project.id),
+          project: project,
+          viewModel: viewModel,
         );
       },
     );
@@ -232,13 +225,11 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
 class _AnimatedProjectCard extends StatefulWidget {
   final Project project;
   final RoomieLabViewModel viewModel;
-  final double cardHeight;
 
   const _AnimatedProjectCard({
     super.key,
     required this.project,
     required this.viewModel,
-    required this.cardHeight,
   });
 
   @override
@@ -392,7 +383,6 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
       child: FadeTransition(
         opacity: _fade,
         child: Container(
-          height: widget.cardHeight,
           margin: const EdgeInsets.only(bottom: 16),
           child: Stack(
             children: [
@@ -400,6 +390,9 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
               GestureDetector(
                 onTap: () => _navigateToFullScreen(context, project),
                 child: Container(
+                  constraints: BoxConstraints(
+                    minHeight: 200,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.getCardBackground(context),
                     borderRadius: BorderRadius.circular(20),
@@ -414,17 +407,13 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Project Image - Dynamic height
-                      Expanded(
-                        flex: 3,
+                      // Project Image
+                      AspectRatio(
+                        aspectRatio: 16 / 9,
                         child: _buildProjectImage(context, project),
                       ),
 
-                      // Project Info and Actions - Dynamic height
-                      Expanded(
-                        flex: 1,
-                        child: _buildProjectInfoAndActions(context, project),
-                      ),
+                      _buildProjectInfoAndActions(context, project),
                     ],
                   ),
                 ),
@@ -460,6 +449,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
               project.imageUrl!,
               fit: BoxFit.cover,
               width: double.infinity,
+              height: double.infinity,
               errorBuilder: (context, error, stackTrace) {
                 return _buildPlaceholderImage();
               },
@@ -477,7 +467,6 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
               },
             ),
 
-            // Gradient overlay for better text readability
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -512,61 +501,53 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
   }
 
   Widget _buildProjectInfoAndActions(BuildContext context, Project project) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final availableHeight = constraints.maxHeight;
-
-        return Container(
-          padding: EdgeInsets.all(availableHeight * 0.1), // Dynamic padding based on available height
-          child: Column(
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Project Name and Date
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Project Name and Date - Dynamic sizing
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        project.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: _calculateTitleFontSize(availableHeight),
-                          color: AppColors.getTextColor(context),
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SizedBox(height: availableHeight * 0.05),
-                    Text(
-                      '${project.roomType} • ${_formatDate(project.createdAt)}',
-                      style: TextStyle(
-                        color: AppColors.getSecondaryTextColor(context),
-                        fontSize: _calculateSubtitleFontSize(availableHeight),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+              // Project Name
+              Text(
+                project.name,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.getTextColor(context),
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-
-              // Action Buttons - Dynamic sizing
-              SizedBox(height: availableHeight * 0.1),
-              _buildActionButtons(context, availableHeight),
+              const SizedBox(height: 4),
+              // Room Type and Date
+              Text(
+                '${project.roomType} • ${_formatDate(project.createdAt)}',
+                style: TextStyle(
+                  color: AppColors.getSecondaryTextColor(context),
+                  fontSize: 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
-        );
-      },
+
+          const SizedBox(height: 16),
+
+          Container(
+            height: 70,
+            child: _buildActionButtons(context),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, double availableHeight) {
+  Widget _buildActionButtons(BuildContext context) {
     final project = widget.project;
-    final buttonSize = availableHeight * 0.4; // Dynamic button size
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -577,7 +558,6 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
           label: '$_likeCount',
           color: _isLiked ? Colors.red : AppColors.getSecondaryTextColor(context),
           onTap: _toggleLike,
-          size: buttonSize,
         ),
 
         // Collaborators Button
@@ -586,7 +566,6 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
           label: '${project.collaborators?.length ?? 0}',
           color: AppColors.getSecondaryTextColor(context),
           onTap: _showCollaboratorsDialog,
-          size: buttonSize,
         ),
 
         // Share Button
@@ -595,7 +574,6 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
           label: 'Share',
           color: AppColors.getSecondaryTextColor(context),
           onTap: () => _shareProject(context, project),
-          size: buttonSize,
         ),
 
         // Edit Button
@@ -604,7 +582,6 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
           label: 'Edit',
           color: AppColors.getSecondaryTextColor(context),
           onTap: () => _navigateToEditProject(context, project),
-          size: buttonSize,
         ),
       ],
     );
@@ -615,56 +592,48 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     required String label,
     required Color color,
     required VoidCallback onTap,
-    required double size,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: size * 0.45, // Dynamic icon size
-            ),
-          ),
-          SizedBox(height: size * 0.1),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: _calculateButtonFontSize(size),
-                color: color,
-                fontWeight: FontWeight.w500,
+      child: Container(
+        width: 50,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon container
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              child: Icon(
+                icon,
+                color: color,
+                size: 20,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 16,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: color,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  // Dynamic font size calculations
-  double _calculateTitleFontSize(double availableHeight) {
-    // Base size for normal screens, scales with available height
-    return 16.0 + (availableHeight * 0.01);
-  }
-
-  double _calculateSubtitleFontSize(double availableHeight) {
-    return 12.0 + (availableHeight * 0.005);
-  }
-
-  double _calculateButtonFontSize(double buttonSize) {
-    return 10.0 + (buttonSize * 0.02);
   }
 
   void _navigateToFullScreen(BuildContext context, Project project) {
@@ -682,10 +651,12 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProjectEditPage(
-          projectId: project.id,
-          furnitureItemId: project.items.isNotEmpty ? project.items.first : '',
-          furnitureName: project.name,
+        builder: (context) => ChangeNotifierProvider.value(
+          value: Provider.of<CameraViewModel>(context, listen: false),
+          child: ProjectEditPage(
+            projectId: project.id,
+            initialDesignId: null,
+          ),
         ),
       ),
     );
@@ -875,7 +846,7 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
         padding: const EdgeInsets.all(20),
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7, // 70% of screen height
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
