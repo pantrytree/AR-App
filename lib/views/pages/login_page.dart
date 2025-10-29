@@ -81,7 +81,7 @@ class LoginPage extends StatelessWidget {
                                   ),
                                 ),
 
-                              // Email Field
+                              // Email Field - FIXED
                               Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.9),
@@ -109,12 +109,24 @@ class LoginPage extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
                                     ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primaryPurple,
+                                        width: 2,
+                                      ),
+                                    ),
                                     filled: true,
                                     fillColor: AppColors.white.withOpacity(0.9),
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
                                     ),
+                                    floatingLabelBehavior: FloatingLabelBehavior.never,
                                   ),
                                   style: TextStyle(
                                     color: AppColors.primaryDarkBlue,
@@ -123,7 +135,7 @@ class LoginPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 16),
 
-                              // Password Field
+                              // Password Field - FIXED
                               Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.9),
@@ -150,12 +162,24 @@ class LoginPage extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
                                     ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primaryPurple,
+                                        width: 2,
+                                      ),
+                                    ),
                                     filled: true,
                                     fillColor: AppColors.white.withOpacity(0.9),
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
                                     ),
+                                    floatingLabelBehavior: FloatingLabelBehavior.never,
                                   ),
                                   obscureText: true,
                                   style: TextStyle(
