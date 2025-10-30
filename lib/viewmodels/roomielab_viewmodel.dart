@@ -9,21 +9,18 @@ class RoomieLabViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Properties
   List<Project> _projects = [];
-  List<Design> _designs = []; // Add designs list
+  List<Design> _designs = [];
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
 
-  // Getters
   List<Project> get projects => _projects;
   List<Design> get designs => _designs;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
 
-  /// Create a new design for a project
   Future<String?> createDesign({
     required String projectId,
     required String name,
@@ -70,7 +67,7 @@ class RoomieLabViewModel extends ChangeNotifier {
     }
   }
 
-  /// Get project designs (furniture items in the project)
+  /// Get project designs
   Future<List<Design>> getProjectDesigns(String projectId) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -80,7 +77,6 @@ class RoomieLabViewModel extends ChangeNotifier {
         return [];
       }
 
-      // Query designs collection for this project
       final designsSnapshot = await _firestore
           .collection('designs')
           .where('projectId', isEqualTo: projectId)
@@ -92,7 +88,6 @@ class RoomieLabViewModel extends ChangeNotifier {
         return Design.fromFirestore(doc);
       }).toList();
 
-      // Update local designs list
       _designs = designs;
       notifyListeners();
 
