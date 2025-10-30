@@ -71,7 +71,7 @@ class _CameraPageState extends State<CameraPage> {
                   },
                 ),
 
-                // Selected furniture info banner
+                // Selected furniture info banner - UPDATED
                 if (viewModel.selectedFurnitureItem != null)
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 60,
@@ -117,17 +117,34 @@ class _CameraPageState extends State<CameraPage> {
                                     color: Colors.black87,
                                   ),
                                 ),
-                                if (!viewModel.isObjectPlaced)
-                                  Text(
-                                    'Tap "Place" to add',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black54,
-                                    ),
+                                Text(
+                                  viewModel.placedNodes.isEmpty
+                                      ? 'Tap "Place" to add'
+                                      : '${viewModel.placedNodes.length} objects placed - Tap "Place" to add more',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black54,
                                   ),
+                                ),
                               ],
                             ),
                           ),
+                          if (viewModel.placedNodes.isNotEmpty)
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLightPurple,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${viewModel.placedNodes.length}',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -167,7 +184,7 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
 
-                // Bottom controls
+                // Bottom controls - UPDATED LAYOUT
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -276,34 +293,8 @@ class _CameraPageState extends State<CameraPage> {
                           SizedBox(height: 16),
                         ],
 
-                        // Main action buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Select Furniture button
-                            _buildActionButton(
-                              icon: Icons.list,
-                              label: 'Select',
-                              isPrimary: false,
-                              onPressed: () {
-                                _showFurnitureSelectionBottomSheet(context, viewModel);
-                              },
-                            ),
-
-                            SizedBox(width: 16),
-
-                            // Place/Remove button
-                            _buildActionButton(
-                              icon: viewModel.isObjectPlaced ? Icons.delete : Icons.add_circle,
-                              label: viewModel.isObjectPlaced ? 'Remove' : 'Place',
-                              isPrimary: true,
-                              isDestructive: viewModel.isObjectPlaced,
-                              onPressed: viewModel.isLoading
-                                  ? null
-                                  : () => viewModel.placeOrRemoveFurniture(),
-                            ),
-                          ],
-                        ),
+                        // Main action buttons - FIXED LAYOUT
+                        _buildActionButtons(viewModel),
                       ],
                     ),
                   ),
@@ -332,6 +323,73 @@ class _CameraPageState extends State<CameraPage> {
           );
         },
       ),
+    );
+  }
+
+  // NEW: Separate method for action buttons to handle layout properly
+  Widget _buildActionButtons(CameraViewModel viewModel) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // First row: Select and Place buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Select Furniture button
+            _buildActionButton(
+              icon: Icons.list,
+              label: 'Select',
+              isPrimary: false,
+              onPressed: () {
+                _showFurnitureSelectionBottomSheet(context, viewModel);
+              },
+            ),
+
+            SizedBox(width: 16),
+
+            // Place button
+            if (viewModel.selectedFurnitureItem != null)
+              _buildActionButton(
+                icon: Icons.add_circle,
+                label: 'Place',
+                isPrimary: true,
+                onPressed: viewModel.isLoading
+                    ? null
+                    : () => viewModel.placeFurniture(),
+              ),
+          ],
+        ),
+
+        SizedBox(height: 12),
+
+        // Second row: Remove buttons (only when objects are placed)
+        if (viewModel.placedNodes.isNotEmpty)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Remove Last button
+              _buildActionButton(
+                icon: Icons.delete,
+                label: 'Remove Last',
+                isPrimary: false,
+                isDestructive: true,
+                onPressed: () => viewModel.removeLastFurniture(),
+              ),
+
+              SizedBox(width: 12),
+
+              // Clear All button (only when multiple objects)
+              if (viewModel.placedNodes.length > 1)
+                _buildActionButton(
+                  icon: Icons.delete_sweep,
+                  label: 'Clear All',
+                  isPrimary: false,
+                  isDestructive: true,
+                  onPressed: () => viewModel.removeAllFurniture(),
+                ),
+            ],
+          ),
+      ],
     );
   }
 
@@ -467,18 +525,18 @@ class _CameraPageState extends State<CameraPage> {
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(20), // Slightly smaller radius
         ),
-        elevation: 8,
+        elevation: 4,
         shadowColor: backgroundColor.withOpacity(0.5),
       ),
-      icon: Icon(icon, size: 24),
+      icon: Icon(icon, size: 20), // Smaller icon
       label: Text(
         label,
         style: TextStyle(
-          fontSize: 18,
+          fontSize: 14, // Smaller font
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -486,6 +544,7 @@ class _CameraPageState extends State<CameraPage> {
     );
   }
 
+  // ... keep the rest of your methods (_showFurnitureSelectionBottomSheet, _showScreenshotPreview, _showDesignNameDialog) the same ...
   void _showFurnitureSelectionBottomSheet(BuildContext context, CameraViewModel viewModel) {
     showModalBottomSheet(
       context: context,
