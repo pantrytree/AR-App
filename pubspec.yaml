@@ -1,11 +1,4 @@
-# AR-App
-Eduvos project
-
-kotlin: 2.1.0
-gradle: 8.10.2
-
-working dependency versions (16/10):
-name: roomantics
+name: Roomantics
 description: A modern Flutter app for room design and management.
 publish_to: 'none'
 
@@ -22,9 +15,13 @@ dependencies:
 
   intl: ^0.20.2
 
+  flutter_staggered_animations: ^1.1.0
+  flutter_svg: ^2.1.6
+
   cupertino_icons: ^1.0.8
   google_fonts: ^6.1.0
   provider: ^6.1.1
+
 
   # Firebase - Ultra stable versions
   firebase_core: ^4.2.0
@@ -38,19 +35,49 @@ dependencies:
   image_picker: ^1.2.0
   image_picker_android: ^0.8.9+1
   image_picker_platform_interface: ^2.9.3
-  camera: ^0.11.2
+  model_viewer_plus: ^1.0.0
+  photo_manager: ^3.4.1
+
+  camera: ^0.10.5
+
   path: ^1.8.3
   path_provider: ^2.1.1
-  permission_handler: ^12.0.1
   shared_preferences: ^2.2.2
+  ar_flutter_plugin: ^0.7.3
+
+  device_info_plus: ^9.0.0
+  package_info_plus: ^4.0.0
+
+
+dependency_overrides:
+  permission_handler: ^12.0.1
   http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.1
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "b1b9e8"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#b1b9e8"
+  image: assets/icon/splash_icon.png
+  android: true
+  ios: true
+  android_12:
+    color: "#b1b9e8"
+    image: assets/icon/splash_icon.png
 
 flutter:
   uses-material-design: true
   assets:
     - assets/help_data.json
+    - assets/icon/

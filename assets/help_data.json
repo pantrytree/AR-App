@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "title": "Getting Started",
+    "type": "info",
+    "content": "Learn how to set up your account, customize your profile, and start using Roomantics effectively. This section helps new users understand the basics."
+  },
+  {
+    "id": 2,
+    "title": "Creating Your First Project",
+    "type": "guide",
+    "content": "Step 1: Tap 'Create Project' on the dashboard.\nStep 2: Name your project and choose a room layout.\nStep 3: Add furniture and decorations using the catalog.\nStep 4: Save and share your project with friends or clients."
+  },
+  {
+    "id": 3,
+    "title": "Importing Room Designs",
+    "type": "guide",
+    "content": "You can import 3D room designs from external sources in .obj or .gltf format. Navigate to 'Import Room' and select the file. Supported formats ensure your imported model is compatible."
+  },
+  {
+    "id": 4,
+    "title": "How do I reset my password?",
+    "type": "faq",
+    "content": "Go to Settings → Account → Reset Password. Enter your email and follow the instructions sent to your inbox."
+  },
+  {
+    "id": 5,
+    "title": "How do I contact support?",
+    "type": "faq",
+    "content": "You can reach out to our support team via the Help Center or email support@roomantics.com. We respond within 24 hours."
+  },
+  {
+    "id": 6,
+    "title": "Sharing Projects",
+    "type": "info",
+    "content": "Learn how to share your projects with others. Use the 'Share' button inside any project to generate a link or export it as a PDF."
+  },
+  {
+    "id": 7,
+    "title": "Managing Notifications",
+    "type": "info",
+    "content": "Control which notifications you receive from Roomantics. Go to Settings → Notifications to toggle email and push notifications for new messages or project updates."
+  },
+  {
+    "id": 8,
+    "title": "Advanced 3D Features",
+    "type": "guide",
+    "content": "Explore lighting, shadows, and realistic textures for your room designs. Enable advanced 3D features in Settings → 3D Tools."
+  },
+  {
+    "id": 9,
+    "title": "Frequently Asked Questions",
+    "type": "faq",
+    "content": "Check here for common questions like account management, subscription plans, and troubleshooting."
+  },
+  {
+    "id": 10,
+    "title": "Subscription & Billing",
+    "type": "info",
+    "content": "Understand your subscription plan, billing cycles, and how to upgrade or cancel. Navigate to Settings → Billing for full details."
+  }
+]

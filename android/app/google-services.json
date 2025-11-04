@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "755916720907",
+    "firebase_url": "https://roomantics-8eafd-default-rtdb.firebaseio.com",
+    "project_id": "roomantics-8eafd",
+    "storage_bucket": "roomantics-8eafd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:755916720907:android:1cb22d99639ee53d07f00e",
+        "android_client_info": {
+          "package_name": "com.example.roomantics"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwp6vOxoKuLczllyxJD8Oizqv3P7XoBxI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
