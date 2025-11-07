@@ -10,7 +10,7 @@ class ProjectService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 1. Get User's Projects
+  // Get User's Projects
 
   Future<List<Project>> getProjects({bool useFirestore = true}) async {
     try {
@@ -38,7 +38,7 @@ class ProjectService {
     }
   }
 
-  // 2. Stream projects (Real-time)
+  // Stream projects (Real-time)
 
   Stream<List<Project>> streamProjects() {
     final userId = _auth.currentUser?.uid;
@@ -56,7 +56,7 @@ class ProjectService {
     });
   }
 
-  // 3. Get Single Project
+  //  Get Single Project
 
   Future<Project> getProject(String projectId, {bool useFirestore = true}) async {
     try {
@@ -77,7 +77,7 @@ class ProjectService {
     }
   }
 
-  // 4. Stream single project
+  //  Stream single project
 
   Stream<Project?> streamProject(String projectId) {
     return _firestore
@@ -90,7 +90,7 @@ class ProjectService {
     });
   }
 
-  // 5. Create Project
+  //  Create Project
 
   Future<String> createProject({
     required String name,
@@ -141,7 +141,7 @@ class ProjectService {
     }
   }
 
-  // 6. Update Project
+  //  Update Project
 
   Future<void> updateProject(
       String projectId, {
@@ -184,7 +184,7 @@ class ProjectService {
     }
   }
 
-  // 7. Delete Project
+  //  Delete Project
 
   Future<void> deleteProject(String projectId, {bool useFirestore = true}) async {
     try {
@@ -209,7 +209,7 @@ class ProjectService {
     }
   }
 
-  // 8. Add Item to Project
+  //  Add Item to Project
 
   Future<void> addItemToProject(String projectId, String itemId) async {
     try {
@@ -222,7 +222,7 @@ class ProjectService {
     }
   }
 
-  // 9. Remove Item from Project
+  // Remove Item from Project
 
   Future<void> removeItemFromProject(String projectId, String itemId) async {
     try {
@@ -235,7 +235,7 @@ class ProjectService {
     }
   }
 
-  // 10. Get Project Items (returns FurnitureItem models)
+  // Get Project Items (returns FurnitureItem models)
 
   Future<List<FurnitureItem>> getProjectItems(String projectId) async {
     try {
@@ -261,7 +261,7 @@ class ProjectService {
     }
   }
 
-  // 11. Share Project (Add Collaborator)
+  //  Share Project (Add Collaborator)
 
   Future<void> shareProject(String projectId, String userEmail) async {
     try {
@@ -288,7 +288,7 @@ class ProjectService {
     }
   }
 
-  // 12. Remove Collaborator
+  // Remove Collaborator
 
   Future<void> removeCollaborator(String projectId, String userId) async {
     try {
@@ -301,7 +301,7 @@ class ProjectService {
     }
   }
 
-  // 13. Get Project Collaborators (returns User models)
+  //  Get Project Collaborators (returns User models)
 
   Future<List<models.User>> getProjectCollaborators(String projectId) async {
     try {
@@ -327,7 +327,7 @@ class ProjectService {
     }
   }
 
-  // 14. Get Shared Projects (projects where user is collaborator)
+  //  Get Shared Projects (projects where user is collaborator)
 
   Future<List<Project>> getSharedProjects() async {
     try {
@@ -348,7 +348,7 @@ class ProjectService {
     }
   }
 
-  // 15. Duplicate Project
+  //  Duplicate Project
 
   Future<String> duplicateProject(String projectId) async {
     try {
@@ -365,7 +365,7 @@ class ProjectService {
     }
   }
 
-  // 16. Get Project Count
+  //  Get Project Count
 
   Future<int> getProjectCount() async {
     try {
@@ -384,7 +384,7 @@ class ProjectService {
     }
   }
 
-  // 17. Check if user can access project
+  //  Check if user can access project
 
   Future<bool> canAccessProject(String projectId) async {
     try {
