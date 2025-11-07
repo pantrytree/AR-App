@@ -11,6 +11,7 @@ class Favorite {
     required this.createdAt,
   });
 
+  //From JSON (API response)
   factory Favorite.fromJson(Map<String, dynamic> json) {
     return Favorite(
       itemId: json['itemId'] as String,
@@ -19,6 +20,7 @@ class Favorite {
     );
   }
 
+  //From Firestore DocumentSnapshot
   factory Favorite.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Favorite(
