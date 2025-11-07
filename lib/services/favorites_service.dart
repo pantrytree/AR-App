@@ -9,8 +9,7 @@ class FavoritesService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 1. Get User's Favorites (Returns FurnitureItem models)
-  // Endpoint: GET /api/favorites
+  // Get User's Favorites (Returns FurnitureItem models) - Endpoint: GET /api/favorites
 
   Future<List<FurnitureItem>> getFavorites({bool useFirestore = true}) async {
     try {
@@ -74,8 +73,7 @@ class FavoritesService {
       return snapshot.docs.map((doc) => doc.id).toList();
     });
   }
-  // 2. Add to Favorites
-  // Endpoint: POST /api/favorites
+  //  Add to Favorites - Endpoint: POST /api/favorites
 
   Future<void> addToFavorites(String itemId, {bool useFirestore = true}) async {
     try {
@@ -107,8 +105,7 @@ class FavoritesService {
     }
   }
 
-  // 3. Remove from Favorites
-  // Endpoint: DELETE /api/favorites/:itemId
+  // Remove from Favorites - Endpoint: DELETE /api/favorites/:itemId
 
   Future<void> removeFromFavorites(String itemId, {bool useFirestore = true}) async {
     try {
@@ -130,8 +127,7 @@ class FavoritesService {
     }
   }
 
-  // 4. Check if Item is Favorite
-  // Endpoint: GET /api/favorites/check/:itemId
+  // Check if Item is Favorite - Endpoint: GET /api/favorites/check/:itemId
 
   Future<bool> isFavorite(String itemId, {bool useFirestore = true}) async {
     try {
@@ -159,7 +155,7 @@ class FavoritesService {
     }
   }
 
-  // 5. Toggle favorite (add if not favorite, remove if favorite)
+  // Toggle favorite (add if not favorite, remove if favorite)
 
   Future<bool> toggleFavorite(String itemId) async {
     try {
@@ -177,7 +173,7 @@ class FavoritesService {
     }
   }
 
-  // 6. Get favorite count
+  //  Get favorite count
 
   Future<int> getFavoriteCount() async {
     try {
@@ -197,7 +193,7 @@ class FavoritesService {
     }
   }
 
-  // 7. Clear all favorites
+  //  Clear all favorites
 
   Future<void> clearAllFavorites() async {
     try {
@@ -218,7 +214,7 @@ class FavoritesService {
     }
   }
 
-  // 8. Get favorites by category
+  //  Get favorites by category
 
   Future<List<FurnitureItem>> getFavoritesByCategory(String category) async {
     try {
@@ -229,7 +225,7 @@ class FavoritesService {
     }
   }
 
-  // 9. Get favorites by room type
+  //  Get favorites by room type
 
   Future<List<FurnitureItem>> getFavoritesByRoomType(String roomType) async {
     try {
