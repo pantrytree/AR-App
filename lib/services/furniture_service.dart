@@ -9,7 +9,7 @@ class FurnitureService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 1. Get All Furniture Items (with filters)
+  //  Get All Furniture Items (with filters)
 
   Future<List<FurnitureItem>> getFurnitureItems({
     String? category,
@@ -52,7 +52,7 @@ class FurnitureService {
     }
   }
 
-  // 2. Stream furniture items (Real-time)
+  //  Stream furniture items (Real-time)
 
   Stream<List<FurnitureItem>> streamFurnitureItems({
     String? category,
@@ -103,7 +103,7 @@ class FurnitureService {
     });
   }
 
-  // 3. Get Single Furniture Item
+  // Get Single Furniture Item
 
   Future<FurnitureItem> getFurnitureItem(String id, {bool useFirestore = true}) async {
     try {
@@ -124,7 +124,7 @@ class FurnitureService {
     }
   }
 
-  // 4. Stream single furniture item
+  //  Stream single furniture item
   Stream<FurnitureItem?> streamFurnitureItem(String id) {
     return _firestore
         .collection('furnitureItem')
@@ -136,7 +136,7 @@ class FurnitureService {
     });
   }
 
-  // 5. Search Furniture
+  //  Search Furniture
 
   Future<List<FurnitureItem>> searchFurniture(String query, {bool useFirestore = true}) async {
     try {
@@ -163,7 +163,7 @@ class FurnitureService {
     }
   }
 
-// 6. Get Recently Viewed Items
+//  Get Recently Viewed Items
   Future<List<FurnitureItem>> getRecentlyViewed() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -238,7 +238,7 @@ class FurnitureService {
     }
   }
 
-// 7. Track Item View
+//  Track Item View
   Future<void> trackItemView(String itemId) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -279,7 +279,7 @@ class FurnitureService {
     }
   }
 
-  // 8. Get Featured Items
+  //  Get Featured Items
 
   Future<List<FurnitureItem>> getFeaturedItems({bool useFirestore = true}) async {
     try {
@@ -304,7 +304,7 @@ class FurnitureService {
     }
   }
 
-  // 9. Get Items by Room
+  //  Get Items by Room
 
   Future<List<FurnitureItem>> getItemsByRoom(String roomType, {bool useFirestore = true}) async {
     try {
@@ -328,7 +328,7 @@ class FurnitureService {
     }
   }
 
-  // 10. Get items by category
+  //  Get items by category
 
   Future<List<FurnitureItem>> getItemsByCategory(String category) async {
     try {
@@ -345,7 +345,7 @@ class FurnitureService {
     }
   }
 
-  // 11. Get furniture count
+  //  Get furniture count
 
   Future<int> getFurnitureCount() async {
     try {
@@ -360,7 +360,7 @@ class FurnitureService {
     }
   }
 
-  // 12. Get all categories
+  // Get all categories
 
   Future<List<String>> getAllCategories() async {
     try {
@@ -378,7 +378,7 @@ class FurnitureService {
     }
   }
 
-  // 13. Get all room types
+  // Get all room types
 
   Future<List<String>> getAllRoomTypes() async {
     try {
@@ -396,7 +396,7 @@ class FurnitureService {
     }
   }
 
-  // 14. Create Furniture Item
+  // Create Furniture Item
   Future<String> createFurnitureItem({
     required String name,
     required String description,
@@ -437,7 +437,7 @@ class FurnitureService {
     }
   }
 
-  // 15. Update Furniture Item
+  //  Update Furniture Item
   Future<void> updateFurnitureItem(
       String id, {
         String? name,
@@ -473,7 +473,7 @@ class FurnitureService {
     }
   }
 
-  // 16. Delete Furniture Item
+  //  Delete Furniture Item
   Future<void> deleteFurnitureItem(String id) async {
     try {
       await _firestore.collection('furnitureItem').doc(id).delete();
@@ -482,7 +482,7 @@ class FurnitureService {
     }
   }
 
-  // 17. Batch create furniture items
+  //  Batch create furniture items
   Future<void> batchCreateFurnitureItems(List<FurnitureItem> items) async {
     try {
       final batch = _firestore.batch();
