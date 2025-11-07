@@ -9,8 +9,7 @@ class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 1. Get User Profile
-  // Endpoint: GET /api/users/profile
+  // Get User Profile - Endpoint: GET /api/users/profile
   Future<models.User?> getUserProfile() async {
     try {
       final uid = _auth.currentUser?.uid;
@@ -51,8 +50,7 @@ class UserService {
     });
   }
 
-  // 2. Update User Profile
-  // Endpoint: PUT /api/users/profile
+  //  Update User Profile - Endpoint: PUT /api/users/profile
   Future<void> updateUserProfile({
     String? displayName,
     String? photoUrl,
@@ -88,8 +86,7 @@ class UserService {
     }
   }
 
-  // 3. Get User Preferences
-  // Endpoint: GET /api/users/preferences
+  //  Get User Preferences - Endpoint: GET /api/users/preferences
   Future<Map<String, dynamic>> getUserPreferences() async {
     try {
       final response = await _apiService.get(
@@ -102,8 +99,7 @@ class UserService {
     }
   }
 
-  // 4. Update User Preferences
-  // Endpoint: PUT /api/users/preferences
+  //  Update User Preferences -  Endpoint: PUT /api/users/preferences
   Future<void> updateUserPreferences(Map<String, dynamic> preferences) async {
     try {
       final uid = _auth.currentUser?.uid;
