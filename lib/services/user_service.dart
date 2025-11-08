@@ -1,15 +1,15 @@
 import '/services/api_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:Roomantics/models/user.dart' as models;
 
+// Service class for managing user data, profiles, and preferences
 class UserService {
   final ApiService _apiService = ApiService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Get User Profile - Endpoint: GET /api/users/profile
+  // Get the current user's complete profile from Firestore
   Future<models.User?> getUserProfile() async {
     try {
       final uid = _auth.currentUser?.uid;
@@ -22,6 +22,7 @@ class UserService {
     }
   }
 
+  // Get any user's profile by their user ID
   Future<models.User?> getUserProfileById(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
@@ -34,6 +35,7 @@ class UserService {
     }
   }
 
+  // Stream that provides real-time updates of the current user's profile
   Stream<models.User?> streamUserProfile() {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
@@ -50,7 +52,7 @@ class UserService {
     });
   }
 
-  //  Update User Profile - Endpoint: PUT /api/users/profile
+  // Update specific fields in the user's profile
   Future<void> updateUserProfile({
     String? displayName,
     String? photoUrl,
@@ -72,6 +74,7 @@ class UserService {
     }
   }
 
+  // Update user profile using a complete User model object
   Future<void> updateUserWithModel(models.User user) async {
     try {
       final uid = _auth.currentUser?.uid;
@@ -86,7 +89,7 @@ class UserService {
     }
   }
 
-  //  Get User Preferences - Endpoint: GET /api/users/preferences
+  // Get user preferences from the backend API
   Future<Map<String, dynamic>> getUserPreferences() async {
     try {
       final response = await _apiService.get(
@@ -99,7 +102,7 @@ class UserService {
     }
   }
 
-  //  Update User Preferences -  Endpoint: PUT /api/users/preferences
+  // Update user preferences in both Firestore and backend API
   Future<void> updateUserPreferences(Map<String, dynamic> preferences) async {
     try {
       final uid = _auth.currentUser?.uid;
@@ -111,6 +114,7 @@ class UserService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // Sync with backend API
       await _apiService.put(
         '/users/preferences',
         body: preferences,
@@ -121,6 +125,7 @@ class UserService {
     }
   }
 
+  // Update a single preference key-value pair in Firestore
   Future<void> updatePreference(String key, dynamic value) async {
     try {
       final uid = _auth.currentUser?.uid;
@@ -135,6 +140,7 @@ class UserService {
     }
   }
 
+  // Update the user's last login timestamp for activity tracking
   Future<void> updateLastLogin() async {
     try {
       final uid = _auth.currentUser?.uid;
@@ -148,6 +154,7 @@ class UserService {
     }
   }
 
+  // Check if a user exists in the database by their user ID
   Future<bool> userExists(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
@@ -157,6 +164,7 @@ class UserService {
     }
   }
 
+  // Search for users by display name using Firestore query
   Future<List<models.User>> searchUsersByName(String query) async {
     try {
       if (query.isEmpty) return [];
@@ -176,6 +184,7 @@ class UserService {
     }
   }
 
+  // Find a user by their email address
   Future<models.User?> getUserByEmail(String email) async {
     try {
       final snapshot = await _firestore
@@ -192,12 +201,14 @@ class UserService {
     }
   }
 
+  // Get multiple users by their IDs using batched queries (10 users per batch)
   Future<List<models.User>> getUsersByIds(List<String> userIds) async {
     try {
       if (userIds.isEmpty) return [];
 
       List<models.User> users = [];
 
+      // Process in batches of 10 due to Firestore 'in' query limitations
       for (int i = 0; i < userIds.length; i += 10) {
         final batch = userIds.skip(i).take(10).toList();
 
@@ -217,13 +228,16 @@ class UserService {
     }
   }
 
+  // Permanently delete the current user's account and data
   Future<void> deleteUserAccount() async {
     try {
       final uid = _auth.currentUser?.uid;
       if (uid == null) throw Exception('No user logged in');
 
+      // Delete user document from Firestore
       await _firestore.collection('users').doc(uid).delete();
 
+      // Delete user from Firebase Authentication
       await _auth.currentUser?.delete();
     } catch (e) {
       throw Exception('Failed to delete account: $e');
