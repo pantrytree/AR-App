@@ -138,7 +138,6 @@ class FurnitureService {
       isFeatured: false,
     ),
 
-    // Add more furniture items as needed...
   ];
 
   // Get furniture by room category
