@@ -11,7 +11,6 @@ class ProjectService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Get User's Projects
-
   Future<List<Project>> getProjects({bool useFirestore = true}) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -39,7 +38,6 @@ class ProjectService {
   }
 
   // Stream projects (Real-time)
-
   Stream<List<Project>> streamProjects() {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return Stream.value([]);
@@ -57,7 +55,6 @@ class ProjectService {
   }
 
   //  Get Single Project
-
   Future<Project> getProject(String projectId, {bool useFirestore = true}) async {
     try {
       if (useFirestore) {
@@ -78,7 +75,6 @@ class ProjectService {
   }
 
   //  Stream single project
-
   Stream<Project?> streamProject(String projectId) {
     return _firestore
         .collection('projects')
@@ -91,7 +87,6 @@ class ProjectService {
   }
 
   //  Create Project
-
   Future<String> createProject({
     required String name,
     required String roomType,
@@ -142,7 +137,6 @@ class ProjectService {
   }
 
   //  Update Project
-
   Future<void> updateProject(
       String projectId, {
         String? name,
@@ -185,7 +179,6 @@ class ProjectService {
   }
 
   //  Delete Project
-
   Future<void> deleteProject(String projectId, {bool useFirestore = true}) async {
     try {
       if (useFirestore) {
@@ -210,7 +203,6 @@ class ProjectService {
   }
 
   //  Add Item to Project
-
   Future<void> addItemToProject(String projectId, String itemId) async {
     try {
       await _firestore.collection('projects').doc(projectId).update({
@@ -223,7 +215,6 @@ class ProjectService {
   }
 
   // Remove Item from Project
-
   Future<void> removeItemFromProject(String projectId, String itemId) async {
     try {
       await _firestore.collection('projects').doc(projectId).update({
@@ -236,7 +227,6 @@ class ProjectService {
   }
 
   // Get Project Items (returns FurnitureItem models)
-
   Future<List<FurnitureItem>> getProjectItems(String projectId) async {
     try {
       final project = await getProject(projectId);
@@ -262,7 +252,6 @@ class ProjectService {
   }
 
   //  Share Project (Add Collaborator)
-
   Future<void> shareProject(String projectId, String userEmail) async {
     try {
       // Find user by email
@@ -289,7 +278,6 @@ class ProjectService {
   }
 
   // Remove Collaborator
-
   Future<void> removeCollaborator(String projectId, String userId) async {
     try {
       await _firestore.collection('projects').doc(projectId).update({
@@ -302,7 +290,6 @@ class ProjectService {
   }
 
   //  Get Project Collaborators (returns User models)
-
   Future<List<models.User>> getProjectCollaborators(String projectId) async {
     try {
       final project = await getProject(projectId);
@@ -328,7 +315,6 @@ class ProjectService {
   }
 
   //  Get Shared Projects (projects where user is collaborator)
-
   Future<List<Project>> getSharedProjects() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -349,7 +335,6 @@ class ProjectService {
   }
 
   //  Duplicate Project
-
   Future<String> duplicateProject(String projectId) async {
     try {
       final project = await getProject(projectId);
@@ -366,7 +351,6 @@ class ProjectService {
   }
 
   //  Get Project Count
-
   Future<int> getProjectCount() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -385,7 +369,6 @@ class ProjectService {
   }
 
   //  Check if user can access project
-
   Future<bool> canAccessProject(String projectId) async {
     try {
       final userId = _auth.currentUser?.uid;
