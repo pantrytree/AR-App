@@ -10,7 +10,6 @@ class FavoritesService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Get User's Favorites (Returns FurnitureItem models) - Endpoint: GET /api/favorites
-
   Future<List<FurnitureItem>> getFavorites({bool useFirestore = true}) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -73,8 +72,8 @@ class FavoritesService {
       return snapshot.docs.map((doc) => doc.id).toList();
     });
   }
+  
   //  Add to Favorites - Endpoint: POST /api/favorites
-
   Future<void> addToFavorites(String itemId, {bool useFirestore = true}) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -106,7 +105,6 @@ class FavoritesService {
   }
 
   // Remove from Favorites - Endpoint: DELETE /api/favorites/:itemId
-
   Future<void> removeFromFavorites(String itemId, {bool useFirestore = true}) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -128,7 +126,6 @@ class FavoritesService {
   }
 
   // Check if Item is Favorite - Endpoint: GET /api/favorites/check/:itemId
-
   Future<bool> isFavorite(String itemId, {bool useFirestore = true}) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -156,7 +153,6 @@ class FavoritesService {
   }
 
   // Toggle favorite (add if not favorite, remove if favorite)
-
   Future<bool> toggleFavorite(String itemId) async {
     try {
       final isFav = await isFavorite(itemId);
@@ -174,7 +170,6 @@ class FavoritesService {
   }
 
   //  Get favorite count
-
   Future<int> getFavoriteCount() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -194,7 +189,6 @@ class FavoritesService {
   }
 
   //  Clear all favorites
-
   Future<void> clearAllFavorites() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -215,7 +209,6 @@ class FavoritesService {
   }
 
   //  Get favorites by category
-
   Future<List<FurnitureItem>> getFavoritesByCategory(String category) async {
     try {
       final favorites = await getFavorites();
@@ -226,7 +219,6 @@ class FavoritesService {
   }
 
   //  Get favorites by room type
-
   Future<List<FurnitureItem>> getFavoritesByRoomType(String roomType) async {
     try {
       final favorites = await getFavorites();
