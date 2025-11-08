@@ -3,17 +3,20 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '/services/api_service.dart';
 import '/models/user.dart' as models;
 
+// Service class handling all authentication and user management operations
 class AuthService {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ApiService _apiService = ApiService();
 
+  // Getters for current authentication state
   firebase_auth.User? get currentUser => _auth.currentUser;
   Stream<firebase_auth.User?> get authStateChanges => _auth.authStateChanges();
   Future<String?> getIdToken() async => await _auth.currentUser?.getIdToken();
   bool get isAuthenticated => _auth.currentUser != null;
   String? get currentUserId => _auth.currentUser?.uid;
 
+  // Get the current user's full model from Firestore with optional refresh
   Future<models.User?> getCurrentUserModel({bool refresh = false}) async {
     try {
       final uid = _auth.currentUser?.uid;
@@ -25,7 +28,7 @@ class AuthService {
       }
 
       if (refresh) {
-        // Force refresh Firebase Auth user
+        // Force refresh Firebase Auth user to get latest data
         await _auth.currentUser?.reload();
         print('Firebase Auth user reloaded');
       }
@@ -48,6 +51,7 @@ class AuthService {
     }
   }
 
+  // Stream that provides real-time updates of the current user's model
   Stream<models.User?> streamCurrentUserModel() {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
@@ -64,6 +68,7 @@ class AuthService {
     });
   }
 
+  // Authenticate user with email and password
   Future<models.User?> login({
     required String email,
     required String password,
@@ -74,10 +79,12 @@ class AuthService {
         password: password,
       );
 
+      // Update last login timestamp in Firestore
       await _firestore.collection('users').doc(credential.user!.uid).update({
         'lastLogin': FieldValue.serverTimestamp(),
       });
 
+      // Notify backend API about login (non-critical operation)
       try {
         await _apiService.post(
           '/auth/login',
@@ -96,6 +103,7 @@ class AuthService {
     }
   }
 
+  // Create new user account with email, password, and display name
   Future<bool> signup({
     required String email,
     required String password,
@@ -107,11 +115,13 @@ class AuthService {
         password: password,
       );
 
+      // Update display name in Firebase Auth
       if (credential.user != null) {
         await credential.user!.updateDisplayName(displayName);
         await credential.user!.reload();
       }
 
+      // Create user document in Firestore with initial data
       await _firestore.collection('users').doc(credential.user!.uid).set({
         'uid': credential.user!.uid,
         'email': email,
@@ -123,6 +133,7 @@ class AuthService {
         'lastLogin': FieldValue.serverTimestamp(),
       });
 
+      // Notify backend API about new user (non-critical operation)
       try {
         await _apiService.post(
           '/auth/signup',
@@ -148,10 +159,11 @@ class AuthService {
     }
   }
 
-  // Forgot Password - Endpoint: POST /api/auth/forgot-password
+  // Send password reset email to the specified email address
   Future<Map<String, dynamic>> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
+      // Notify backend API about password reset request
       try {
         await _apiService.post(
           '/auth/forgot-password',
@@ -180,7 +192,7 @@ class AuthService {
     }
   }
 
-  // Sign Out
+  // Sign out the current user
   Future<void> signOut() async {
     try {
       await _auth.signOut();
@@ -191,7 +203,7 @@ class AuthService {
     }
   }
 
-//  Update email
+  // Update user's email address with verification requirement
   Future<Map<String, dynamic>> updateEmail(String newEmail) async {
     try {
       final user = _auth.currentUser;
@@ -204,6 +216,7 @@ class AuthService {
 
       print('Updating email from ${user.email} to $newEmail');
 
+      // Validate email format
       if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(newEmail)) {
         return {
           'success': false,
@@ -211,8 +224,10 @@ class AuthService {
         };
       }
 
+      // Send verification email before actually updating
       await user.verifyBeforeUpdateEmail(newEmail);
 
+      // Update email in Firestore
       await _firestore.collection('users').doc(user.uid).update({
         'email': newEmail,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -239,7 +254,7 @@ class AuthService {
     }
   }
 
-  // Update Password
+  // Update user's password
   Future<Map<String, dynamic>> updatePassword(String newPassword) async {
     try {
       final user = _auth.currentUser;
@@ -269,6 +284,7 @@ class AuthService {
     }
   }
 
+  // Check if user recently completed a password reset
   Future<bool> checkRecentPasswordReset(String email) async {
     try {
       final resetQuery = await _firestore
@@ -286,7 +302,7 @@ class AuthService {
     }
   }
 
-  // Reauthenticate User
+  // Re-authenticate user with email and password for sensitive operations
   Future<Map<String, dynamic>> reauthenticate({
     required String email,
     required String password,
@@ -324,7 +340,7 @@ class AuthService {
     }
   }
 
-  //  Delete Account
+  // Permanently delete user account and all associated data
   Future<Map<String, dynamic>> deleteAccount() async {
     try {
       final user = _auth.currentUser;
@@ -337,8 +353,10 @@ class AuthService {
 
       final uid = user.uid;
 
+      // Delete all user data from Firestore first
       await _deleteUserData(uid);
 
+      // Delete the Firebase Auth user account
       await user.delete();
 
       print('Account deleted successfully');
@@ -367,6 +385,7 @@ class AuthService {
     }
   }
 
+  // Delete all user data from Firestore collections
   Future<void> _deleteUserData(String uid) async {
     try {
       // Delete user document
@@ -420,6 +439,7 @@ class AuthService {
     }
   }
 
+  // Send email verification to the current user
   Future<Map<String, dynamic>> sendEmailVerification() async {
     try {
       final user = _auth.currentUser;
@@ -451,6 +471,7 @@ class AuthService {
     }
   }
 
+  // Reload user data from Firebase Auth to get latest verification status
   Future<bool> reloadUser() async {
     try {
       await _auth.currentUser?.reload();
@@ -461,8 +482,10 @@ class AuthService {
     }
   }
 
+  // Check if current user's email is verified
   bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
 
+  // Update user's display name in both Auth and Firestore
   Future<Map<String, dynamic>> updateDisplayName(String displayName) async {
     try {
       final user = _auth.currentUser;
@@ -491,6 +514,7 @@ class AuthService {
     }
   }
 
+  // Update user's profile photo URL in both Auth and Firestore
   Future<Map<String, dynamic>> updatePhotoURL(String photoURL) async {
     try {
       final user = _auth.currentUser;
@@ -520,6 +544,7 @@ class AuthService {
     }
   }
 
+  // Convert Firebase Auth error codes to user-friendly messages
   String _getErrorMessage(String code) {
     switch (code) {
       case 'weak-password':
@@ -550,5 +575,4 @@ class AuthService {
         return 'An error occurred. Please try again.';
     }
   }
-
 }
