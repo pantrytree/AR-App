@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ======================
   //  CORE BRAND COLORS
-  // ======================
 
   // Primary Colors
   static const Color primaryPurple = Color(0xFF963CF1);
@@ -17,9 +15,7 @@ class AppColors {
   static const Color secondaryLightPurple = Color(0xFFDADDF2);
   static const Color secondaryLighterPurple = Color(0xFFC1C8F5);
 
-  // ======================
   //  NEUTRAL COLORS
-  // ======================
   static const Color white = Color(0xFFFFFFFF);
   static const Color black = Color(0xFF000000);
   static const Color darkGrey = Color(0xFF14213D);
@@ -28,17 +24,13 @@ class AppColors {
   static const Color lightGrey = Color(0xFFE0E0E0);
   static const Color veryLightGrey = Color(0xFFF5F5F5);
 
-  // ======================
   //  FUNCTIONAL COLORS
-  // ======================
   static const Color error = Color(0xFFF44336);
   static const Color success = Color(0xFF4CAF50);
   static const Color warning = Color(0xFFFF9800);
   static const Color info = Color(0xFF2196F3);
 
-  // ======================
   // COMPONENT-SPECIFIC COLORS
-  // ======================
 
   // Side Menu
   static const Color sideMenuBackground = Color(0xFFDADDF2);
@@ -79,9 +71,7 @@ class AppColors {
   static const Color categoryTabSelected = Color(0xFFCACEED);
   static const Color categoryTabUnselected = Color(0xFFC1C8F5);
 
-  // ======================
   //  GRADIENTS
-  // ======================
   static const Gradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -100,9 +90,7 @@ class AppColors {
     colors: [Color(0xFFb1b9e8), Color(0xFFf4f4ff)],
   );
 
-  // ======================
   //  BACKEND TEAM COLORS
-  // ======================
   static const Color splashScreenBackground = Color(0xFFB1B9E8);
   static const Color splashScreenText = Color(0xFFe3e4f6);
   static const Color lightBlueOpaque = Color(0x4DB1B9E8);
@@ -115,47 +103,12 @@ class AppColors {
   static const Color pastelGreyBlueOpaque = Color(0x9699a0d1);
   static const Color purplePink = Color(0xFFcb6ce6);
 
-  // ======================
   //  CONSISTENCY COLORS
-  // ======================
   static const Color background = Color(0xFFF2F4FC);
   static const Color textDark = Color(0xFF14213D);
   static const Color textLight = Color(0xFF666666);
   static const Color divider = Color(0xFFDADDF2);
   static const Color veryLightPurple = Color(0xFFE8E0FF);
-
-  // ======================
-  //  ADDITIONAL COLORS
-  // ======================
-
-  // Light purple for selected tabs (MyLikes) - already exists as likesTabSelected
-  // Even lighter purple for tabs - already exists as veryLightPurple
-
-  // Pure white for cards and backgrounds - already exists as white
-  // Pure black for text and icons - already exists as black
-
-  // Dark grey for primary text - already exists as darkGrey
-  // Medium grey for secondary text - already exists as mediumGrey
-  // Standard grey for tertiary text and borders - already exists as grey
-  // Light grey for backgrounds and subtle elements - already exists as lightGrey
-  // Very light grey for placeholders and disabled states - already exists as veryLightGrey
-
-  // Text field background color - already exists as textFieldBackground
-  // Card background (usually white) - already exists as cardBackground
-  // Button primary color (used in save buttons) - already exists as buttonPrimary
-  // Purple for folder icons - already exists as folderPurple
-  // Purple for heart icons in MyLikes - already exists as likesHeart
-  // Shadow color for subtle shadows - already exists as shadowColor
-
-  // Color for selected bottom navigation items - already exists as bottomNavSelected
-  // Color for unselected bottom navigation items - already exists as bottomNavUnselected
-  // Color for selected category tabs - already exists as categoryTabSelected
-  // Color for unselected category tabs - already exists as categoryTabUnselected
-
-  // Color for error states - already exists as error
-  // Color for success states - already exists as success
-  // Color for warning states - already exists as warning
-  // Color for info states - already exists as info
 
   // Splash screens/Login/Signup specific colors
   static const Color splashBrackground = Color(0xFFb1b9e9);
@@ -165,9 +118,7 @@ class AppColors {
   static const Color signupButtonText = Color(0xFF474a81);
   static const Color loginButtonText = Color(0xFFf0f1fa);
 
-  // ======================
   //  DYNAMIC THEME METHODS
-  // ======================
 
   static Color getBackgroundColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
@@ -239,9 +190,7 @@ class AppColors {
         : primaryPurple.withOpacity(0.2);
   }
 
-  // ======================
   // SIDE MENU DYNAMIC METHODS
-  // ======================
 
   static Color getSideMenuBackground(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
