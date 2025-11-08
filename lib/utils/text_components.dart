@@ -336,17 +336,17 @@ class TextComponents {
 
   // METHODS TO UPDATE DYNAMIC CONTENT
 
-  /// Updates the user name dynamically (to be called after login/user data fetch)
+  // Updates the user name dynamically (to be called after login/user data fetch)
   static void updateUserName(String newName) {
     userName = newName;
   }
 
-  /// Updates the user email dynamically
+  // Updates the user email dynamically
   static void updateUserEmail(String newEmail) {
     userEmail = newEmail;
   }
 
-  /// Resets user data to guest/default values
+  // Resets user data to guest/default values
   static void resetToGuest() {
     userName = "Guest";
     userEmail = "guest@example.com";
