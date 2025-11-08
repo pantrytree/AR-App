@@ -1,6 +1,4 @@
-// services/session_service.dart
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -8,10 +6,12 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 
+// Service for managing user sessions and tracking device/usage analytics
 class SessionService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Create or update a user session with comprehensive device and location data
   Future<void> createOrUpdateSession({
     required String sessionId,
     String? deviceName,
@@ -22,7 +22,7 @@ class SessionService {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      // Get device information
+      // Collect comprehensive session information from various sources
       final deviceInfo = await _getDeviceInfo();
       final ipAddress = await _getIPAddress();
       final appVersion = await _getAppVersion();
@@ -44,6 +44,7 @@ class SessionService {
         'isActive': true,
       };
 
+      // Store session data in user's sessions subcollection
       await _firestore
           .collection('users')
           .doc(user.uid)
@@ -57,6 +58,7 @@ class SessionService {
     }
   }
 
+  // Collect detailed device information including model, OS, and manufacturer
   Future<Map<String, String>> _getDeviceInfo() async {
     final deviceInfoPlugin = DeviceInfoPlugin();
     Map<String, String> deviceInfo = {};
@@ -107,9 +109,10 @@ class SessionService {
     return deviceInfo;
   }
 
+  // Retrieve device's public IP address using multiple fallback services
   Future<String> _getIPAddress() async {
     try {
-      // Try multiple IP detection services
+      // Try multiple IP detection services for reliability
       final responses = await Future.wait([
         http.get(Uri.parse('https://api.ipify.org')),
         http.get(Uri.parse('https://api64.ipify.org')),
@@ -128,6 +131,7 @@ class SessionService {
     return 'Unknown';
   }
 
+  // Estimate geographic location based on IP address using IP geolocation API
   Future<String> _getLocationFromIP(String ipAddress) async {
     if (ipAddress == 'Unknown' || ipAddress == '127.0.0.1') {
       return 'Local Network';
@@ -153,6 +157,7 @@ class SessionService {
     return 'Unknown Location';
   }
 
+  // Get current app version and build number from package info
   Future<String> _getAppVersion() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
@@ -163,6 +168,7 @@ class SessionService {
     }
   }
 
+  // Update the last active timestamp for an existing session
   Future<void> updateSessionActivity(String sessionId) async {
     try {
       final user = _auth.currentUser;
@@ -181,6 +187,7 @@ class SessionService {
     }
   }
 
+  // Mark a session as ended and record the end timestamp
   Future<void> endSession(String sessionId) async {
     try {
       final user = _auth.currentUser;
@@ -200,16 +207,18 @@ class SessionService {
     }
   }
 
+  // Generate a unique session ID based on user, device, and network characteristics
   Future<String> generateSessionId() async {
     final user = _auth.currentUser;
     final deviceInfo = await _getDeviceInfo();
     final ipAddress = await _getIPAddress();
 
-    // Create a unique session ID based on user, device, and IP
+    // Create a unique session ID based on user, device, and IP combination
     final uniqueString = '${user?.uid}_${deviceInfo['model']}_$ipAddress';
     return _hashString(uniqueString);
   }
 
+  // Simple hash function for generating consistent session IDs (demo purposes)
   String _hashString(String input) {
     // Simple hash function for demo purposes
     // In production, use a proper hash like SHA-256
