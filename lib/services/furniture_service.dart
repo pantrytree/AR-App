@@ -10,7 +10,6 @@ class FurnitureService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   //  Get All Furniture Items (with filters)
-
   Future<List<FurnitureItem>> getFurnitureItems({
     String? category,
     String? roomType,
@@ -53,7 +52,6 @@ class FurnitureService {
   }
 
   //  Stream furniture items (Real-time)
-
   Stream<List<FurnitureItem>> streamFurnitureItems({
     String? category,
     String? roomType,
@@ -104,7 +102,6 @@ class FurnitureService {
   }
 
   // Get Single Furniture Item
-
   Future<FurnitureItem> getFurnitureItem(String id, {bool useFirestore = true}) async {
     try {
       if (useFirestore) {
@@ -137,7 +134,6 @@ class FurnitureService {
   }
 
   //  Search Furniture
-
   Future<List<FurnitureItem>> searchFurniture(String query, {bool useFirestore = true}) async {
     try {
       if (useFirestore) {
@@ -280,7 +276,6 @@ class FurnitureService {
   }
 
   //  Get Featured Items
-
   Future<List<FurnitureItem>> getFeaturedItems({bool useFirestore = true}) async {
     try {
       if (useFirestore) {
@@ -305,7 +300,6 @@ class FurnitureService {
   }
 
   //  Get Items by Room
-
   Future<List<FurnitureItem>> getItemsByRoom(String roomType, {bool useFirestore = true}) async {
     try {
       if (useFirestore) {
@@ -329,7 +323,6 @@ class FurnitureService {
   }
 
   //  Get items by category
-
   Future<List<FurnitureItem>> getItemsByCategory(String category) async {
     try {
       final snapshot = await _firestore
@@ -346,7 +339,6 @@ class FurnitureService {
   }
 
   //  Get furniture count
-
   Future<int> getFurnitureCount() async {
     try {
       final snapshot = await _firestore
@@ -361,7 +353,6 @@ class FurnitureService {
   }
 
   // Get all categories
-
   Future<List<String>> getAllCategories() async {
     try {
       final snapshot = await _firestore.collection('furnitureItem').get();
@@ -379,7 +370,6 @@ class FurnitureService {
   }
 
   // Get all room types
-
   Future<List<String>> getAllRoomTypes() async {
     try {
       final snapshot = await _firestore.collection('furnitureItem').get();
