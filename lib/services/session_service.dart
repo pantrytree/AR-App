@@ -218,10 +218,9 @@ class SessionService {
     return _hashString(uniqueString);
   }
 
-  // Simple hash function for generating consistent session IDs (demo purposes)
+  // Simple hash function for generating consistent session IDs 
   String _hashString(String input) {
     // Simple hash function for demo purposes
-    // In production, use a proper hash like SHA-256
     var hash = 0;
     for (var i = 0; i < input.length; i++) {
       hash = (hash << 5) - hash + input.codeUnitAt(i);
