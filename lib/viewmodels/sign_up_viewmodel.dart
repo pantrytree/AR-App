@@ -57,7 +57,6 @@ class SignUpViewModel extends ChangeNotifier {
       // ===== Placeholder for real API/database call =====
       // Replace this with your actual API method
       final bool success = await fakeApiSignUp(name, email, password, confirmPassword);
-      // ================================================
 
       if (success) {
         loading = false;
@@ -108,8 +107,8 @@ class SignUpViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// --- Placeholder function simulating an API/database call ---
-  /// In production, replace with real HTTP/database call
+  // --- Placeholder function simulating an API/database call ---
+  // In production, replace with real HTTP/database call
   Future<bool> fakeApiSignUp(String name, String email, String password, String confirmPassword) async {
     await Future.delayed(Duration(seconds: 2)); // Simulate network latency
 
