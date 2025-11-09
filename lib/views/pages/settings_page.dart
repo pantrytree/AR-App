@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/settings_viewmodel.dart';
-import '../../utils/theme.dart'; // ✅ ADD THIS
+import '../../utils/theme.dart'; 
 import '../../utils/colors.dart';
 import '../../utils/text_components.dart';
 
@@ -12,9 +12,9 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeManager>( // ✅ USE THEME MANAGER FOR THEME
+    return Consumer<ThemeManager>( 
       builder: (context, themeManager, child) {
-        return Consumer<SettingsViewModel>( // ✅ USE SETTINGS VIEWMODEL FOR NAVIGATION
+        return Consumer<SettingsViewModel>( 
           builder: (context, settingsViewModel, child) {
             return Scaffold(
               backgroundColor: AppColors.getBackgroundColor(context),
@@ -44,17 +44,17 @@ class SettingsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 👤 User Section with icon
+                    // User Section with icon
                     _buildUserSection(context, settingsViewModel),
 
                     const SizedBox(height: 20),
 
-                    // ⚙️ General Settings Section
+                    // General Settings Section
                     _buildGeneralSection(context, themeManager, settingsViewModel),
 
                     const SizedBox(height: 20),
 
-                    // ℹ️ Other Options Section
+                    // Other Options Section
                     _buildOtherOptionsSection(context, settingsViewModel),
                   ],
                 ),
@@ -207,7 +207,7 @@ class SettingsPage extends StatelessWidget {
             subtitle: themeManager.isDarkMode ? 'Enabled' : 'Disabled',
             value: themeManager.isDarkMode,
             onChanged: (value) {
-              themeManager.toggleTheme(value); // ✅ USE THEME MANAGER
+              themeManager.toggleTheme(value); 
             },
           ),
         ],
