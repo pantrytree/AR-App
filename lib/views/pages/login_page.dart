@@ -17,7 +17,7 @@ class LoginPage extends StatelessWidget {
         builder: (context, themeManager, child) {
           return Consumer<LoginViewModel>(
             builder: (context, viewModel, child) {
-              // Handle navigation when flagged
+              // Redirect to the next screen when ViewModel triggers navigation
               if (viewModel.navigateToRoute != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.pushReplacementNamed(context, viewModel.navigateToRoute!);
@@ -38,17 +38,19 @@ class LoginPage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+
+                              // Page heading
                               Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.white,
-                                  )
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.white,
+                                ),
                               ),
                               const SizedBox(height: 32),
 
-                              // Error Message
+                              // Inline error display (appears after failed login)
                               if (viewModel.errorMessage.isNotEmpty)
                                 Container(
                                   padding: const EdgeInsets.all(12),
@@ -62,11 +64,8 @@ class LoginPage extends StatelessWidget {
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(
-                                        Icons.error_outline,
-                                        color: AppColors.error,
-                                        size: 20,
-                                      ),
+                                      Icon(Icons.error_outline,
+                                          color: AppColors.error, size: 20),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -81,7 +80,7 @@ class LoginPage extends StatelessWidget {
                                   ),
                                 ),
 
-                              // Email Field - FIXED
+                              // Email input
                               Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.9),
@@ -109,10 +108,6 @@ class LoginPage extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
@@ -128,14 +123,12 @@ class LoginPage extends StatelessWidget {
                                     ),
                                     floatingLabelBehavior: FloatingLabelBehavior.never,
                                   ),
-                                  style: TextStyle(
-                                    color: AppColors.primaryDarkBlue,
-                                  ),
+                                  style: TextStyle(color: AppColors.primaryDarkBlue),
                                 ),
                               ),
                               const SizedBox(height: 16),
 
-                              // Password Field - FIXED
+                              // Password input
                               Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.9),
@@ -162,10 +155,6 @@ class LoginPage extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
@@ -182,71 +171,65 @@ class LoginPage extends StatelessWidget {
                                     floatingLabelBehavior: FloatingLabelBehavior.never,
                                   ),
                                   obscureText: true,
-                                  style: TextStyle(
-                                    color: AppColors.primaryDarkBlue,
-                                  ),
+                                  style: TextStyle(color: AppColors.primaryDarkBlue),
                                 ),
                               ),
                               const SizedBox(height: 32),
 
-                              // Login Button
+                              // Submit button or loading spinner
                               viewModel.isLoading
-                                  ? CircularProgressIndicator(
-                                color: AppColors.white,
-                              )
+                                  ? CircularProgressIndicator(color: AppColors.white)
                                   : ElevatedButton(
-                                onPressed: () {
-                                  if (_formKey.currentState!.validate()) {
-                                    viewModel.login();
-                                  }
-                                },
-                                child: Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.signupButtonBackground,
-                                  foregroundColor: AppColors.signupButtonText,
-                                  minimumSize: const Size(double.infinity, 50),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 2,
-                                ),
-                              ),
+                                      onPressed: () {
+                                        if (_formKey.currentState!.validate()) {
+                                          viewModel.login();
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.signupButtonBackground,
+                                        foregroundColor: AppColors.signupButtonText,
+                                        minimumSize: const Size(double.infinity, 50),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        elevation: 2,
+                                      ),
+                                      child: Text(
+                                        'Login',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
                               const SizedBox(height: 16),
 
-                              // Forgot Password
+                              // Forgot password shortcut
                               TextButton(
                                 onPressed: viewModel.onForgotPasswordTapped,
                                 style: TextButton.styleFrom(
                                   foregroundColor: AppColors.white,
                                 ),
-                                child: Text('Forgot your password?'),
+                                child: const Text('Forgot your password?'),
                               ),
                               const SizedBox(height: 16),
 
-                              // Sign Up Link
+                              // Sign-up redirect
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     "Don't have an account? ",
-                                    style: TextStyle(
-                                      color: AppColors.white,
-                                    ),
+                                    style: TextStyle(color: AppColors.white),
                                   ),
                                   GestureDetector(
                                     onTap: viewModel.onSignUpTapped,
                                     child: Text(
-                                        'Sign Up',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.white,
-                                        )
+                                      'Sign Up',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.white,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -258,7 +241,7 @@ class LoginPage extends StatelessWidget {
                       ),
                     ),
 
-                    // Back button
+                    // Top-left close button
                     SafeArea(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
