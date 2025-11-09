@@ -10,6 +10,7 @@ import 'package:Roomantics/views/pages/project_edit_page.dart';
 import '../../viewmodels/camera_viewmodel.dart';
 import '/models/project.dart';
 
+// Main page to display user's saved Roomantics projects
 class GalleryPage extends StatefulWidget {
   const GalleryPage({super.key});
 
@@ -21,6 +22,8 @@ class _GalleryPageState extends State<GalleryPage> {
   @override
   void initState() {
     super.initState();
+    // Ensures projects are loaded after the first build is complete,
+    // so we have a valid context for Provider access.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<RoomieLabViewModel>(context, listen: false);
       viewModel.loadProjects();
@@ -29,6 +32,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to the RoomieLabViewModel for loading, error, and project data changes
     final viewModel = Provider.of<RoomieLabViewModel>(context);
 
     return Scaffold(
@@ -48,6 +52,8 @@ class _GalleryPageState extends State<GalleryPage> {
           ),
         ],
       ),
+      
+      // FAB to start the camera and create a new project
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, '/camera-page');
@@ -57,14 +63,18 @@ class _GalleryPageState extends State<GalleryPage> {
       ),
       body: Consumer<RoomieLabViewModel>(
         builder: (context, viewModel, child) {
+          
+          // Show loading spinner only if we're still loading and have 0 projects
           if (viewModel.isLoading && viewModel.projects.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // Show error if there's a loading failure and no projects to show
           if (viewModel.errorMessage != null && viewModel.projects.isEmpty) {
             return _buildErrorState(context, viewModel);
           }
 
+          // Show the grid of projects, or empty state if none
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
             child: viewModel.projects.isEmpty
@@ -99,6 +109,7 @@ class _GalleryPageState extends State<GalleryPage> {
     );
   }
 
+  // When no projects are available, show a prominent empty state message and button
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       key: const ValueKey('emptyState'),
@@ -139,6 +150,7 @@ class _GalleryPageState extends State<GalleryPage> {
     );
   }
 
+  // Show an error message (with retry option) if there's a loading failure and no data
   Widget _buildErrorState(BuildContext context, RoomieLabViewModel viewModel) {
     return Center(
       child: Column(
@@ -181,6 +193,7 @@ class _GalleryPageState extends State<GalleryPage> {
   }
 }
 
+// Individual card for each project in the grid, with animation when appearing
 class _AnimatedProjectCard extends StatefulWidget {
   final Project project;
   final RoomieLabViewModel viewModel;
@@ -205,6 +218,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
   void initState() {
     super.initState();
 
+    // Setup animation for project card entry
     _controller = AnimationController(
       duration: const Duration(milliseconds: 450),
       vsync: this,
@@ -256,6 +270,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Main project image (network or local file, with placeholder fallback)
                   Expanded(
                     flex: 7,
                     child: _buildProjectImage(imageUrl),
@@ -317,6 +332,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
                 ],
               ),
 
+              // Project options menu (view, edit, delete)
               Positioned(
                 top: 8,
                 right: 8,
@@ -356,6 +372,8 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Helper to display the right type of image for each project,
+  // or a fallback if not available.
   Widget _buildProjectImage(String? imageUrl) {
     final isCloudinaryUrl = imageUrl?.contains('cloudinary.com') ?? false;
     final isLocalFile = imageUrl?.startsWith('/') ?? false;
@@ -411,6 +429,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     }
   }
 
+  // Reusable placeholder if project image is missing or format is invalid
   Widget _buildPlaceholderImage(IconData icon, String text) {
     return Container(
       color: Colors.grey[200],
@@ -434,6 +453,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Navigation actions for project card's context menu
   void _navigateToFullScreen(BuildContext context, Project project) {
     Navigator.push(
       context,
@@ -460,6 +480,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Deletes a project after showing a confirmation dialog
   Future<void> _deleteProject(BuildContext context, Project project) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -503,6 +524,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     }
   }
 
+  // Format the project's date for display
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
