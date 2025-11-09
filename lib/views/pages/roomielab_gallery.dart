@@ -16,10 +16,12 @@ class RoomieLabGallery extends StatefulWidget {
 }
 
 class _RoomieLabGalleryState extends State<RoomieLabGallery> {
+  // Firebase services for data management
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DesignService _designService = DesignService();
 
+  // State variables for designs and UI
   List<Design> _designs = [];
   String _selectedCategory = 'All';
   final List<String> _categories = [
@@ -41,6 +43,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     _loadDesigns();
   }
 
+  // Load designs from Firebase via DesignService
   Future<void> _loadDesigns() async {
     setState(() {
       _isLoading = true;
@@ -65,6 +68,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     }
   }
 
+  // Filter designs based on selected category
   List<Design> get _filteredDesigns {
     if (_selectedCategory == 'All') {
       return _designs;
@@ -73,6 +77,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     _getDesignCategory(design) == _selectedCategory).toList();
   }
 
+  // Determine design category based on name keywords
   String _getDesignCategory(Design design) {
     final name = design.name.toLowerCase();
 
@@ -92,12 +97,14 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     return 'Uncategorized';
   }
 
+  // Check if design has a valid image URL
   bool _hasImage(Design design) {
     return design.imageUrl != null &&
         design.imageUrl!.isNotEmpty &&
         design.imageUrl!.startsWith('http');
   }
 
+  // Delete design from Firebase
   Future<void> _deleteDesign(Design design) async {
     try {
       await _designService.deleteDesign(design.id);
@@ -132,6 +139,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
         backgroundColor: AppColors.primaryLightPurple,
         foregroundColor: Colors.white,
         actions: [
+          // Refresh button to reload designs
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadDesigns,
@@ -145,10 +153,10 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
           ? _buildErrorState()
           : Column(
         children: [
-          // Category Filter
+          // Category Filter section
           _buildCategoryFilter(),
 
-          // Designs Grid
+          // Designs Grid section
           Expanded(
             child: _filteredDesigns.isEmpty
                 ? _buildEmptyState()
@@ -159,6 +167,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Horizontal category filter chips
   Widget _buildCategoryFilter() {
     return Container(
       height: 70,
@@ -208,6 +217,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Grid view of design cards
   Widget _buildDesignsGrid() {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -226,6 +236,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Individual design card widget
   Widget _buildDesignCard(Design design) {
     final hasImage = _hasImage(design);
     final category = _getDesignCategory(design);
@@ -241,7 +252,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Design Image/Thumbnail
+                // Design Image/Thumbnail section
                 Container(
                   height: 120,
                   decoration: BoxDecoration(
@@ -268,7 +279,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
                       : null,
                 ),
 
-                // Design Info
+                // Design Info section
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(
@@ -315,7 +326,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
               ],
             ),
 
-            // Delete button
+            // Delete button overlay
             Positioned(
               top: 8,
               right: 8,
@@ -338,6 +349,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Loading state with progress indicator
   Widget _buildLoadingState() {
     return Center(
       child: Column(
@@ -358,6 +370,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Error state for failed data loading
   Widget _buildErrorState() {
     return Center(
       child: Column(
@@ -399,6 +412,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Empty state when no designs are found
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -439,6 +453,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
             ),
             child: const Text('Create Design'),
           ),
+          // Show "View All" button when filtered category is empty
           if (_selectedCategory != 'All')
             TextButton(
               onPressed: () {
@@ -458,6 +473,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Show design details in a dialog
   void _showDesignDetails(Design design) {
     showDialog(
       context: context,
@@ -491,6 +507,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Design image widget with fallback
   Widget _buildDesignImage(Design design, {double height = 120}) {
     final hasImage = _hasImage(design);
 
@@ -531,6 +548,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Design information section
   Widget _buildDesignInfo(Design design) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,6 +559,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
         _buildInfoRow('Last Updated:', _formatDate(design.updatedAt)),
         _buildInfoRow('Objects:', '${design.objects.length} items'),
 
+        // Show object list if design has objects
         if (design.objects.isNotEmpty) ...[
           const SizedBox(height: 12),
           Text(
@@ -567,6 +586,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Helper widget for info row layout
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -594,6 +614,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Full screen image viewer dialog
   void _viewDesignFullScreen(Design design) {
     final hasImage = _hasImage(design);
 
@@ -617,7 +638,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
           ),
           child: Stack(
             children: [
-              // Close button
+              // Close button overlay
               Positioned(
                 top: 16,
                 right: 16,
@@ -633,7 +654,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
                 ),
               ),
 
-              // Design info overlay
+              // Design info overlay at bottom
               if (hasImage)
                 Positioned(
                   bottom: 0,
@@ -683,7 +704,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
                   ),
                 ),
 
-              // Fallback if no image
+              // Fallback content when no image available
               if (!hasImage)
                 Center(
                   child: Column(
@@ -712,6 +733,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Confirmation dialog for design deletion
   void _confirmDeleteDesign(Design design) {
     showDialog(
       context: context,
@@ -736,6 +758,7 @@ class _RoomieLabGalleryState extends State<RoomieLabGallery> {
     );
   }
 
+  // Format date for display
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
