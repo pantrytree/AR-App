@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../utils/colors.dart';
 import '../../viewmodels/guides_page_viewmodel.dart';
 
+// The main GuidesPage displays a grid of user guides with search and nice animations.
 class GuidesPage extends StatelessWidget {
   const GuidesPage({super.key});
 
@@ -33,6 +34,8 @@ class GuidesPage extends StatelessWidget {
               ),
               centerTitle: true,
             ),
+
+            // Body: main content is a CustomScrollView with a search bar and an animated grid
             body: CustomScrollView(
               slivers: [
                 SliverPadding(
@@ -57,6 +60,7 @@ class GuidesPage extends StatelessWidget {
     );
   }
 
+  // Search bar widget that updates the viewmodel's search query
   Widget _buildSearchBar(GuidesPageViewModel vm) {
     return TextField(
       onChanged: vm.setSearchQuery,
@@ -73,8 +77,11 @@ class GuidesPage extends StatelessWidget {
     );
   }
 
+  // Main grid builder for guide cards, using staggered/sliding animations
   Widget _buildGuideGrid(GuidesPageViewModel vm) {
     if (vm.guides.isEmpty) {
+
+      // Show placeholder if no guides found after search
       return SliverFillRemaining(
         child: Center(
           child: Column(
@@ -92,6 +99,7 @@ class GuidesPage extends StatelessWidget {
       );
     }
 
+    // If guides exist, show staggered animated grid (2 columns)
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       sliver: AnimationLimiter(
@@ -136,6 +144,7 @@ class GuidesPage extends StatelessWidget {
     );
   }
 
+  // Individual card widget for a guide, with icon, title, and description
   Widget _buildGuideCard(
       BuildContext context, {
         required IconData icon,
