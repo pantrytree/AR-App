@@ -25,7 +25,7 @@ class AccountHubViewModel extends ChangeNotifier {
   String? get successMessage => _successMessage;
 
 
-  /// Load user data from Firestore
+  // Load user data from Firestore
   Future<void> loadUserData() async {
     _setLoading(true);
     _clearMessages();
@@ -50,7 +50,7 @@ class AccountHubViewModel extends ChangeNotifier {
     }
   }
 
-  /// Refresh user data
+  // Refresh user data
   Future<void> refreshUserData() async {
     print('Refreshing user data...');
     await loadUserData();
@@ -105,7 +105,7 @@ class AccountHubViewModel extends ChangeNotifier {
     }
   }
 
-  /// Logout user
+  // Logout user
   Future<bool> logout(BuildContext context) async {
     _setLoading(true);
     _clearMessages();
@@ -121,7 +121,7 @@ class AccountHubViewModel extends ChangeNotifier {
     }
   }
 
-  /// Get user statistics
+  // Get user statistics
   Future<Map<String, int>> getUserStats() async {
     try {
       return {
@@ -139,25 +139,25 @@ class AccountHubViewModel extends ChangeNotifier {
     }
   }
 
-  /// Clear messages
+  // Clear messages
   void _clearMessages() {
     _errorMessage = null;
     _successMessage = null;
   }
 
-  /// Clear error
+  // Clear error
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 
-  /// Clear success
+  // Clear success
   void clearSuccess() {
     _successMessage = null;
     notifyListeners();
   }
 
-  /// Set loading state
+  // Set loading state
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
