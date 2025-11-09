@@ -13,6 +13,7 @@ class LanguagePage extends StatefulWidget {
 class _LanguagePageState extends State<LanguagePage> {
   String _selectedLanguage = 'English';
 
+  // List of supported languages, each with its code, English name, and native name
   final List<Map<String, String>> _languages = [
     {'code': 'en', 'name': 'English', 'native': 'English'},
     {'code': 'es', 'name': 'Spanish', 'native': 'Español'},
