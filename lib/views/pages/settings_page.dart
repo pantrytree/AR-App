@@ -18,6 +18,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
+    // Initialize the ViewModel that manages settings state and logic
     _viewModel = SettingsViewModel();
 
     // Clear any previous navigation when the page loads
@@ -28,23 +29,27 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
+    // Clean up the ViewModel when the widget is disposed
     _viewModel.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Consumer for theme management to react to theme changes
     return Consumer<ThemeManager>(
       builder: (context, themeManager, child) {
+        // Provide the SettingsViewModel to the widget tree
         return ChangeNotifierProvider<SettingsViewModel>.value(
           value: _viewModel,
           child: Consumer<SettingsViewModel>(
             builder: (context, settingsViewModel, child) {
+              // Handle navigation when ViewModel requests it
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (settingsViewModel.navigateToRoute != null) {
                   final route = settingsViewModel.navigateToRoute;
                   settingsViewModel.clearNavigation();
-
+                  // Navigate to the requested route
                   Navigator.pushNamed(context, route!);
                 }
               });
@@ -73,6 +78,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 body: RefreshIndicator(
+                  // Pull-to-refresh functionality
                   onRefresh: () => settingsViewModel.refresh(),
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -80,6 +86,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Error message display
                         if (settingsViewModel.errorMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -107,6 +114,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           ),
 
+                        // Success message display
                         if (settingsViewModel.successMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -134,6 +142,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           ),
 
+                        // Build different sections of the settings page
                         _buildUserSection(context, settingsViewModel),
                         const SizedBox(height: 20),
                         _buildGeneralSection(context, themeManager, settingsViewModel),
@@ -153,6 +162,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Builds the user profile section at the top
   Widget _buildUserSection(BuildContext context, SettingsViewModel settingsViewModel) {
     return GestureDetector(
       onTap: () {
@@ -174,6 +184,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         child: Row(
           children: [
+            // User avatar/photo
             Container(
               width: 40,
               height: 40,
@@ -232,6 +243,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Builds the general settings section
   Widget _buildGeneralSection(BuildContext context, ThemeManager themeManager, SettingsViewModel settingsViewModel) {
     return Container(
       width: double.infinity,
@@ -260,6 +272,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 12),
 
+          // Language setting
           _buildSoftItem(
             context,
             icon: Icons.language,
@@ -272,6 +285,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Notifications setting
           _buildSoftItem(
             context,
             icon: Icons.notifications,
@@ -284,6 +298,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Clear cache option
           _buildSoftItem(
             context,
             icon: Icons.clear_all,
@@ -297,6 +312,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Dark mode toggle
           _buildSoftToggleItem(
             context,
             icon: Icons.dark_mode,
@@ -312,6 +328,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Builds the account security section
   Widget _buildAccountSecuritySection(BuildContext context, SettingsViewModel settingsViewModel) {
     return Container(
       width: double.infinity,
@@ -340,6 +357,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 12),
 
+          // Change password option
           _buildSoftItem(
             context,
             icon: Icons.lock,
@@ -352,6 +370,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Two-factor authentication
           _buildSoftItem(
             context,
             icon: Icons.security,
@@ -364,6 +383,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Active sessions management
           _buildSoftItem(
             context,
             icon: Icons.devices,
@@ -378,6 +398,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Builds the "other options" section with various app settings
   Widget _buildOtherOptionsSection(BuildContext context, SettingsViewModel settingsViewModel) {
     return Container(
       width: double.infinity,
@@ -396,6 +417,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // About application
           _buildSoftItem(
             context,
             icon: Icons.info,
@@ -408,6 +430,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Help/FAQ
           _buildSoftItem(
             context,
             icon: Icons.help,
@@ -420,6 +443,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Privacy policy
           _buildSoftItem(
             context,
             icon: Icons.privacy_tip,
@@ -432,6 +456,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Terms of service
           _buildSoftItem(
             context,
             icon: Icons.description,
@@ -444,6 +469,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Logout option
           _buildSoftItem(
             context,
             icon: Icons.logout,
@@ -457,6 +483,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           _buildSoftDivider(context),
 
+          // Delete account option
           _buildSoftItem(
             context,
             icon: Icons.delete_outline,
@@ -472,6 +499,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Reusable widget for a settings list item
   Widget _buildSoftItem(
       BuildContext context, {
         required IconData icon,
@@ -482,6 +510,7 @@ class _SettingsPageState extends State<SettingsPage> {
         bool isLogout = false,
         bool isDelete = false,
       }) {
+    // Determine icon color based on item type
     Color primaryColor = AppColors.getPrimaryColor(context);
 
     if (isLogout) {
@@ -525,6 +554,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Reusable widget for a toggleable settings item
   Widget _buildSoftToggleItem(
       BuildContext context, {
         required IconData icon,
@@ -566,6 +596,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Reusable widget for a divider between settings items
   Widget _buildSoftDivider(BuildContext context) {
     return Divider(
       height: 16,
@@ -574,10 +605,12 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Shows a confirmation dialog for clearing cache
   void _showClearCacheDialog(BuildContext context, SettingsViewModel settingsViewModel) {
     showDialog(
       context: context,
       builder: (dialogContext) => FutureBuilder<String>(
+        // Get current cache size asynchronously
         future: settingsViewModel.getCacheSize(),
         builder: (context, snapshot) {
           final cacheSize = snapshot.data ?? 'Calculating...';
@@ -626,6 +659,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onPressed: () async {
                   Navigator.pop(dialogContext);
 
+                  // Show loading indicator
                   showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -634,13 +668,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   );
 
+                  // Clear cache
                   final success = await settingsViewModel.clearCache();
 
-                  // Hide loading
+                  // Hide loading indicator
                   if (context.mounted) {
                     Navigator.pop(context);
                   }
 
+                  // Show success message
                   if (success && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -665,6 +701,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // Shows a confirmation dialog for account deletion
   void _showDeleteAccountDialog(BuildContext context, SettingsViewModel settingsViewModel) {
     showDialog(
       context: context,
@@ -697,7 +734,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onPressed: () async {
               Navigator.pop(dialogContext);
 
-              // Show loading
+              // Show loading indicator
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -706,14 +743,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               );
 
+              // Attempt to delete account
               final success = await settingsViewModel.deleteAccount();
 
-              // Hide loading
+              // Hide loading indicator
               if (context.mounted) {
                 Navigator.pop(context);
               }
 
               if (success && context.mounted) {
+                // Show success message and navigate to login
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Account deleted successfully'),
@@ -728,10 +767,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   Navigator.pushNamedAndRemoveUntil(
                     context,
                     '/login',
-                        (route) => false,
+                        (route) => false, // Remove all routes from stack
                   );
                 }
               } else if (context.mounted) {
+                // Show error message if deletion failed
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(settingsViewModel.errorMessage ?? 'Failed to delete account'),
