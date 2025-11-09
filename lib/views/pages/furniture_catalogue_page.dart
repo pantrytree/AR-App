@@ -63,6 +63,8 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     _loadFurnitureItems();
     _loadFavorites();
 
+    // Commented since the data now already is called by the method _applyFilters()
+
     // if (widget.initialRoom != null && widget.initialRoom != 'All') {
     //   WidgetsBinding.instance.addPostFrameCallback((_) {
     //     if (mounted) {
