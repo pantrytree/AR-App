@@ -5,18 +5,21 @@ import '../../../utils/text_components.dart';
 import '../../theme/theme.dart';
 import '../../../viewmodels/forgot_password_viewmodel.dart';
 
+// ForgotPasswordPage is a stateless widget that handles the password reset flow
 class ForgotPasswordPage extends StatelessWidget {
   const ForgotPasswordPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Use ChangeNotifierProvider to manage the viewmodel state
     return ChangeNotifierProvider(
       create: (_) => ForgotPasswordViewModel(),
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
           return Consumer<ForgotPasswordViewModel>(
             builder: (context, viewModel, child) {
-              // Handle navigation
+              // Handle navigation logic after the frame is built
+              // This ensures navigation happens after the current build cycle completes
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (viewModel.navigateToRoute != null) {
                   Navigator.pushNamed(
@@ -43,11 +46,14 @@ class ForgotPasswordPage extends StatelessWidget {
                         Icons.arrow_back,
                         color: AppColors.getAppBarForeground(context)
                     ),
+                    // Conditional back button behavior:
+                    // - If we can go back in the flow, go to previous step
+                    // - Otherwise, pop the entire page
                     onPressed: viewModel.canGoBack
                         ? () => viewModel.goToPreviousStep()
                         : () => Navigator.pop(context),
                   ),
-                  elevation: 0,
+                  elevation: 0, // Remove app bar shadow
                 ),
                 body: _buildBody(context, viewModel),
               );
@@ -58,6 +64,7 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  // Builds the main content body of the page
   Widget _buildBody(BuildContext context, ForgotPasswordViewModel viewModel) {
     return SafeArea(
       child: SingleChildScrollView(
@@ -65,30 +72,31 @@ class ForgotPasswordPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min, // Column only takes needed space
             children: [
               const SizedBox(height: 32),
 
+              // Progress indicator showing current step in the flow
               _buildProgressIndicator(context, viewModel),
 
               const SizedBox(height: 32),
 
-              // Title section
+              // Title and description section
               _buildTitleSection(context, viewModel),
 
               const SizedBox(height: 32),
 
-              // Form section
+              // Dynamic form section that changes based on current step
               _buildCurrentStepForm(context, viewModel),
 
               const SizedBox(height: 24),
 
-              // Error and success messages
+              // Error and success messages display
               _buildMessages(context, viewModel),
 
               const SizedBox(height: 16),
 
-              // Action button
+              // Primary action button (changes based on step)
               _buildActionButton(context, viewModel),
 
               const SizedBox(height: 20),
@@ -99,11 +107,13 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  // Builds the title and description section that changes per step
   Widget _buildTitleSection(BuildContext context, ForgotPasswordViewModel viewModel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Main title for the current step
         Text(
           viewModel.currentStepTitle,
           style: TextStyle(
@@ -115,21 +125,25 @@ class ForgotPasswordPage extends StatelessWidget {
 
         const SizedBox(height: 8),
 
+        // Conditional description based on current step
         if (viewModel.currentStep == 1)
+          // Special rich text description for step 1 (link sent)
           _buildEmailDescription(context, viewModel)
         else
+          // Regular description for other steps
           Text(
             viewModel.currentStepDescription,
             style: TextStyle(
               color: AppColors.getSecondaryTextColor(context),
               fontSize: 16,
-              height: 1.5,
+              height: 1.5, // Line height for better readability
             ),
           ),
       ],
     );
   }
 
+  // Builds a rich text description for the email sent step
   Widget _buildEmailDescription(BuildContext context, ForgotPasswordViewModel viewModel) {
     return RichText(
       text: TextSpan(
@@ -140,6 +154,7 @@ class ForgotPasswordPage extends StatelessWidget {
         ),
         children: [
           const TextSpan(text: "We've sent a password reset link to:\n\n"),
+          // Highlight the email address for emphasis
           TextSpan(
             text: viewModel.email,
             style: TextStyle(
@@ -155,38 +170,43 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  // Builds the progress indicator showing current step in the flow
   Widget _buildProgressIndicator(BuildContext context, ForgotPasswordViewModel viewModel) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // Step 0: Email input
         _buildProgressStep(context, 0, 'Email', viewModel.currentStep),
         _buildProgressConnector(context),
+        // Step 1: Link sent
         _buildProgressStep(context, 1, 'Link Sent', viewModel.currentStep),
       ],
     );
   }
 
+  // Builds an individual progress step circle with label
   Widget _buildProgressStep(BuildContext context, int step, String label, int currentStep) {
-    final isActive = step == currentStep;
-    final isCompleted = step < currentStep;
+    final isActive = step == currentStep; // Current step
+    final isCompleted = step < currentStep; // Completed step
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Progress circle
         Container(
           width: 32,
           height: 32,
           decoration: BoxDecoration(
             color: isActive || isCompleted
-                ? AppColors.getPrimaryColor(context)
-                : AppColors.getSecondaryTextColor(context).withOpacity(0.3),
+                ? AppColors.getPrimaryColor(context) // Active/completed color
+                : AppColors.getSecondaryTextColor(context).withOpacity(0.3), // Inactive color
             shape: BoxShape.circle,
           ),
           child: Center(
             child: isCompleted
-                ? const Icon(Icons.check, color: Colors.white, size: 16)
+                ? const Icon(Icons.check, color: Colors.white, size: 16) // Checkmark for completed
                 : Text(
-              (step + 1).toString(),
+              (step + 1).toString(), // Step number
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -196,13 +216,14 @@ class ForgotPasswordPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
+        // Step label
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
             color: isActive || isCompleted
-                ? AppColors.getPrimaryColor(context)
-                : AppColors.getSecondaryTextColor(context).withOpacity(0.5),
+                ? AppColors.getPrimaryColor(context) // Active/completed color
+                : AppColors.getSecondaryTextColor(context).withOpacity(0.5), // Inactive color
             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -210,6 +231,7 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  // Builds the connector line between progress steps
   Widget _buildProgressConnector(BuildContext context) {
     return Container(
       width: 40,
@@ -219,17 +241,19 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  // Builds the dynamic form content based on current step
   Widget _buildCurrentStepForm(BuildContext context, ForgotPasswordViewModel viewModel) {
     switch (viewModel.currentStep) {
       case 0:
-        return _buildEmailStep(context, viewModel);
+        return _buildEmailStep(context, viewModel); // Email input step
       case 1:
-        return _buildLinkSentStep(context, viewModel);
+        return _buildLinkSentStep(context, viewModel); // Link sent step
       default:
-        return _buildEmailStep(context, viewModel);
+        return _buildEmailStep(context, viewModel); // Fallback to email step
     }
   }
 
+  // Builds the email input step form
   Widget _buildEmailStep(BuildContext context, ForgotPasswordViewModel viewModel) {
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -249,7 +273,7 @@ class ForgotPasswordPage extends StatelessWidget {
               ],
             ),
             child: TextField(
-              onChanged: (value) => viewModel.setEmail(value),
+              onChanged: (value) => viewModel.setEmail(value), // Update email in viewmodel
               decoration: InputDecoration(
                 labelText: TextComponents.emailFieldLabel,
                 labelStyle: TextStyle(
@@ -263,7 +287,7 @@ class ForgotPasswordPage extends StatelessWidget {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide.none, // Remove default border
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -295,6 +319,7 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  // Builds the link sent confirmation step
   Widget _buildLinkSentStep(BuildContext context, ForgotPasswordViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -302,12 +327,14 @@ class ForgotPasswordPage extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 20),
+          // Success icon
           Icon(
             Icons.mark_email_read_outlined,
             size: 80,
             color: AppColors.getPrimaryColor(context),
           ),
           const SizedBox(height: 20),
+          // Resend link option
           GestureDetector(
             onTap: viewModel.isLoading ? null : () => viewModel.resendResetLink(),
             child: Text(
@@ -321,6 +348,7 @@ class ForgotPasswordPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          // Return to login option
           GestureDetector(
             onTap: () => _navigateToLogin(context, viewModel.email),
             child: Text(
@@ -338,7 +366,9 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  // Builds error and success message displays
   Widget _buildMessages(BuildContext context, ForgotPasswordViewModel viewModel) {
+    // Show error message if exists
     if (viewModel.hasError) {
       return Container(
         width: double.infinity,
@@ -359,6 +389,7 @@ class ForgotPasswordPage extends StatelessWidget {
       );
     }
 
+    // Show success message if exists
     if (viewModel.successMessage != null) {
       return Container(
         width: double.infinity,
@@ -379,9 +410,11 @@ class ForgotPasswordPage extends StatelessWidget {
       );
     }
 
+    // Return empty container if no messages
     return const SizedBox.shrink();
   }
 
+  // Builds the primary action button (changes based on step)
   Widget _buildActionButton(BuildContext context, ForgotPasswordViewModel viewModel) {
     return SizedBox(
       width: double.infinity,
@@ -394,7 +427,7 @@ class ForgotPasswordPage extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 0,
+          elevation: 0, // Remove button shadow
         ),
         child: viewModel.isLoading
             ? const SizedBox(
@@ -406,7 +439,7 @@ class ForgotPasswordPage extends StatelessWidget {
           ),
         )
             : Text(
-          viewModel.primaryButtonText,
+          viewModel.primaryButtonText, // Dynamic button text
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -416,17 +449,19 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  // Handles the primary button action based on current step
   void _handlePrimaryAction(BuildContext context, ForgotPasswordViewModel viewModel) {
     switch (viewModel.currentStep) {
       case 0:
-        viewModel.sendPasswordResetEmail();
+        viewModel.sendPasswordResetEmail(); // Send reset email
         break;
       case 1:
-        viewModel.verifyResetCompletion();
+        viewModel.verifyResetCompletion(); // Verify completion
         break;
     }
   }
 
+  // Navigates back to login page with email parameter
   void _navigateToLogin(BuildContext context, String email) {
     Navigator.pushNamed(
       context,
