@@ -7,6 +7,8 @@ class GuideImportingMediaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    
+    // Root scaffold for page layout
     return Scaffold(
       backgroundColor: AppColors.secondaryBackground,
       appBar: AppBar(
@@ -36,6 +38,8 @@ class GuideImportingMediaPage extends StatelessWidget {
               content:
               'Learn how to import images, videos, and 3D models into your AR projects.',
             ),
+
+            // Section: Importing Images & Videos
             const SizedBox(height: 20),
             _buildSection(
               title: 'Importing Images & Videos',
@@ -44,6 +48,8 @@ class GuideImportingMediaPage extends StatelessWidget {
                   '• Choose media from your gallery or cloud storage.\n'
                   '• Adjust the file as needed in the project workspace.',
             ),
+
+            // Section: Importing 3D Models
             const SizedBox(height: 20),
             _buildSection(
               title: 'Importing 3D Models',
@@ -59,6 +65,7 @@ class GuideImportingMediaPage extends StatelessWidget {
     );
   }
 
+  // Helper: Build a styled guide section with header and body content
   Widget _buildSection({required String title, required String content}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
