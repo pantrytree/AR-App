@@ -31,9 +31,8 @@ class CameraViewModel extends ChangeNotifier {
   String? get capturedImagePath => _capturedImagePath;
   bool get hasCapturedImage => _capturedImagePath != null;
 
-  // ===========================================================
+ 
   // CAMERA SETUP
-  // ===========================================================
   Future<void> initializeCamera() async {
     _isLoading = true;
     _error = null;
@@ -75,9 +74,7 @@ class CameraViewModel extends ChangeNotifier {
     }
   }
 
-  // ===========================================================
   // AR OBJECT MANAGEMENT
-  // ===========================================================
   void selectObject(String object) {
     _selectedObject = object;
     notifyListeners();
@@ -93,9 +90,7 @@ class CameraViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ===========================================================
   // CAPTURE
-  // ===========================================================
   Future<void> captureImage(BuildContext context) async {
     if (_controller == null || !_controller!.value.isInitialized) {
       _error = 'Camera not ready';
@@ -133,9 +128,7 @@ class CameraViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ===========================================================
   // SWITCH CAMERA
-  // ===========================================================
   Future<void> switchCamera() async {
     if (_cameras == null || _cameras!.length < 2) return;
 
