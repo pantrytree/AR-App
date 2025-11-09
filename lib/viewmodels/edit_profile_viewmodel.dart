@@ -111,7 +111,7 @@ class EditProfileViewModel extends ChangeNotifier {
     return true;
   }
 
-  /// Returns password strength as string: Weak, Medium, Strong
+  // Returns password strength as string: Weak, Medium, Strong
   String passwordStrength() {
     if (_password.length < 6) return "Weak";
     if (_password.length < 10) return "Medium";
@@ -143,9 +143,9 @@ class EditProfileViewModel extends ChangeNotifier {
   }
 
   // Save Profile
-  /// TODO: Replace SharedPreferences with:
-  ///       PUT /user/profile → update name, email, username, password
-  ///       POST /user/profile/image → upload profile image
+  // TODO: Replace SharedPreferences with:
+  //       PUT /user/profile → update name, email, username, password
+  //       POST /user/profile/image → upload profile image
   Future<void> saveProfile() async {
     if (!validateForm()) return;
 
@@ -166,7 +166,7 @@ class EditProfileViewModel extends ChangeNotifier {
 
       _errorMessage = null;
       debugPrint(
-          '✅ Profile saved: Name=$_name, Email=$_email, Username=$_username');
+          'Profile saved: Name=$_name, Email=$_email, Username=$_username');
     } catch (e) {
       _errorMessage = "Failed to save profile.";
       debugPrint('Error saving profile: $e');
