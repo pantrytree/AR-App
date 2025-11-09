@@ -1,40 +1,32 @@
-// ThemeManager - Application Theme State Management
-//
-// PURPOSE: Manages dark/light mode theming across the entire app
-//
-// IMPLEMENTATION:
-// - Singleton pattern ensures single source of truth for theme state
-// - Uses ChangeNotifier for reactive theme updates
-// - Integrated with MaterialApp themeMode for automatic theming
-//
-// USAGE:
-// - Access via Provider.of<ThemeManager>(context)
-// - Toggle with toggleTheme(true/false)
-// - Check current mode with isDarkMode
-//
-// BACKEND INTEGRATION:
-// - Future: Sync theme preference with user profile via API
-
 import 'package:flutter/foundation.dart';
 
+// Manages application theme state (light/dark mode) using ChangeNotifier
+// Provides centralized theme control with observer pattern for UI updates
 class ThemeManager extends ChangeNotifier {
+  // Singleton instance for global theme access
   static final ThemeManager _instance = ThemeManager._internal();
+  
+  // Factory constructor returns the singleton instance
   factory ThemeManager() => _instance;
+  
+  // Private internal constructor for singleton pattern
   ThemeManager._internal();
 
-  bool _isDarkMode = false;
+  bool _isDarkMode = false; // Current theme state (false = light, true = dark)
 
+  // Returns the current theme mode
+  // true = dark mode, false = light mode
   bool get isDarkMode => _isDarkMode;
 
-  // Toggle between dark and light theme modes
-  //
-  // @param value: true for dark mode, false for light mode
-  // @notify: Updates all listening widgets automatically
-  // Theme method - ONLY ONE VERSION
+  // Toggles between light and dark theme modes
+  // Notifies all listeners to trigger UI rebuilds with new theme
   void toggleTheme(bool value) {
-    print('🎨 ThemeManager: Toggling theme to ${value ? 'DARK' : 'LIGHT'}');
+    print('ThemeManager: Toggling theme to ${value ? 'DARK' : 'LIGHT'}');
     _isDarkMode = value;
+    
+    // Notify all registered listeners (widgets) to rebuild with new theme
     notifyListeners();
-    print('🎨 ThemeManager: Notified ${_isDarkMode ? 'DARK' : 'LIGHT'}');
+    
+    print('ThemeManager: Notified ${_isDarkMode ? 'DARK' : 'LIGHT'}');
   }
 }
