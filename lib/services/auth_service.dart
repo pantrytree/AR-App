@@ -148,7 +148,7 @@ class AuthService {
     }
   }
 
-  // 3. Forgot Password
+  // Forgot Password
   // Endpoint: POST /api/auth/forgot-password
   Future<Map<String, dynamic>> resetPassword(String email) async {
     try {
@@ -181,7 +181,7 @@ class AuthService {
     }
   }
 
-  // 4. Sign Out
+  // Sign Out
   Future<void> signOut() async {
     try {
       await _auth.signOut();
@@ -192,7 +192,7 @@ class AuthService {
     }
   }
 
-// 5. Update email
+// Update email
   Future<Map<String, dynamic>> updateEmail(String newEmail) async {
     try {
       final user = _auth.currentUser;
@@ -240,7 +240,7 @@ class AuthService {
     }
   }
 
-  //6. Update Password
+  // Update Password
   Future<Map<String, dynamic>> updatePassword(String newPassword) async {
     try {
       final user = _auth.currentUser;
@@ -287,7 +287,7 @@ class AuthService {
     }
   }
 
-  //7. Reauthenticate User
+  // Reauthenticate User
   Future<Map<String, dynamic>> reauthenticate({
     required String email,
     required String password,
@@ -325,7 +325,7 @@ class AuthService {
     }
   }
 
-  // 8. Delete Account
+  // Delete Account
   Future<Map<String, dynamic>> deleteAccount() async {
     try {
       final user = _auth.currentUser;
