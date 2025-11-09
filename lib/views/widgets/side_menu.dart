@@ -6,6 +6,7 @@ import '/utils/text_components.dart';
 import '/viewmodels/side_menu_viewmodel.dart';
 import '/viewmodels/home_viewmodel.dart';
 
+//Side Menu 
 class SideMenu extends StatelessWidget {
   const SideMenu({super.key});
 
@@ -51,6 +52,7 @@ class SideMenu extends StatelessWidget {
     );
   }
 
+  // Header section build
   Widget _buildHeaderSection(BuildContext context, SideMenuViewModel viewModel) {
     return Container(
       height: 180,
