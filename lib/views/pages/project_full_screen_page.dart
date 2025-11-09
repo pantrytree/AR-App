@@ -55,7 +55,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     return _project?.imageUrl?.startsWith('/') ?? false;
   }
 
-  /// Get the local backup image path
+  // Get the local backup image path
   String? _getLocalBackupPath() {
     final imageUrl = _project?.imageUrl;
     if (imageUrl == null) return null;
@@ -67,7 +67,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     return null;
   }
 
-  /// Switch to local fallback image
+  // Switch to local fallback image
   void _switchToLocalFallback() {
     final localPath = _getLocalBackupPath();
     if (localPath != null && File(localPath).existsSync()) {
