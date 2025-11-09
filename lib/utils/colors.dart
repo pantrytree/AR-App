@@ -1,21 +1,3 @@
-// AppColors - Comprehensive Color System for Roomanties
-//
-// PURPOSE: Centralized color management for consistent UI/UX
-//
-// COLOR SYSTEM:
-// - Brand Colors: Primary purple (#963CF1) and dark blue (#14213D)
-// - Semantic Colors: Success, Error, Warning, Info states
-// - Dynamic Methods: Theme-aware color getters for dark/light mode
-//
-// USAGE:
-// - Static colors: AppColors.primaryPurple
-// - Dynamic colors: AppColors.getBackgroundColor(context)
-// - Gradients: AppColors.primaryGradient
-//
-// DESIGN TOKENS: All colors follow design system specifications
-
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 
 class AppColors {
@@ -108,17 +90,13 @@ class AppColors {
   // Color for info states
   static const Color info = Color(0xFF2196F3);
 
-  // ======================
-  // 🎨 SIDE MENU COLORS
-  // ======================
+  // SIDE MENU COLORS
   static const Color sideMenuBackground = Color(0xFFF2F4FC);
   static const Color sideMenuDivider = Color(0xFFDADDF2);
   static const Color sideMenuIcon = Color(0xFF14213D);
   static const Color sideMenuItemText = Color(0xFF14213D);
 
-  // ======================
-  // 🎨 GRADIENT COLORS
-  // ======================
+  // GRADIENT COLORS
   static const Gradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -150,9 +128,7 @@ class AppColors {
   static const Color helpCardShadow = Color(0x14000000);
   static const Color helpArrowIcon = Color(0xFF9E9E9E);
 
-  // ======================
-  // 🎨 BACKEND TEAM COLORS (Your colors)
-  // ======================
+  // BACKEND TEAM COLORS 
   static const Color splashScreenBackground = Color(0xFFB1B9E8);
   static const Color splashScreenText = Color(0xFFE3E4F6);
   static const Color lightBlueOpaque = Color(0x4DB1B9E8);
@@ -165,18 +141,13 @@ class AppColors {
   static const Color pastelGreyBlueOpaque = Color(0x9699A0D1);
   static const Color purplePink = Color(0xFFCB6CE6);
 
-  // ======================
-  // 🎨 CONSISTENCY COLORS - Bulelwa's Assigned Pages Colors
-  // ======================
+  // CONSISTENCY COLORS 
   static const Color background = Color(0xFFF2F4FC);
   static const Color textDark = Color(0xFF14213D);
   static const Color textLight = Color(0xFF666666);
   static const Color divider = Color(0xFFDADDF2);
 
-  // ======================
-  // 🎨 DYNAMIC THEME METHODS
-  // ======================
-
+  // DYNAMIC THEME METHODS
   static Color getBackgroundColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? primaryDarkBlue
@@ -247,10 +218,7 @@ class AppColors {
         : primaryPurple.withOpacity(0.2);
   }
 
-  // ======================
-  // 🎨 SIDE MENU DYNAMIC METHODS
-  // ======================
-
+  // SIDE MENU DYNAMIC METHODS
   static Color getSideMenuBackground(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? primaryDarkBlue
