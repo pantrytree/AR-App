@@ -1,20 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 
+// Handles:
+// - Form fields: name, email, username, password
+// - Profile image upload
+// - Password visibility toggle
+// - Form validation
+// - Loading & error states
+// - Communication with backend
 
-/// Handles:
-/// - Form fields: name, email, username, password
-/// - Profile image upload
-/// - Password visibility toggle
-/// - Form validation
-/// - Loading & error states
-/// - Communication with backend
-
-/// Example API endpoints to integrate later:
-///   - GET    /user/profile         → Fetch current user's profile
-///   - PUT    /user/profile         → Update profile info (name, email, username, password)
-///   - POST   /user/profile/image   → Upload a new profile image
-///   - DELETE /user/profile/image   → Remove profile image (optional)
+// Example API endpoints to integrate later:
+//   - GET    /user/profile         → Fetch current user's profile
+//   - PUT    /user/profile         → Update profile info (name, email, username, password)
+//   - POST   /user/profile/image   → Upload a new profile image
+//   - DELETE /user/profile/image   → Remove profile image (optional)
 class EditProfileViewModel extends ChangeNotifier {
   // Form Fields
   String _name = '';
@@ -43,48 +42,48 @@ class EditProfileViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   // Setters
-  /// Updates the user's name and notifies listeners
+  // Updates the user's name and notifies listeners
   void setName(String value) {
     _name = value;
     notifyListeners();
   }
 
-  /// Updates the user's email and notifies listeners
+  // Updates the user's email and notifies listeners
   void setEmail(String value) {
     _email = value;
     notifyListeners();
   }
 
-  /// Updates the user's username and notifies listeners
+  // Updates the user's username and notifies listeners
   void setUsername(String value) {
     _username = value;
     notifyListeners();
   }
 
-  /// Updates the user's password and notifies listeners
+  // Updates the user's password and notifies listeners
   void setPassword(String value) {
     _password = value;
     notifyListeners();
   }
 
-  /// Sets a new profile image and notifies listeners
-  /// TODO: Integrate POST /user/profile/image API to upload the image
+  // Sets a new profile image and notifies listeners
+  // TODO: Integrate POST /user/profile/image API to upload the image
   void setProfileImage(File image) {
     _profileImage = image;
     notifyListeners();
   }
 
-  /// Toggles the password visibility in the UI
+  // Toggles the password visibility in the UI
   void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
     notifyListeners();
   }
 
   // Validation
-  /// Validates the form fields before saving
-  /// Checks for empty name, email, username and valid email format
-  /// Sets [_errorMessage] if invalid
-  /// Returns true if the form is valid
+  // Validates the form fields before saving
+  // Checks for empty name, email, username and valid email format
+  // Sets [_errorMessage] if invalid
+  // Returns true if the form is valid
   bool validateForm() {
     if (_name.isEmpty || _email.isEmpty || _username.isEmpty) {
       _errorMessage = "Name, Email, and Username cannot be empty.";
@@ -103,8 +102,8 @@ class EditProfileViewModel extends ChangeNotifier {
     return true;
   }
 
-  /// Returns a string representing password strength: Weak, Medium, Strong
-  /// Can be used to show a visual indicator in the UI
+  // Returns a string representing password strength: Weak, Medium, Strong
+  // Can be used to show a visual indicator in the UI
   String passwordStrength() {
     if (_password.length < 6) return "Weak";
     if (_password.length < 10) return "Medium";
@@ -112,9 +111,9 @@ class EditProfileViewModel extends ChangeNotifier {
   }
 
   // Load Profile
-  /// Loads the current user profile from backend (placeholder for now)
-  /// TODO: Replace placeholder logic with GET /user/profile
-  /// Sets the form fields and profile image
+  // Loads the current user profile from backend (placeholder for now)
+  // TODO: Replace placeholder logic with GET /user/profile
+  // Sets the form fields and profile image
   Future<void> loadUserProfile() async {
     _setLoading(true);
 
@@ -138,12 +137,12 @@ class EditProfileViewModel extends ChangeNotifier {
   }
 
   // Save Profile
-  /// Saves changes made to the profile
-  /// Performs form validation first
-  /// TODO: Replace placeholder logic with:
-  ///       PUT /user/profile → update name, email, username, password
-  ///       POST /user/profile/image → upload profile image if changed
-  /// Updates [_errorMessage] if saving fails
+  // Saves changes made to the profile
+  // Performs form validation first
+  // TODO: Replace placeholder logic with:
+  //       PUT /user/profile → update name, email, username, password
+  //       POST /user/profile/image → upload profile image if changed
+  // Updates [_errorMessage] if saving fails
   Future<void> saveProfile() async {
     if (!validateForm()) return;
 
@@ -169,7 +168,7 @@ class EditProfileViewModel extends ChangeNotifier {
   }
 
   // Internal Helper
-  /// Sets the loading state and notifies listeners
+  // Sets the loading state and notifies listeners
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
