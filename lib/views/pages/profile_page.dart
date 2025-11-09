@@ -53,6 +53,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
       value: _viewModel,
       child: Consumer<AccountHubViewModel>(
         builder: (context, viewModel, child) {
+          // Handle navigation to other routes
           if (viewModel.navigateToRoute != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.pushNamedAndRemoveUntil(
@@ -63,7 +64,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
             });
           }
 
-          // Handle messages
+          // Handle messages (errors and success)
           _handleMessages(context, viewModel);
           return Scaffold(
             backgroundColor: AppColors.getBackgroundColor(context),
@@ -193,6 +194,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
     );
   }
 
+  // Handle error and success messages from viewmodel
   void _handleMessages(BuildContext context, AccountHubViewModel viewModel) {
     // Show error messages
     if (viewModel.errorMessage != null) {
@@ -230,6 +232,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
     }
   }
 
+  // Loading state with spinner
   Widget _buildLoadingState(BuildContext context) {
     return Center(
       child: Column(
@@ -250,6 +253,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
     );
   }
 
+  // Profile header with image, name and email
   Widget _buildProfileHeader(BuildContext context, AccountHubViewModel viewModel) {
     return Column(
       children: [
@@ -312,6 +316,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
     );
   }
 
+  // User statistics section with projects, designs and favorites
   Widget _buildUserStatistics(BuildContext context, AccountHubViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -355,6 +360,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
     );
   }
 
+  // Individual statistic item with icon, count and label
   Widget _buildStatItem(BuildContext context, {
     required int count,
     required String label,
@@ -395,6 +401,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
     );
   }
 
+  // Placeholder when profile image is not available
   Widget _buildProfilePlaceholder(BuildContext context) {
     return Container(
       color: AppColors.getPrimaryColor(context).withOpacity(0.1),
@@ -406,6 +413,7 @@ class _AccountHubPageState extends State<AccountHubPage> with WidgetsBindingObse
     );
   }
 
+  // Menu item builder for navigation options
   Widget _buildMenuItem(
       BuildContext context, {
         required String text,
