@@ -44,9 +44,7 @@ class HomeViewModel extends ChangeNotifier {
 
   dynamic get currentUser => {'displayName': _userName ?? 'Bulelwa'};
 
-  // ======================
   // BACKEND INTEGRATION POINTS
-  // ======================
 
   // TODO: Backend - Implement fetchUserName()
   // Description: Gets the current user's name from the users table
@@ -81,9 +79,7 @@ class HomeViewModel extends ChangeNotifier {
     return _userRoomsMock; // Mock response
   }
 
-  // ======================
   // PUBLIC METHODS
-  // ======================
 
   // Refresh home page data - calls all backend functions
   Future<void> refreshHomePage() async {
