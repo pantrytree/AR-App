@@ -24,18 +24,16 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool _isInitialLoad = true;
+  bool _isInitialLoad = true; // used to show loading indicator only on first build
 
   @override
   void initState() {
     super.initState();
-    // Initialize data when the page first loads
+    // Once the widget builds, fetch initial data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
       homeViewModel.refreshHomePage().then((_) {
-        setState(() {
-          _isInitialLoad = false;
-        });
+        setState(() => _isInitialLoad = false);
       });
     });
   }
@@ -44,32 +42,24 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => HomeViewModel.instance,
-        ),
+        ChangeNotifierProvider(create: (_) => HomeViewModel.instance),
         ChangeNotifierProvider(create: (_) => SideMenuViewModel()),
       ],
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
           return Consumer<HomeViewModel>(
             builder: (context, homeViewModel, child) {
-              // Handle navigation
+              // Handles navigation requests triggered by the ViewModel
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (homeViewModel.navigateToRoute != null) {
                   final route = homeViewModel.navigateToRoute!;
-                  final arguments = homeViewModel.navigationArguments;
-
+                  final args = homeViewModel.navigationArguments;
                   homeViewModel.clearNavigation();
-
-                  Navigator.pushNamed(
-                    context,
-                    route,
-                    arguments: arguments,
-                  );
+                  Navigator.pushNamed(context, route, arguments: args);
                 }
               });
 
-              // Show loading only on initial load
+              // Show a loading screen while data is being fetched for the first time
               if (_isInitialLoad && homeViewModel.isLoading) {
                 return _buildLoadingScaffold(context);
               }
@@ -79,17 +69,13 @@ class _HomePageState extends State<HomePage> {
                 appBar: AppBar(
                   backgroundColor: AppColors.getAppBarBackground(context),
                   leading: Builder(
-                    builder: (BuildContext context) {
-                      return IconButton(
-                        icon: Icon(
-                          Icons.menu,
-                          color: AppColors.getAppBarForeground(context),
-                        ),
-                        onPressed: () {
-                          Scaffold.of(context).openDrawer();
-                        },
-                      );
-                    },
+                    builder: (context) => IconButton(
+                      icon: Icon(
+                        Icons.menu,
+                        color: AppColors.getAppBarForeground(context),
+                      ),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
                   ),
                   title: Text(
                     TextComponents.homePageTitle,
@@ -99,11 +85,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   elevation: 0,
-                  actions: [],
                 ),
                 drawer: const SideMenu(),
                 body: _buildBody(context, homeViewModel),
-                bottomNavigationBar: _buildBottomNavigationBar(context, homeViewModel),
+                bottomNavigationBar:
+                    _buildBottomNavigationBar(context, homeViewModel),
               );
             },
           );
@@ -112,6 +98,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Small loading UI when the app first starts up
   Widget _buildLoadingScaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.getBackgroundColor(context),
@@ -149,9 +136,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Decides which view to show (loading, error, or main content)
   Widget _buildBody(BuildContext context, HomeViewModel homeViewModel) {
     if (homeViewModel.isLoading && !_isInitialLoad) {
-      return _buildLoadingState(context);
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (homeViewModel.hasError) {
@@ -161,22 +149,14 @@ class _HomePageState extends State<HomePage> {
     return _buildContent(context, homeViewModel);
   }
 
-  Widget _buildLoadingState(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(),
-    );
-  }
-
+  // Displays a retry option when loading fails
   Widget _buildErrorState(BuildContext context, HomeViewModel homeViewModel) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.getPrimaryColor(context),
-          ),
+          Icon(Icons.error_outline,
+              size: 64, color: AppColors.getPrimaryColor(context)),
           const SizedBox(height: 16),
           Text(
             TextComponents.loadingError,
@@ -196,7 +176,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => homeViewModel.refreshHomePage(),
+            onPressed: homeViewModel.refreshHomePage,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.getPrimaryColor(context),
               foregroundColor: Colors.white,
@@ -208,6 +188,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Main layout once all data is ready
   Widget _buildContent(BuildContext context, HomeViewModel homeViewModel) {
     if (!homeViewModel.isUserDataLoaded) {
       return _buildUserDataLoadingState(context);
@@ -215,87 +196,83 @@ class _HomePageState extends State<HomePage> {
 
     return SafeArea(
       child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                TextComponents.homeGreeting(homeViewModel.userDisplayName),
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.getTextColor(context),
-                ),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              TextComponents.homeGreeting(homeViewModel.userDisplayName),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.getTextColor(context),
               ),
-              const SizedBox(height: 8),
-              Text(
-                TextComponents.homeWelcome,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.getSecondaryTextColor(context),
-                ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              TextComponents.homeWelcome,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.getSecondaryTextColor(context),
               ),
-              const SizedBox(height: 32),
-              _buildRecentlyUsedSection(context, homeViewModel),
-              const SizedBox(height: 32),
-              _buildAllRoomsSection(context, homeViewModel),
-              const SizedBox(height: 20),
-            ],
-          ),
+            ),
+            const SizedBox(height: 32),
+            _buildRecentlyUsedSection(context, homeViewModel),
+            const SizedBox(height: 32),
+            _buildAllRoomsSection(context, homeViewModel),
+          ],
         ),
       ),
     );
   }
 
+  // Placeholder skeleton while waiting for user info
   Widget _buildUserDataLoadingState(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Skeleton loading for greeting
-              Container(
-                width: 200,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: AppColors.getCardBackground(context),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Simple grey boxes as loading placeholders
+            Container(
+              width: 200,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppColors.getCardBackground(context),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(height: 8),
-              Container(
-                width: 150,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: AppColors.getCardBackground(context),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: 150,
+              height: 20,
+              decoration: BoxDecoration(
+                color: AppColors.getCardBackground(context),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(height: 32),
-              _buildRecentlyUsedSection(context, HomeViewModel.instance),
-              const SizedBox(height: 32),
-              _buildAllRoomsSection(context, HomeViewModel.instance),
-            ],
-          ),
+            ),
+            const SizedBox(height: 32),
+            _buildRecentlyUsedSection(context, HomeViewModel.instance),
+            const SizedBox(height: 32),
+            _buildAllRoomsSection(context, HomeViewModel.instance),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildRecentlyUsedSection(BuildContext context, HomeViewModel homeViewModel) {
-    // Use real recently viewed items from backend
+  // Recently viewed furniture section
+  Widget _buildRecentlyUsedSection(
+      BuildContext context, HomeViewModel homeViewModel) {
     final recentItems = homeViewModel.recentlyViewedItems;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section header with navigation
         GestureDetector(
-          onTap: () {
-            homeViewModel.navigateToCatalogue();
-          },
+          onTap: homeViewModel.navigateToCatalogue,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -307,11 +284,8 @@ class _HomePageState extends State<HomePage> {
                   color: AppColors.getTextColor(context),
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: AppColors.getTextColor(context),
-              ),
+              Icon(Icons.arrow_forward_ios,
+                  size: 16, color: AppColors.getTextColor(context)),
             ],
           ),
         ),
@@ -323,7 +297,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         const SizedBox(height: 16),
-        // Show message if no recent items
+        // Message if user hasn't opened any furniture yet
         if (recentItems.isEmpty)
           Container(
             padding: const EdgeInsets.all(16),
@@ -333,10 +307,8 @@ class _HomePageState extends State<HomePage> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.visibility_off_outlined,
-                  color: AppColors.getSecondaryTextColor(context),
-                ),
+                Icon(Icons.visibility_off_outlined,
+                    color: AppColors.getSecondaryTextColor(context)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -350,6 +322,7 @@ class _HomePageState extends State<HomePage> {
             ),
           )
         else
+          // Displays recent furniture horizontally
           SizedBox(
             height: 120,
             child: ListView.builder(
@@ -365,18 +338,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildAllRoomsSection(BuildContext context, HomeViewModel homeViewModel) {
-    // Use real room categories from backend
+  // Shows all room categories like “Living Room”, “Kitchen”, etc.
+  Widget _buildAllRoomsSection(
+      BuildContext context, HomeViewModel homeViewModel) {
     final roomCategories = homeViewModel.roomCategories;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () {
-            // Navigate to catalogue showing all rooms (no filter)
-            homeViewModel.onAllCategoriesTapped();
-          },
+          onTap: homeViewModel.onAllCategoriesTapped,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -388,16 +359,13 @@ class _HomePageState extends State<HomePage> {
                   color: AppColors.getTextColor(context),
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: AppColors.getTextColor(context),
-              ),
+              Icon(Icons.arrow_forward_ios,
+                  size: 16, color: AppColors.getTextColor(context)),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        // Show message if no rooms
+        // Fallback message when no data is loaded
         if (roomCategories.isEmpty)
           Container(
             padding: const EdgeInsets.all(16),
@@ -413,6 +381,7 @@ class _HomePageState extends State<HomePage> {
             ),
           )
         else
+          // Displays each room as a grid card
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -432,20 +401,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Builds a single card in the “recently viewed” section
   Widget _buildRecentItemCard(
-      BuildContext context,
-      HomeViewModel homeViewModel,
-      FurnitureItem item,
-      ) {
+      BuildContext context, HomeViewModel homeViewModel, FurnitureItem item) {
     return GestureDetector(
-      onTap: () {
-        homeViewModel.onFurnitureItemTapped(item.id);
-      },
+      onTap: () => homeViewModel.onFurnitureItemTapped(item.id),
       child: Container(
         width: 100,
         margin: const EdgeInsets.only(right: 12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               width: 80,
@@ -462,29 +426,30 @@ class _HomePageState extends State<HomePage> {
                 ],
                 image: item.imageUrl != null
                     ? DecorationImage(
-                  image: NetworkImage(item.imageUrl!),
-                  fit: BoxFit.cover,
-                )
+                        image: NetworkImage(item.imageUrl!),
+                        fit: BoxFit.cover,
+                      )
                     : null,
               ),
+              // fallback icon if no image is available
               child: item.imageUrl == null
                   ? Icon(
-                _getFurnitureIcon(item.category),
-                color: AppColors.getPrimaryColor(context),
-                size: 30,
-              )
+                      _getFurnitureIcon(item.category),
+                      color: AppColors.getPrimaryColor(context),
+                      size: 30,
+                    )
                   : null,
             ),
             const SizedBox(height: 8),
             SizedBox(
-              width: 90, // Slightly less than container width for padding
+              width: 90,
               child: Text(
                 item.name,
                 style: TextStyle(
-                  fontSize: 11, // Slightly smaller font
+                  fontSize: 11,
                   color: AppColors.getTextColor(context),
                   fontWeight: FontWeight.w500,
-                  height: 1.2, // Better line spacing
+                  height: 1.2,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -497,24 +462,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Single room tile in the rooms grid
   Widget _buildRoomCard(
-      BuildContext context,
-      HomeViewModel homeViewModel,
-      Map<String, dynamic> room,
-      ) {
+      BuildContext context, HomeViewModel homeViewModel, Map<String, dynamic> room) {
     final roomName = room['name'] as String;
     final itemCount = room['itemCount'] as String;
     final iconName = room['icon'] as String?;
 
     return GestureDetector(
       onTap: () {
-        print('Room tapped: $roomName');
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => FurnitureCataloguePage(
-              initialRoom: roomName,
-            ),
+            builder: (_) => FurnitureCataloguePage(initialRoom: roomName),
           ),
         );
       },
@@ -546,7 +506,6 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: FontWeight.w600,
                 color: AppColors.getTextColor(context),
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
@@ -562,13 +521,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildBottomNavigationBar(BuildContext context, HomeViewModel homeViewModel) {
+  // Shared bottom navigation
+  Widget _buildBottomNavigationBar(
+      BuildContext context, HomeViewModel homeViewModel) {
     return BottomNavBar(
       currentIndex: homeViewModel.selectedIndex,
-      onTap: (index) => homeViewModel.onTabSelected(index),
+      onTap: homeViewModel.onTabSelected,
     );
   }
 
+  // Icons used for rooms and furniture
   IconData _getRoomIcon(String iconName) {
     final iconMap = {
       'weekend': Icons.weekend,
