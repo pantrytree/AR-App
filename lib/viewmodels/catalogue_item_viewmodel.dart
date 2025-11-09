@@ -35,9 +35,7 @@ class CatalogueItemViewModel extends ChangeNotifier {
   String? get navigateToRoute => _navigateToRoute;
   Map<String, dynamic>? get navigationArguments => _navigationArguments;
 
-  // ======================
   // BACKEND INTEGRATION POINTS
-  // ======================
 
   // TODO: Backend - Implement loadProductData()
   // Description: Loads product details from products table
@@ -61,9 +59,7 @@ class CatalogueItemViewModel extends ChangeNotifier {
     debugPrint("Toggling favorite for $productTitle - BACKEND NEEDED");
   }
 
-  // ======================
   // PUBLIC METHODS
-  // ======================
 
   void openInAR() {
     debugPrint("Opening $productTitle in AR");
