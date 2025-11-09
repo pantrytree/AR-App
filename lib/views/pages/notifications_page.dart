@@ -50,7 +50,7 @@ class _NotificationsPageBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Show error message
+                // Show error message if any
                 if (viewModel.errorMessage != null)
                   Container(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -74,6 +74,7 @@ class _NotificationsPageBody extends StatelessWidget {
                     ),
                   ),
 
+                // Notification channels section
                 _buildNotificationSection(
                   context: context,
                   title: 'Notification Channels',
@@ -104,6 +105,7 @@ class _NotificationsPageBody extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
+                // Notification types section
                 _buildNotificationSection(
                   context: context,
                   title: 'Notification Types',
@@ -127,7 +129,7 @@ class _NotificationsPageBody extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                // Save button
+                // Save settings button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -191,6 +193,7 @@ class _NotificationsPageBody extends StatelessWidget {
     );
   }
 
+  // Build section header with title
   Widget _buildNotificationSection({
     required BuildContext context,
     required String title,
@@ -213,6 +216,7 @@ class _NotificationsPageBody extends StatelessWidget {
     );
   }
 
+  // Build individual notification switch item
   Widget _buildNotificationSwitch({
     required BuildContext context,
     required String title,
