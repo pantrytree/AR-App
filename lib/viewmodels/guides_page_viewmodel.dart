@@ -4,11 +4,10 @@ import '../../../views/pages/guides_design_tools.dart';
 import '../../../views/pages/guides_sharing_page.dart';
 import '../../../views/pages/guides_media_sharing_page.dart';
 
-
 class Guide {
-  final String iconString;
-  final String title;
-  final String description;
+  final String iconString;  
+  final String title;       
+  final String description; 
 
   Guide({
     required this.iconString,
@@ -17,7 +16,10 @@ class Guide {
   });
 }
 
+// ViewModel for managing guides page state and navigation
+// Handles guide filtering, search, and page routing
 class GuidesPageViewModel extends ChangeNotifier {
+  // Predefined list of available help guides
   final List<Guide> _allGuides = [
     Guide(
       iconString: 'Icons.book',
@@ -41,24 +43,26 @@ class GuidesPageViewModel extends ChangeNotifier {
     ),
   ];
 
-  List<Guide> _filteredGuides = [];
-  String _searchQuery = '';
+  List<Guide> _filteredGuides = []; 
+  String _searchQuery = '';         
 
   GuidesPageViewModel() {
-    _filteredGuides = List.from(_allGuides);
+    _filteredGuides = List.from(_allGuides); 
   }
 
-  List<Guide> get guides => _filteredGuides;
+  List<Guide> get guides => _filteredGuides; 
 
+  // Filters guides based on search query in title or description
   void setSearchQuery(String query) {
     _searchQuery = query.toLowerCase();
     _filteredGuides = _allGuides.where((g) {
       return g.title.toLowerCase().contains(_searchQuery) ||
           g.description.toLowerCase().contains(_searchQuery);
     }).toList();
-    notifyListeners();
+    notifyListeners(); // Update UI with filtered results
   }
 
+  // Converts icon string to actual Material icon
   IconData parseIcon(String iconString) {
     switch (iconString) {
       case 'Icons.book':
@@ -70,10 +74,11 @@ class GuidesPageViewModel extends ChangeNotifier {
       case 'Icons.file_upload':
         return Icons.file_upload;
       default:
-        return Icons.help_outline;
+        return Icons.help_outline; // Fallback icon
     }
   }
 
+  // Returns the corresponding page widget for a guide title
   Widget? getPageForGuide(String title) {
     switch (title) {
       case 'Getting Started Guide':
@@ -85,7 +90,7 @@ class GuidesPageViewModel extends ChangeNotifier {
       case 'Importing Media Guide':
         return const GuideImportingMediaPage();
       default:
-        return null;
+        return null; // No page found for guide
     }
   }
 }
