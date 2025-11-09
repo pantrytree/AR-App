@@ -38,9 +38,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     _clearErrors();
   }
 
-  // ======================
   // BACKEND INTEGRATION
-  // ======================
 
   /// Step 1: Request password reset
   Future<void> sendPasswordResetEmail() async {
@@ -112,9 +110,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     }
   }
 
-  // ======================
   // VALIDATION METHODS
-  // ======================
 
   bool _validateEmailStep() {
     if (_email.isEmpty) {
@@ -139,9 +135,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     return emailRegex.hasMatch(email);
   }
 
-  // ======================
   // UI STATE MANAGEMENT
-  // ======================
 
   void goToPreviousStep() {
     if (_currentStep > 0) {
@@ -189,9 +183,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     }
   }
 
-  // ======================
   // NAVIGATION METHODS
-  // ======================
 
   void navigateToLogin() {
     _navigateToRoute = '/login';
@@ -207,9 +199,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     _navigationArguments = null;
   }
 
-  // ======================
   // HELPER METHODS
-  // ======================
 
   void _clearErrors() {
     if (_hasError) {
