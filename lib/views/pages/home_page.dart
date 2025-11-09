@@ -261,9 +261,9 @@ class HomePage extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // Room Categories as grid - Fixed height to prevent overflow
+        // Room Categories as grid 
         SizedBox(
-          height: 400, // Fixed height to contain the grid
+          height: 400, 
           child: GridView.builder(
             physics: const NeverScrollableScrollPhysics(), // Disable grid scrolling
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
