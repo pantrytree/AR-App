@@ -1,11 +1,3 @@
-// FurnitureService - Mock Data Service for Development
-//
-// PURPOSE: Provides furniture data during development phase
-// CURRENT: Returns local mock data
-// FUTURE: Replace with Firebase or API integration
-
-// ignore_for_file: avoid_print
-
 import '../models/furniture_item.dart';
 
 class FurnitureService {
@@ -15,10 +7,11 @@ class FurnitureService {
   List<FurnitureItem> getAllFurniture() {
     if (_cachedItems.isNotEmpty) return _cachedItems;
 
-    print('🔄 Loading furniture items...');
+    print('Loading furniture items...');
 
     final now = DateTime.now();
 
+    //mock furniture data representing furniture catlogue
     _cachedItems = [
       FurnitureItem(
         id: '1',
@@ -125,7 +118,7 @@ class FurnitureService {
       ),
     ];
 
-    print('✅ Loaded ${_cachedItems.length} items');
+    print('Loaded ${_cachedItems.length} items');
     return _cachedItems;
   }
 
@@ -137,22 +130,28 @@ class FurnitureService {
     );
   }
 
+  // Asynchronously retrieves all furniture items with simulated network delay
   Future<List<FurnitureItem>> getFurnitureItems() async {
     await Future.delayed(const Duration(milliseconds: 700));
     return getAllFurniture();
   }
 
+  // Returns furniture items marked as favorites by the user
   Future<List<FurnitureItem>> getFavorites() async {
     final items = await getFurnitureItems();
     return items.where((item) => item.isFavorite).toList();
   }
 
+  // Filters furniture items by category
+  // Returns all items if category is 'All', otherwise filters by specific category
   Future<List<FurnitureItem>> getItemsByCategory(String category) async {
     final items = await getFurnitureItems();
     if (category == 'All') return items;
     return items.where((item) => item.category == category).toList();
   }
 
+  // Retrieves all unique furniture categories from the catalog
+  // Always includes 'All' as the first option for comprehensive filtering
   Future<List<String>> getCategories() async {
     final items = await getFurnitureItems();
     final categories = items.map((item) => item.category).toSet().toList();
