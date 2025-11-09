@@ -147,13 +147,7 @@ class ApiService {
     );
   }
 
-  /// Perform GET request
-  ///
-  /// Example:
-  /// ```dart
-  /// final data = await apiService.get('/furniture');
-  /// final data = await apiService.get('/furniture/123', requiresAuth: true);
-  /// ```
+  // Perform GET request
   Future<dynamic> get(
       String endpoint, {
         bool requiresAuth = false,
@@ -181,15 +175,7 @@ class ApiService {
     }
   }
 
-  /// Perform POST request
-  ///
-  /// Example:
-  /// ```dart
-  /// final result = await apiService.post(
-  ///   '/auth/login',
-  ///   body: {'email': 'test@example.com', 'password': '123456'},
-  /// );
-  /// ```
+  // Perform POST request
   Future<dynamic> post(
       String endpoint, {
         required Map<String, dynamic> body,
@@ -219,16 +205,7 @@ class ApiService {
     }
   }
 
-  /// Perform PUT request
-  ///
-  /// Example:
-  /// ```dart
-  /// await apiService.put(
-  ///   '/users/profile',
-  ///   body: {'displayName': 'New Name'},
-  ///   requiresAuth: true,
-  /// );
-  /// ```
+  // Perform PUT request
   Future<dynamic> put(
       String endpoint, {
         required Map<String, dynamic> body,
@@ -258,16 +235,7 @@ class ApiService {
     }
   }
 
-  /// Perform PATCH request
-  ///
-  /// Example:
-  /// ```dart
-  /// await apiService.patch(
-  ///   '/users/preferences',
-  ///   body: {'theme': 'dark'},
-  ///   requiresAuth: true,
-  /// );
-  /// ```
+  // Perform PATCH request
   Future<dynamic> patch(
       String endpoint, {
         required Map<String, dynamic> body,
@@ -297,12 +265,7 @@ class ApiService {
     }
   }
 
-  /// Perform DELETE request
-  ///
-  /// Example:
-  /// ```dart
-  /// await apiService.delete('/favorites/123', requiresAuth: true);
-  /// ```
+  // Perform DELETE request
   Future<dynamic> delete(
       String endpoint, {
         bool requiresAuth = false,
@@ -332,18 +295,7 @@ class ApiService {
     }
   }
 
-  /// Perform multipart request for file uploads
-  ///
-  /// Example:
-  /// ```dart
-  /// await apiService.uploadFile(
-  ///   '/storage/profile-image',
-  ///   filePath: '/path/to/image.jpg',
-  ///   fileField: 'image',
-  ///   additionalFields: {'userId': '123'},
-  ///   requiresAuth: true,
-  /// );
-  /// ```
+  // Perform multipart request for file uploads
   Future<dynamic> uploadFile(
       String endpoint, {
         required String filePath,
