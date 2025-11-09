@@ -8,6 +8,7 @@ class AboutPage extends StatefulWidget {
   State<AboutPage> createState() => _AboutPageState();
 }
 
+// AboutPage
 class _AboutPageState extends State<AboutPage> {
   // Hardcoded app information
   final String _appName = 'Roomantic';
@@ -87,6 +88,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 20),
 
+            // Developer info card
             _buildInfoCard(
               title: 'Developer Information',
               children: [
@@ -98,6 +100,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 20),
 
+            // App Description card
             _buildInfoCard(
               title: 'App Description',
               children: [
@@ -117,6 +120,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 20),
 
+            // Features card
             _buildInfoCard(
               title: 'Features',
               children: [
@@ -130,6 +134,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 20),
 
+            // Legal section (privacy policy, terms, licenses)
             _buildInfoCard(
               title: 'Legal',
               children: [
@@ -200,6 +205,7 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
+  // Helper method for creating a styled info card with title and child widgets
   Widget _buildInfoCard({
     required String title,
     required List<Widget> children,
@@ -227,6 +233,7 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
+  // Helper for individual label/value row in info cards
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -252,6 +259,7 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
+  // Helper for feature items in the features card
   Widget _buildFeatureItem(String feature) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -274,6 +282,7 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
+  // Shows a simple dialog for placeholder legal items
   void _showPlaceholderDialog(BuildContext context, String title) {
     showDialog(
       context: context,
