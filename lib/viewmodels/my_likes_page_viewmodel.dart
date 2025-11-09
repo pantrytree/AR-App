@@ -37,7 +37,7 @@ class MyLikesViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  /// Sets up real-time stream for favorites
+  // Sets up real-time stream for favorites
   void _setupFavoritesStream() {
     _favoritesSubscription = _favoritesService.streamFavoriteIds().listen(
           (List<String> favoriteIds) {
@@ -51,7 +51,7 @@ class MyLikesViewModel extends ChangeNotifier {
     );
   }
 
-  /// Sync local items with real-time stream updates
+  // Sync local items with real-time stream updates
   void _syncFavoritesWithStream(List<String> favoriteIds) {
     _likedItems.removeWhere((item) => !favoriteIds.contains(item.id));
     notifyListeners();
@@ -86,7 +86,7 @@ class MyLikesViewModel extends ChangeNotifier {
     return categoryMap[backendCategory.toLowerCase()] ?? 'Furniture';
   }
 
-  /// Remove item from favorites
+  // Remove item from favorites
   Future<void> removeLikedItem(String id) async {
     try {
       final removedItem = _likedItems.firstWhere((item) => item.id == id);
@@ -117,7 +117,7 @@ class MyLikesViewModel extends ChangeNotifier {
     }
   }
 
-  /// Toggle favorite status
+  // Toggle favorite status
   Future<bool> toggleFavorite(String itemId) async {
     try {
       return await _favoritesService.toggleFavorite(itemId);
@@ -127,7 +127,7 @@ class MyLikesViewModel extends ChangeNotifier {
     }
   }
 
-  /// Check if item is favorited
+  // Check if item is favorited
   Future<bool> isItemFavorite(String itemId) async {
     try {
       return await _favoritesService.isFavorite(itemId);
@@ -137,7 +137,7 @@ class MyLikesViewModel extends ChangeNotifier {
     }
   }
 
-  /// Load liked items from backend
+  // Load liked items from backend
   Future<void> loadLikedItems() async {
     _isLoading = true;
     _errorMessage = null;
@@ -164,12 +164,12 @@ class MyLikesViewModel extends ChangeNotifier {
     }
   }
 
-  /// Refresh favorites
+  // Refresh favorites
   Future<void> refreshLikedItems() async {
     await loadLikedItems();
   }
 
-  /// Get favorite count
+  // Get favorite count
   Future<int> getFavoriteCount() async {
     try {
       return await _favoritesService.getFavoriteCount();
@@ -179,7 +179,7 @@ class MyLikesViewModel extends ChangeNotifier {
     }
   }
 
-  /// Get favorites by category
+  // Get favorites by category
   Future<List<FurnitureItem>> getFavoritesByCategory(String category) async {
     try {
       return await _favoritesService.getFavoritesByCategory(category);
@@ -189,7 +189,7 @@ class MyLikesViewModel extends ChangeNotifier {
     }
   }
 
-  /// Clear all favorites
+  // Clear all favorites
   Future<void> clearAllFavorites() async {
     try {
       await _favoritesService.clearAllFavorites();
