@@ -7,12 +7,14 @@ import '../../../viewmodels/sign_up_viewmodel.dart';
 class SignUpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // Set up the ViewModel and theme management using Provider
     return ChangeNotifierProvider<SignUpViewModel>(
       create: (_) => SignUpViewModel(),
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
           return Consumer<SignUpViewModel>(
             builder: (context, model, child) {
+              // Handle navigation when ViewModel requests it
               if (model.navigateToRoute != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.pushReplacementNamed(context, model.navigateToRoute!);
@@ -23,6 +25,7 @@ class SignUpPage extends StatelessWidget {
               return Scaffold(
                 body: Stack(
                   children: [
+                    // Background gradient
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -35,14 +38,17 @@ class SignUpPage extends StatelessWidget {
                         ),
                       ),
                     ),
+                    
+                    // Main content
                     Center(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(horizontal: 32.0),
                         child: Form(
-                          key: model.formKey,
+                          key: model.formKey, // Form key for validation
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              // Page title
                               Text(
                                 'Personal details',
                                 style: TextStyle(
@@ -84,8 +90,8 @@ class SignUpPage extends StatelessWidget {
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                     floatingLabelBehavior: FloatingLabelBehavior.never, // Prevents label from moving
                                   ),
-                                  onChanged: model.setName,
-                                  validator: model.nameValidator,
+                                  onChanged: model.setName, // Update name in ViewModel
+                                  validator: model.nameValidator, // Validate name input
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -121,8 +127,8 @@ class SignUpPage extends StatelessWidget {
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                     floatingLabelBehavior: FloatingLabelBehavior.never,
                                   ),
-                                  onChanged: model.setEmail,
-                                  validator: model.emailValidator,
+                                  onChanged: model.setEmail, // Update email in ViewModel
+                                  validator: model.emailValidator, // Validate email format
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -157,6 +163,7 @@ class SignUpPage extends StatelessWidget {
                                     fillColor: AppColors.white.withOpacity(0.9),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                     floatingLabelBehavior: FloatingLabelBehavior.never,
+                                    // Info icon to show password requirements
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         Icons.info_outline,
@@ -168,14 +175,14 @@ class SignUpPage extends StatelessWidget {
                                       },
                                     ),
                                   ),
-                                  obscureText: true,
-                                  onChanged: model.setPassword,
-                                  validator: model.passwordValidator,
+                                  obscureText: true, // Hide password text
+                                  onChanged: model.setPassword, // Update password in ViewModel
+                                  validator: model.passwordValidator, // Validate password strength
                                 ),
                               ),
                               const SizedBox(height: 8),
 
-                              // Password Requirements Hint
+                              // Password Requirements Hint - shows real-time validation
                               _buildPasswordRequirements(model.password),
                               const SizedBox(height: 8),
 
@@ -210,14 +217,14 @@ class SignUpPage extends StatelessWidget {
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                     floatingLabelBehavior: FloatingLabelBehavior.never,
                                   ),
-                                  obscureText: true,
-                                  onChanged: model.setConfirmPassword,
-                                  validator: model.confirmPasswordValidator,
+                                  obscureText: true, // Hide password text
+                                  onChanged: model.setConfirmPassword, // Update confirm password in ViewModel
+                                  validator: model.confirmPasswordValidator, // Validate passwords match
                                 ),
                               ),
                               const SizedBox(height: 32),
 
-                              // Error Message
+                              // Error Message Display
                               if (model.errorMessage != null)
                                 Container(
                                   padding: const EdgeInsets.all(12),
@@ -241,11 +248,11 @@ class SignUpPage extends StatelessWidget {
                                 width: double.infinity,
                                 child: ElevatedButton(
                                   onPressed:  model.loading
-                                      ? null
+                                      ? null // Disable button when loading
                                       : () async {
                                     // Validate and submit
                                     if (model.formKey.currentState!.validate()) {
-                                      await model.signUp();
+                                      await model.signUp(); // Attempt sign up
                                     }
                                   },
                                   child: model.loading
@@ -271,7 +278,7 @@ class SignUpPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 16),
 
-                              // Sign In Link
+                              // Sign In Link for existing users
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -280,7 +287,7 @@ class SignUpPage extends StatelessWidget {
                                     style: TextStyle(color: AppColors.white),
                                   ),
                                   GestureDetector(
-                                    onTap: model.onSignInTapped,
+                                    onTap: model.onSignInTapped, // Navigate to sign in
                                     child: Text(
                                       'Sign In',
                                       style: TextStyle(
@@ -297,7 +304,7 @@ class SignUpPage extends StatelessWidget {
                       ),
                     ),
 
-                    // Back button
+                    // Back button in top left corner
                     SafeArea(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -308,7 +315,7 @@ class SignUpPage extends StatelessWidget {
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
-                              onTap: () => Navigator.pushReplacementNamed(context, '/splash'),
+                              onTap: () => Navigator.pushReplacementNamed(context, '/splash'), // Go back to splash
                               child: const Padding(
                                 padding: EdgeInsets.all(8.0),
                                 child: Icon(Icons.close, color: Colors.black, size: 28),
@@ -328,8 +335,9 @@ class SignUpPage extends StatelessWidget {
     );
   }
 
-  // Password Requirements Widget
+  // Password Requirements Widget - shows real-time validation progress
   Widget _buildPasswordRequirements(String password) {
+    // Define all password requirements with their current fulfillment status
     final requirements = [
       _Requirement(
         text: 'At least 8 characters',
@@ -364,6 +372,7 @@ class SignUpPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
+        // Display each requirement with check/circle icon
         ...requirements.map((req) => Row(
           children: [
             Icon(
@@ -385,7 +394,7 @@ class SignUpPage extends StatelessWidget {
     );
   }
 
-  // Show Password Requirements Dialog
+  // Show Password Requirements Dialog - detailed explanation
   void _showPasswordRequirements(BuildContext context) {
     showDialog(
       context: context,
@@ -404,7 +413,7 @@ class SignUpPage extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context), // Close dialog
             child: Text('OK'),
           ),
         ],
@@ -412,20 +421,22 @@ class SignUpPage extends StatelessWidget {
     );
   }
 
+  // Helper widget for requirement items in dialog
   Widget _buildRequirementItem(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(Icons.check, color: Colors.green, size: 16),
+          Icon(Icons.check, color: Colors.green, size: 16), // Green checkmark
           const SizedBox(width: 8),
-          Text(text),
+          Text(text), // Requirement text
         ],
       ),
     );
   }
 }
 
+// Helper class to track password requirement status
 class _Requirement {
   final String text;
   final bool fulfilled;
