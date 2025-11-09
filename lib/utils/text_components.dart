@@ -219,18 +219,11 @@ class TextComponents {
     return rating.toStringAsFixed(1);
   }
 
-
-
-
-
   // DYNAMIC USER DATA (MUTABLE PROPERTIES)
-
   static String userName = "Guest"; // Mutable property for dynamic user name
   static String userEmail = "guest@example.com"; // Mutable property for dynamic email
 
-
   // MY PROJECTS PAGE STRINGS
-
   static String myProjectsTitle() => "My Projects";
   static String loadingProjects() => "Loading projects...";
   static String projectsLoadError() => "Couldn't load projects.";
@@ -261,11 +254,7 @@ class TextComponents {
   static String createdBy(String creator) => "Created by $creator";
   static String lastUpdate(String date) => "Last update $date";
 
-
-
-
 // MY LIKES PAGE STRINGS
-
   static String myLikesTitle() => "My Likes";
   static String noLikedItemsYet() => "No liked items yet";
   static String likedItemsDescription() => "Items you like will appear here";
@@ -274,19 +263,13 @@ class TextComponents {
   static String errorLoadingLikes(String errorMessage) =>
       "Failed to load liked items. Error: $errorMessage";
 
-
-
-
   //  FALLBACK MESSAGES & PLACEHOLDERS
-
   static String get dataLoadFallback => "Couldn't load data, showing saved info instead.";
   static String get welcomeGuest => "Welcome, Guest!";
   static String get fallbackUserName => "Guest User";
   static String get fallbackProjectCreator => "Unknown User";
 
-
   // HELP PAGE STRINGS
-
   static String helpPageTitle() => "How can we help you?";
   static String searchPlaceholder2() => "Search for help topics...";
   static String gettingStarted() => "Getting Started";
@@ -299,9 +282,7 @@ class TextComponents {
       "Failed to load help content. Please try again.";
   static String contactSupport() => "Contact Support";
 
-
   // SHARED TEXT STYLES
-
   static TextStyle header18 = GoogleFonts.inter(
     fontSize: 18,
     fontWeight: FontWeight.w700,
@@ -337,39 +318,31 @@ class TextComponents {
     fontSize: 14,
     color: AppColors.grey.withOpacity(0.8),
   );
-
-
+  
   // METHODS TO UPDATE DYNAMIC CONTENT
 
-
-  /// Updates the user name dynamically (to be called after login/user data fetch)
+  // Updates the user name dynamically (to be called after login/user data fetch)
   static void updateUserName(String newName) {
     userName = newName;
   }
 
-  /// Updates the user email dynamically
+  // Updates the user email dynamically
   static void updateUserEmail(String newEmail) {
     userEmail = newEmail;
   }
 
-  /// Resets user data to guest/default values
+  // Resets user data to guest/default values
   static void resetToGuest() {
     userName = "Guest";
     userEmail = "guest@example.com";
   }
 
   // Catalogue Page
-
   static const String catalogueHeaderTitle = 'Find Your Style';
-
   static const String catalogueHeaderSubtitle = 'Discover perfect furniture for your space';
-
   static const String searchHint = 'Search furniture...';
-
   static const String noItemsFound = 'No items found';
 
 // Settings Page
-
   static const String settingsPageTitle = 'Settings';
-
 }
