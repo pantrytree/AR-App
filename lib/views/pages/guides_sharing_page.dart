@@ -36,6 +36,8 @@ class GuideSharingPage extends StatelessWidget {
               content:
               'This guide will help you share your projects and collaborate with others efficiently.',
             ),
+
+            // Section describing how to share projects
             const SizedBox(height: 20),
             _buildSection(
               title: 'Sharing Projects',
@@ -44,6 +46,8 @@ class GuideSharingPage extends StatelessWidget {
                   '• Share Link: Generate a link to share with teammates.\n'
                   '• Permissions: Control who can view or edit.',
             ),
+
+            // Section describing collaboration features and tips
             const SizedBox(height: 20),
             _buildSection(
               title: 'Collaboration Tips',
@@ -59,6 +63,7 @@ class GuideSharingPage extends StatelessWidget {
     );
   }
 
+  // Helper function to build a styled section with title and paragraph/bulleted content
   Widget _buildSection({required String title, required String content}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
