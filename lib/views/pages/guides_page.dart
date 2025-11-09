@@ -11,11 +11,15 @@ class GuidesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
+      // The ViewModel manages guides data and search logic
       create: (_) => GuidesPageViewModel(),
+      // Consumer rebuilds UI when ViewModel notifies listeners
       child: Consumer<GuidesPageViewModel>(
         builder: (context, vm, child) {
           return Scaffold(
             backgroundColor: AppColors.secondaryBackground,
+
+            // AppBar configuration
             appBar: AppBar(
               backgroundColor: Colors.white,
               elevation: 1,
@@ -33,8 +37,11 @@ class GuidesPage extends StatelessWidget {
               ),
               centerTitle: true,
             ),
+
+            // Scrollable content for search and guide grid
             body: CustomScrollView(
               slivers: [
+                // Section 1: Search bar
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
                   sliver: SliverToBoxAdapter(
@@ -47,7 +54,11 @@ class GuidesPage extends StatelessWidget {
                     ),
                   ),
                 ),
+
+                // Section 2: Animated grid of guides
                 _buildGuideGrid(vm),
+
+                // Bottom padding
                 const SliverToBoxAdapter(child: SizedBox(height: 32)),
               ],
             ),
@@ -57,6 +68,11 @@ class GuidesPage extends StatelessWidget {
     );
   }
 
+  // Builds the search bar
+  // Allows users to filter the list of guides by keyword.
+  // The entered text triggers vm.setSearchQuery() in the ViewModel,
+  // which updates the displayed results.
+  
   Widget _buildSearchBar(GuidesPageViewModel vm) {
     return TextField(
       onChanged: vm.setSearchQuery,
@@ -73,6 +89,10 @@ class GuidesPage extends StatelessWidget {
     );
   }
 
+  // Builds the grid of guide cards
+  // Displays all available guides as animated cards.
+  // If no guides are found, a "no results" message appears.
+  // Uses flutter_staggered_animations for a fade-and-slide effect.
   Widget _buildGuideGrid(GuidesPageViewModel vm) {
     if (vm.guides.isEmpty) {
       return SliverFillRemaining(
@@ -92,6 +112,7 @@ class GuidesPage extends StatelessWidget {
       );
     }
 
+    // Grid layout for displaying guide cards
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       sliver: AnimationLimiter(
@@ -102,6 +123,9 @@ class GuidesPage extends StatelessWidget {
             mainAxisSpacing: 16,
             childAspectRatio: 0.8,
           ),
+
+    // Builds each grid cell dynamically
+          
           delegate: SliverChildBuilderDelegate(
                 (context, index) {
               final guide = vm.guides[index];
@@ -112,6 +136,8 @@ class GuidesPage extends StatelessWidget {
                 child: SlideAnimation(
                   child: FadeInAnimation(
                     child: GestureDetector(
+
+                      // When tapped, navigate to the guide’s detailed page
                       onTap: () {
                         final page = vm.getPageForGuide(guide.title);
                         if (page != null) {
