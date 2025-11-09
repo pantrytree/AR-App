@@ -2,29 +2,29 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// AccountHubViewModel
-///
-/// Handles user data management for the Account Hub screen.
-///
-/// Features:
-/// - Loads user data from local storage (SharedPreferences)
-/// - Updates profile info (name, email, username, image)
-/// - Provides live refresh when returning from Edit Profile
-/// - Prepared for backend integration with TODOs
-///
-/// Backend APIs to implement:
-/// 1. GET /user/profile
-///    - Load user info (name, email, username, profile image)
-///    - Should replace loadUserData()
-/// 2. PUT /user/profile
-///    - Update user details (name, email, username)
-///    - Should replace updateProfile() logic for text fields
-/// 3. POST /user/profile/image
-///    - Upload new profile picture
-///    - Should replace updateProfile() logic for profileImageUrl
-/// 4. POST /auth/logout (or DELETE /user/session)
-///    - Invalidate user session / auth token
-///    - Should replace logout() logic
+// AccountHubViewModel
+//
+// Handles user data management for the Account Hub screen.
+//
+// Features:
+// - Loads user data from local storage (SharedPreferences)
+// - Updates profile info (name, email, username, image)
+// - Provides live refresh when returning from Edit Profile
+// - Prepared for backend integration with TODOs
+//
+// Backend APIs to implement:
+// 1. GET /user/profile
+//    - Load user info (name, email, username, profile image)
+//    - Should replace loadUserData()
+// 2. PUT /user/profile
+//    - Update user details (name, email, username)
+//    - Should replace updateProfile() logic for text fields
+// 3. POST /user/profile/image
+//    - Upload new profile picture
+//    - Should replace updateProfile() logic for profileImageUrl
+// 4. POST /auth/logout (or DELETE /user/session)
+//    - Invalidate user session / auth token
+//    - Should replace logout() logic
 class AccountHubViewModel extends ChangeNotifier {
   // User Data
   String _userName = '';
@@ -48,8 +48,8 @@ class AccountHubViewModel extends ChangeNotifier {
   static const String _imageKey = 'profile_image_url';
 
   // Load user data
-  /// Loads user data from SharedPreferences (placeholder for backend)
-  /// TODO: Replace with GET /user/profile API call
+  // Loads user data from SharedPreferences (placeholder for backend)
+  // TODO: Replace with GET /user/profile API call
   Future<void> loadUserData() async {
     _setLoading(true);
     try {
@@ -69,16 +69,16 @@ class AccountHubViewModel extends ChangeNotifier {
   }
 
   // Refresh user data
-  /// Refreshes data manually when returning from Edit Profile
-  /// TODO: Ensure this calls GET /user/profile to get latest backend data
+  // Refreshes data manually when returning from Edit Profile
+  // TODO: Ensure this calls GET /user/profile to get latest backend data
   Future<void> refreshUserData() async {
     await loadUserData();
     notifyListeners();
   }
 
   // Update user profile info
-  /// Updates local user data and persists to SharedPreferences
-  /// TODO: Replace with PUT /user/profile and POST /user/profile/image when backend is ready
+  // Updates local user data and persists to SharedPreferences
+  // TODO: Replace with PUT /user/profile and POST /user/profile/image when backend is ready
   Future<void> updateProfile({
     String? name,
     String? email,
@@ -115,8 +115,8 @@ class AccountHubViewModel extends ChangeNotifier {
   }
 
   // Logout
-  /// Clears user data and local preferences
-  /// TODO: Call backend logout API (POST /auth/logout or DELETE /user/session)
+  // Clears user data and local preferences
+  // TODO: Call backend logout API (POST /auth/logout or DELETE /user/session)
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -132,7 +132,7 @@ class AccountHubViewModel extends ChangeNotifier {
   }
 
   // Internal helper
-  /// Sets loading state and notifies listeners
+  // Sets loading state and notifies listeners
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
