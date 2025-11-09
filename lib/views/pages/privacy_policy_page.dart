@@ -35,6 +35,7 @@ class PrivacyPolicyPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Display last updated date
               Text(
                 'Last Updated: ${DateTime.now().toString().split(' ')[0]}',
                 style: TextStyle(
@@ -45,6 +46,7 @@ class PrivacyPolicyPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
+              // Privacy policy sections
               _buildSectionTitle(context, '1. Information We Collect'),
               _buildSectionContent(context,
                 'We collect information you provide directly to us when you use our app, '
@@ -119,6 +121,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
               const SizedBox(height: 32),
 
+              // Disclaimer box at the bottom
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -141,6 +144,7 @@ class PrivacyPolicyPage extends StatelessWidget {
     );
   }
 
+  // Helper method to build section titles
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
@@ -152,6 +156,7 @@ class PrivacyPolicyPage extends StatelessWidget {
     );
   }
 
+  // Helper method to build section content
   Widget _buildSectionContent(BuildContext context, String content) {
     return Text(
       content,
