@@ -9,6 +9,8 @@ import 'furniture_catalogue_page.dart';
 import '/services/furniture_service.dart';
 import '/models/furniture_item.dart';
 
+// Main catalogue page displaying furniture organized by room categories
+// Features search, category filtering, and room-based navigation
 class CataloguePage extends StatelessWidget {
   final String? initialRoom;
 
@@ -30,6 +32,7 @@ class CataloguePage extends StatelessWidget {
   }
 }
 
+// Stateful widget body handling catalogue data and user interactions
 class _CataloguePageBody extends StatefulWidget {
   final String? initialRoom;
 
@@ -46,7 +49,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  //Track room item counts from Firestore
+  // Track room item counts from Firestore for display
   Map<String, int> _roomItemCounts = {};
   bool _isLoadingCounts = true;
   List<FurnitureItem> _allFurnitureItems = [];
@@ -55,8 +58,9 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
   void initState() {
     super.initState();
 
-    _loadFurnitureData();
+    _loadFurnitureData(); // Load furniture data on initialization
 
+    // Apply initial room filter after widget builds
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialRoom != null) {
         final vm = context.read<CatalogueViewModel>();
@@ -65,23 +69,24 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     });
   }
 
+  // Loads furniture data from Firestore and calculates room counts
   Future<void> _loadFurnitureData() async {
     try {
       print('Loading furniture data for catalogue...');
 
-      // Load all furniture items
+      // Load all furniture items from Firestore
       final items = await _furnitureService.getFurnitureItems(
         useFirestore: true,
       );
 
       print('Loaded ${items.length} furniture items');
 
-      // Debug: Print all furniture item IDs
+      // Debug: Print all furniture item details
       for (var item in items) {
         print('Furniture: ${item.name} (ID: ${item.id}) - Room: ${item.roomType}');
       }
 
-      // Calculate item counts per room type
+      // Calculate item counts per room type for display
       final counts = <String, int>{};
       for (var item in items) {
         final roomType = item.roomType.toLowerCase();
@@ -107,6 +112,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     }
   }
 
+  // Applies initial room filter when navigating from other screens
   void _applyInitialRoomFilter(CatalogueViewModel vm, String initialRoom) {
     final categoryMap = {
       'Living Room': 'Living Room',
@@ -114,7 +120,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
       'Office': 'Office',
       'Kitchen': 'Dining',
       'Dining Room': 'Dining',
-      'Bathroom': 'Bedroom',
+      'Bathroom': 'Bedroom', // Map bathroom to bedroom category
     };
 
     final targetCategory = categoryMap[initialRoom] ?? initialRoom;
@@ -130,12 +136,14 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     super.dispose();
   }
 
+  // Handles search query changes and updates filtered results
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
     });
   }
 
+  // Clears search query and resets search field
   void _clearSearch() {
     setState(() {
       _searchQuery = '';
@@ -143,6 +151,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     });
   }
 
+  // Navigates to filtered furniture catalogue based on category selection
   void _navigateToCategory(String category) {
     final filterOption = FilterOptions.categoryOptions.firstWhere(
           (option) => option.label == category,
@@ -150,6 +159,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
 
     if (filterOption.value == 'all') {
+      // Navigate to unfiltered catalogue
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -157,6 +167,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
         ),
       );
     } else {
+      // Navigate to category-filtered catalogue
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -168,9 +179,10 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     }
   }
 
+  // Filters room options based on current search query
   List<Map<String, dynamic>> _getFilteredRooms() {
     if (_searchQuery.isEmpty) {
-      return FilterOptions.roomCardOptions;
+      return FilterOptions.roomCardOptions; // Return all rooms if no search
     }
 
     return FilterOptions.roomCardOptions.where((room) {
@@ -183,6 +195,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     }).toList();
   }
 
+  // Gets item count for a specific room category
   int _getItemCountForRoom(String roomValue) {
     // Map filter values to room types in database
     final roomTypeMap = {
@@ -197,10 +210,10 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     final mappedRoomType = roomTypeMap[roomValue.toLowerCase()] ?? roomValue.toLowerCase();
 
     if (mappedRoomType == 'all') {
-      return _allFurnitureItems.length;
+      return _allFurnitureItems.length; // Return total count for "all" category
     }
 
-    return _roomItemCounts[mappedRoomType] ?? 0;
+    return _roomItemCounts[mappedRoomType] ?? 0; // Return count for specific room
   }
 
   @override
@@ -235,6 +248,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
               color: AppColors.getAppBarForeground(context),
             ),
             actions: [
+              // Refresh button with loading state
               IconButton(
                 icon: _isLoadingCounts
                     ? const SizedBox(
@@ -251,15 +265,15 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             ],
           ),
           body: RefreshIndicator(
-            onRefresh: _loadFurnitureData,
+            onRefresh: _loadFurnitureData, // Pull-to-refresh functionality
             child: Column(
               children: [
-                _buildWelcomeSection(context),
+                _buildWelcomeSection(context), // Header with search
                 SizedBox(
                   height: 60,
-                  child: _buildCategoryChips(context, vm),
+                  child: _buildCategoryChips(context, vm), // Horizontal category filters
                 ),
-                _buildBrowseAllSection(context, filteredRooms),
+                _buildBrowseAllSection(context, filteredRooms), // Room grid
               ],
             ),
           ),
@@ -268,6 +282,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds the welcome header section with search functionality
   Widget _buildWelcomeSection(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -302,6 +317,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             ),
           ),
           const SizedBox(height: 16),
+          // Search input field
           Container(
             height: 46,
             decoration: BoxDecoration(
@@ -320,7 +336,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                   icon: Icon(Icons.close, color: AppColors.primaryPurple),
-                  onPressed: _clearSearch,
+                  onPressed: _clearSearch, // Clear search button
                 )
                     : null,
               ),
@@ -331,6 +347,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds horizontal scrollable category filter chips
   Widget _buildCategoryChips(BuildContext context, CatalogueViewModel vm) {
     final categories = FilterOptions.categoryOptions;
 
@@ -353,6 +370,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds individual category filter chip
   Widget _buildCategoryChip(FilterOption filterOption, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -382,6 +400,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds the main room grid section with search results
   Widget _buildBrowseAllSection(BuildContext context, List<Map<String, dynamic>> filteredRooms) {
     return Expanded(
       child: Padding(
@@ -389,6 +408,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Section header with clear search option
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -415,6 +435,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
               ],
             ),
             const SizedBox(height: 8),
+            // Dynamic subtitle based on search state
             Text(
               _searchQuery.isEmpty
                   ? 'Select a room category to explore furniture'
@@ -425,9 +446,10 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
               ),
             ),
             const SizedBox(height: 24),
+            // Room grid or empty state
             Expanded(
               child: filteredRooms.isEmpty
-                  ? _buildEmptyState()
+                  ? _buildEmptyState() // Show empty state when no results
                   : GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
@@ -448,6 +470,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds empty state when no rooms match search criteria
   Widget _buildEmptyState() {
     return SingleChildScrollView(
       child: Padding(
@@ -497,6 +520,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds individual room card with icon, name, and item count
   Widget _buildRoomCard(BuildContext context, Map<String, dynamic> room) {
     final filterOption = room['filterOption'] as FilterOption;
 
@@ -504,6 +528,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
 
     return GestureDetector(
       onTap: () {
+        // Navigate to furniture catalogue filtered by room
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -544,6 +569,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
+            // Show loading indicator or item count
             _isLoadingCounts
                 ? SizedBox(
               width: 16,
