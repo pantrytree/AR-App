@@ -298,7 +298,7 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  /// Get furniture items by room type
+  // Get furniture items by room type
   Future<List<FurnitureItem>> getItemsByRoomType(String roomType) async {
     try {
       return await _furnitureService.getItemsByRoom(roomType);
@@ -398,10 +398,10 @@ class HomeViewModel extends ChangeNotifier {
     _navigationArguments = null;
   }
 
-  /// Check if user is authenticated
+  // Check if user is authenticated
   bool get isAuthenticated => _authService.isAuthenticated;
 
-  /// Retry loading data after error
+  // Retry loading data after error
   Future<void> retryLoad() async {
     await refreshHomePage();
   }
