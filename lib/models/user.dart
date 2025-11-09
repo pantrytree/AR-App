@@ -1,4 +1,3 @@
-// user.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class User {
@@ -24,6 +23,8 @@ class User {
     required this.updatedAt,
   });
 
+ // Creates a User instance from a Firestore document snapshot
+ // Includes null safety checks and default values for missing data
   factory User.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     if (data == null) {
@@ -35,14 +36,18 @@ class User {
       email: data['email'] ?? '',
       displayName: data['displayName'] ?? '',
       photoUrl: data['photoUrl'] ?? '',
+      // Convert list fields with empty list fallbacks
       projectIds: List<String>.from(data['projectIds'] ?? []),
       favoriteIds: List<String>.from(data['favoriteIds'] ?? []),
       collaborationIds: List<String>.from(data['collaborationIds'] ?? []),
+      // Convert Firestore Timestamps with current time fallback
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
+  // Converts the User instance to a Map for Firestore storage
+  // Handles DateTime to Timestamp conversion for database compatibility
   Map<String, dynamic> toFirestore() {
     return {
       'email': email,
@@ -51,11 +56,13 @@ class User {
       'projectIds': projectIds,
       'favoriteIds': favoriteIds,
       'collaborationIds': collaborationIds,
+      // Convert DateTime to Firestore Timestamp for storage
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
+  // Creates a new User instance with updated fields
   User copyWith({
     String? id,
     String? email,
@@ -80,17 +87,20 @@ class User {
     );
   }
 
+  // Returns a string representation of the user for debugging
   @override
   String toString() {
     return 'User(id: $id, email: $email, displayName: $displayName)';
   }
 
+  // Two users are considered equal if they have the same ID
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is User && other.id == id;
   }
 
+  // Hash code implementation based on user ID for use in collections
   @override
   int get hashCode => id.hashCode;
 }
