@@ -30,9 +30,8 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     _clearErrors();
   }
 
-  // ======================
   // BACKEND INTEGRATION POINTS
-  // ======================
+  
 
   // TODO: Backend - Implement sendPasswordResetEmail()
   // Description: Creates a record in password_resets table and sends email
@@ -70,9 +69,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     return; // Backend should return success response
   }
 
-  // ======================
   // PUBLIC METHODS
-  // ======================
 
   Future<void> sendPasswordResetEmail() async {
     if (!_validateForm()) {
