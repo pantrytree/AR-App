@@ -12,7 +12,7 @@ class LoginViewModel extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   String? get navigateToRoute => _navigateToRoute;
 
-  /// Instantly navigates to home after login button is pressed
+  // Instantly navigates to home after login button is pressed
   Future<void> login() async {
     _isLoading = true;
     _errorMessage = '';
