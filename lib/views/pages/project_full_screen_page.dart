@@ -26,6 +26,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     _loadProject();
   }
 
+  // Load project data from viewmodel
   Future<void> _loadProject() async {
     try {
       final viewModel = Provider.of<RoomieLabViewModel>(context, listen: false);
@@ -44,6 +45,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     }
   }
 
+  // Check if local fallback image should be used
   bool _shouldUseLocalFallback(String? imageUrl) {
     if (imageUrl == null) return false;
 
@@ -51,6 +53,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
         (imageUrl.startsWith('/') || imageUrl.contains('file://'));
   }
 
+  // Check if local backup image exists
   bool _hasLocalBackup() {
     return _project?.imageUrl?.startsWith('/') ?? false;
   }
@@ -67,7 +70,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     return null;
   }
 
-  /// Switch to local fallback image
+  /// Switch to local fallback image when network image fails
   void _switchToLocalFallback() {
     final localPath = _getLocalBackupPath();
     if (localPath != null && File(localPath).existsSync()) {
@@ -95,7 +98,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
-          // Show indicator when using fallback
+          // Show indicator when using fallback image
           if (_usingFallbackImage)
             Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -118,13 +121,14 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     );
   }
 
+  // Main image viewer with interactive controls
   Widget _buildImageView() {
     final shouldUseLocal = _shouldUseLocalFallback(_currentImageUrl);
     final imageSource = shouldUseLocal ? _getLocalBackupPath() : _currentImageUrl;
 
     return Stack(
       children: [
-        // Main Image Viewer
+        // Main Image Viewer with zoom and pan capabilities
         Center(
           child: InteractiveViewer(
             panEnabled: true,
@@ -136,7 +140,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
           ),
         ),
 
-        // Fallback indicator
+        // Fallback indicator banner
         if (_usingFallbackImage)
           Positioned(
             top: 20,
@@ -171,6 +175,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     );
   }
 
+  // Network image widget with loading and error handling
   Widget _buildNetworkImage(String imageUrl) {
     return Image.network(
       imageUrl,
@@ -209,6 +214,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     );
   }
 
+  // Local image widget for fallback images
   Widget _buildLocalImage(String filePath) {
     final file = File(filePath);
 
@@ -225,6 +231,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     );
   }
 
+  // Loading state when switching between image sources
   Widget _buildLoadingFallback(String message) {
     return Center(
       child: Column(
@@ -241,6 +248,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     );
   }
 
+  // Error state for image loading failures
   Widget _buildErrorImage() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -252,6 +260,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
           style: TextStyle(color: Colors.white),
         ),
         const SizedBox(height: 8),
+        // Show local backup option if available
         if (_hasLocalBackup() && !_usingFallbackImage) ...[
           const SizedBox(height: 16),
           ElevatedButton(
@@ -275,6 +284,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     );
   }
 
+  // State when no image is available
   Widget _buildNoImageState() {
     return Center(
       child: Column(
@@ -291,6 +301,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
             _project?.name ?? 'Project',
             style: const TextStyle(color: Colors.grey, fontSize: 14),
           ),
+          // Show local backup option if available
           if (_hasLocalBackup()) ...[
             const SizedBox(height: 20),
             ElevatedButton(
@@ -307,6 +318,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
     );
   }
 
+  // Error state for project loading failures
   Widget _buildErrorState() {
     return Center(
       child: Column(
@@ -333,6 +345,7 @@ class _ProjectFullScreenPageState extends State<ProjectFullScreenPage> {
             ),
             child: const Text('Retry'),
           ),
+          // Show local backup option if available
           if (_hasLocalBackup()) ...[
             const SizedBox(height: 12),
             ElevatedButton(
