@@ -16,9 +16,11 @@ class RoomieLabScreen extends StatefulWidget {
 }
 
 class _RoomieLabScreenState extends State<RoomieLabScreen> {
+  // Firebase services for data management
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // State variables for designs and UI
   List<Design> _recentDesigns = [];
   List<String> _categories = [];
   bool _isLoading = true;
@@ -31,6 +33,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     _initialize();
   }
 
+  // Initialize the screen by loading data
   Future<void> _initialize() async {
     setState(() => _isLoading = true);
     await Future.wait([
@@ -46,6 +49,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     super.dispose();
   }
 
+  // Load recent designs from Firestore
   Future<void> _loadRecentDesigns() async {
     try {
       final user = _auth.currentUser;
@@ -59,6 +63,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
 
       print('Loading recent designs for user: ${user.uid}');
 
+      // Query Firestore for user's designs, ordered by last viewed
       final querySnapshot = await _firestore
           .collection('designs')
           .where('userId', isEqualTo: user.uid)
@@ -78,6 +83,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
         }
       }
 
+      // Take only the 4 most recent designs
       final recentDesigns = designs.take(4).toList();
 
       if (mounted) {
@@ -99,6 +105,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     }
   }
 
+  // Parse design document from Firestore (fallback method)
   Future<Design?> _parseDesignFromDoc(DocumentSnapshot doc) async {
     try {
       final data = doc.data() as Map<String, dynamic>?;
@@ -135,6 +142,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     }
   }
 
+  // Parse design objects from Firestore data
   List<DesignObject> _parseDesignObjects(dynamic objectsData) {
     if (objectsData == null) return [];
     if (objectsData is! List) return [];
@@ -170,6 +178,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     return objects;
   }
 
+  // Helper method to parse double values from dynamic data
   double? _parseDouble(dynamic value) {
     if (value == null) return null;
     if (value is double) return value;
@@ -178,7 +187,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     return null;
   }
 
-  // Track when a design is viewed
+  // Track when a design is viewed for analytics
   Future<void> _trackDesignView(String designId) async {
     try {
       await _firestore.collection('designs').doc(designId).update({
@@ -190,6 +199,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     }
   }
 
+  // Load categories from Firestore
   Future<void> _loadCategories() async {
     try {
       final querySnapshot = await _firestore
@@ -214,6 +224,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
         }
       }
 
+      // Fallback categories if none found in Firestore
       if (names.isEmpty) {
         names.addAll(['Living Room', 'Bedroom', 'Kitchen', 'Office', 'Dining Room', 'Bathroom']);
       }
@@ -234,10 +245,12 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     }
   }
 
+  // Format date for display
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  // Format relative time for "time ago" display
   String _formatTimeAgo(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
@@ -250,6 +263,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     return '${(difference.inDays / 30).floor()}mo ago';
   }
 
+  // Determine design category based on name keywords
   String _getDesignCategory(Design design) {
     final name = design.name.toLowerCase();
     if (name.contains('living') || name.contains('sofa')) return 'Living Room';
@@ -269,6 +283,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
         backgroundColor: AppColors.primaryLightPurple,
         foregroundColor: Colors.white,
         actions: [
+          // Refresh button to reload data
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -287,6 +302,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Main content builder
   Widget _buildContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -303,6 +319,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Header section with gradient background
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -335,6 +352,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          // Statistics chips
           Wrap(
             spacing: 8,
             children: [
@@ -347,6 +365,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Statistics chip widget
   Widget _buildStatChip(String text, IconData icon) {
     return Chip(
       label: Row(
@@ -361,6 +380,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Quick actions section
   Widget _buildQuickActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,6 +435,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Recent designs section
   Widget _buildRecentDesigns() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,6 +451,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
                 color: AppColors.getTextColor(context),
               ),
             ),
+            // View all button
             TextButton(
               onPressed: () {
                 Navigator.push(
@@ -451,6 +473,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Action card for quick navigation
   Widget _buildActionCard(BuildContext context, {
     required IconData icon,
     required String title,
@@ -494,6 +517,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Grid view of recent designs
   Widget _buildDesignGrid() {
     return GridView.builder(
       shrinkWrap: true,
@@ -512,6 +536,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Individual design card
   Widget _buildDesignCard(Design design) {
     final hasImage = design.imageUrl != null && design.imageUrl!.isNotEmpty;
 
@@ -529,6 +554,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Design image or placeholder
               Container(
                 height: 90,
                 width: double.infinity,
@@ -552,6 +578,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
               ),
               const SizedBox(height: 8),
 
+              // Design name
               Text(
                 design.name,
                 style: TextStyle(
@@ -565,6 +592,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
 
               const SizedBox(height: 2),
 
+              // Category and item count
               Row(
                 children: [
                   Expanded(
@@ -590,6 +618,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
 
               const SizedBox(height: 2),
 
+              // Last viewed time
               Text(
                 _formatTimeAgo(design.lastViewed),
                 style: TextStyle(
@@ -607,6 +636,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Empty state when no recent designs exist
   Widget _buildEmptyGalleryState() {
     return Container(
       padding: const EdgeInsets.all(40),
@@ -655,6 +685,7 @@ class _RoomieLabScreenState extends State<RoomieLabScreen> {
     );
   }
 
+  // Show design options in bottom sheet
   void _showDesignOptions(Design design) {
     showModalBottomSheet(
       context: context,
