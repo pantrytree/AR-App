@@ -3,8 +3,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
 
 
-/// using a local JSON file (`assets/help_data.json`) as data source.
-/// This allows full frontend functionality without requiring backend integration.
+// using a local JSON file (`assets/help_data.json`) as data source.
+// This allows full frontend functionality without requiring backend integration.
 
 class HelpPageViewModel extends ChangeNotifier {
   // Search query entered by the user
@@ -30,14 +30,14 @@ class HelpPageViewModel extends ChangeNotifier {
   final Map<int, bool> _expansionStates = {};
   bool getExpansionState(int id) => _expansionStates[id] ?? false;
 
-  /// Toggle the expanded or collapsed state for a help topic
+  // Toggle the expanded or collapsed state for a help topic
   void toggleExpansion(int id) {
     _expansionStates[id] = !(_expansionStates[id] ?? false);
     notifyListeners();
   }
 
-  /// Loads help data from a local JSON file (assets/help_data.json)
-  /// This simulates how data would be fetched from a backend API later.
+  // Loads help data from a local JSON file (assets/help_data.json)
+  // This simulates how data would be fetched from a backend API later.
   Future<void> loadHelpData() async {
     _isLoading = true;
     _errorMessage = null;
@@ -66,15 +66,15 @@ class HelpPageViewModel extends ChangeNotifier {
     }
   }
 
-  /// Updates the search query and filters visible help items
+  // Updates the search query and filters visible help items
   void setSearchQuery(String query) {
     _searchQuery = query;
     _filterHelpItems();
     notifyListeners();
   }
 
-  /// Filters help topics based on the current search query
-  /// Matches are found if the query appears in either the title or content.
+  // Filters help topics based on the current search query
+  // Matches are found if the query appears in either the title or content.
   void _filterHelpItems() {
     if (_searchQuery.isEmpty) {
       _filteredHelpItems = List.from(_helpItems);
@@ -93,8 +93,8 @@ class HelpPageViewModel extends ChangeNotifier {
     }
   }
 
-  /// Called when the user taps the "Guides" card.
-  /// TODO(shae): Replace with navigation logic or content filter.
+  // Called when the user taps the "Guides" card.
+  // TODO(shae): Replace with navigation logic or content filter.
   void onTapGuides() {
     debugPrint('Navigating to Guides...');
     // Example future logic:
@@ -102,8 +102,8 @@ class HelpPageViewModel extends ChangeNotifier {
     // notifyListeners();
   }
 
-  /// Called when the user taps the "FAQ" card.
-  /// TODO(shae): Replace with navigation logic or content filter.
+  // Called when the user taps the "FAQ" card.
+  // TODO(shae): Replace with navigation logic or content filter.
   void onTapFAQ() {
     debugPrint('Navigating to FAQ...');
     // Example future logic:
