@@ -11,7 +11,7 @@ class CloudinaryService {
   static const String cloudName = 'dwvcvysdl';
   static const String uploadPreset = 'AR-App';
 
-  // ADDED: Build AR model URL from public ID
+  // Build AR model URL from public ID
   String buildArModelUrl(String publicId) {
     print('=== BUILD AR MODEL URL ===');
     print('Input public ID: $publicId');
@@ -34,7 +34,7 @@ class CloudinaryService {
     return url;
   }
 
-  // ADDED: Build AR model URL with version
+  // Build AR model URL with version
   String buildArModelUrlWithVersion(String publicId, {int? version}) {
     final publicIdWithExtension = publicId.endsWith('.glb') ? publicId : '$publicId.glb';
 
@@ -47,7 +47,7 @@ class CloudinaryService {
     return buildArModelUrl(publicId);
   }
 
-  // ADDED: Convert Cloudinary image URL to raw URL for 3D models
+  // Convert Cloudinary image URL to raw URL for 3D models
   String convertToRawUrl(String url) {
     if (!url.contains('cloudinary.com')) {
       return url; // Not a Cloudinary URL, return as-is
@@ -66,7 +66,7 @@ class CloudinaryService {
     return url;
   }
 
-  // MODIFIED: Get AR-ready URL (handles both full URLs and public IDs)
+  // Get AR-ready URL (handles both full URLs and public IDs)
   String getArModelUrl(String urlOrPublicId) {
     print('=== GET AR MODEL URL ===');
     print('Input: $urlOrPublicId');
@@ -93,7 +93,7 @@ class CloudinaryService {
     }
   }
 
-  // ADDED: Extract public ID from full Cloudinary URL
+  // Extract public ID from full Cloudinary URL
   String? extractPublicIdFromUrl(String url) {
     if (!url.contains('cloudinary.com')) return null;
 
@@ -132,7 +132,7 @@ class CloudinaryService {
     return null;
   }
 
-  // ADDED: Upload 3D model file (GLB) and return public ID
+  // Upload 3D model file (GLB) and return public ID
   Future<String> upload3DModel(File modelFile, String furnitureId) async {
     try {
       _validate3DModel(modelFile);
@@ -175,7 +175,7 @@ class CloudinaryService {
     }
   }
 
-  // ADDED: Validate 3D model file
+  // Validate 3D model file
   void _validate3DModel(File file) {
     if (!file.existsSync()) throw Exception('File does not exist');
 
