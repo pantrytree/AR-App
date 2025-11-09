@@ -37,22 +37,28 @@ class ProjectEditPage extends StatefulWidget {
 }
 
 class _ProjectEditPageState extends State<ProjectEditPage> {
+  // AR managers for handling augmented reality functionality
   ARSessionManager? _arSessionManager;
   ARObjectManager? _arObjectManager;
   ARAnchorManager? _arAnchorManager;
 
+  // Services for design and image management
   DesignService _designService = DesignService();
   CloudinaryService _cloudinaryService = CloudinaryService();
+  
+  // Data storage for designs and project
   List<Design> _designs = [];
   Design? _selectedDesign;
   Project? _currentProject;
   List<ARNode> _arNodes = [];
+  
+  // UI state flags
   bool _isLoading = true;
   bool _arInitialized = false;
   String? _selectedObjectId;
   bool _isCapturingScreenshot = false;
 
-  // Track object transformations for movement
+  // Track object transformations for movement, rotation and scaling
   Map<String, Vector3> _objectPositions = {};
   Map<String, double> _objectRotations = {};
   Map<String, Vector3> _objectScales = {};
@@ -63,6 +69,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     _loadProjectAndDesigns();
   }
 
+  // Load project details and associated designs
   Future<void> _loadProjectAndDesigns() async {
     try {
       final viewModel = Provider.of<RoomieLabViewModel>(context, listen: false);
@@ -74,6 +81,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
       _designs = await viewModel.getProjectDesigns(widget.projectId);
 
       if (_designs.isNotEmpty) {
+        // Select initial design based on provided ID or use first design
         _selectedDesign = widget.initialDesignId != null
             ? _designs.firstWhere(
               (design) => design.id == widget.initialDesignId,
@@ -81,7 +89,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
         )
             : _designs.first;
 
-        // Initialize object transformations
+        // Initialize object transformations from design data
         _initializeObjectTransformations();
       }
 
@@ -96,6 +104,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Initialize transformation maps from design object data
   void _initializeObjectTransformations() {
     if (_selectedDesign == null) return;
 
@@ -118,6 +127,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Callback when AR view is created and ready
   void _onARViewCreated(ARSessionManager sessionManager,
       ARObjectManager objectManager,
       ARAnchorManager anchorManager,
@@ -126,6 +136,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     _arObjectManager = objectManager;
     _arAnchorManager = anchorManager;
 
+    // Initialize AR session with configuration
     _arSessionManager!.onInitialize(
       showFeaturePoints: false,
       showPlanes: true,
@@ -135,6 +146,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
 
     _arObjectManager!.onInitialize();
 
+    // Handle object selection when user taps on AR objects
     _arObjectManager!.onNodeTap = (nodeName) {
       setState(() {
         _selectedObjectId = nodeName as String?;
@@ -146,12 +158,13 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
       _arInitialized = true;
     });
 
-    // Load design objects into AR scene
+    // Load design objects into AR scene once AR is initialized
     if (_selectedDesign != null) {
       _placeDesignObjectsInAR();
     }
   }
 
+  // Place all design objects in the AR scene
   Future<void> _placeDesignObjectsInAR() async {
     if (_selectedDesign == null || _arObjectManager == null) return;
 
@@ -169,11 +182,12 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Place individual design object in AR scene
   Future<void> _placeDesignObject(DesignObject designObject) async {
     if (_arObjectManager == null) return;
 
     try {
-      // Get furniture item details
+      // Get furniture item details for AR model
       final cameraViewModel = Provider.of<CameraViewModel>(
           context, listen: false);
       final furnitureItem = await _getFurnitureItem(
@@ -199,6 +213,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
           Vector3(
               designObject.scale.x, designObject.scale.y, designObject.scale.z);
 
+      // Create AR node with transformation data
       final node = ARNode(
         type: NodeType.webGLB,
         uri: modelUrl,
@@ -208,6 +223,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
         name: designObject.itemId,
       );
 
+      // Add node to AR scene
       final bool? didAdd = await _arObjectManager!.addNode(node);
       if (didAdd == true) {
         _arNodes.add(node);
@@ -221,6 +237,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Get furniture item details from viewmodel
   Future<FurnitureItem?> _getFurnitureItem(String itemId,
       CameraViewModel cameraViewModel) async {
     try {
@@ -234,7 +251,9 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
-  // Movement methods
+  // Movement methods for manipulating objects in AR
+
+  // Move selected object (or first object if none selected)
   Future<void> _moveSelectedOrFirstObject(double deltaX, double deltaY,
       double deltaZ) async {
     if (_selectedDesign == null || _selectedDesign!.objects.isEmpty) return;
@@ -259,6 +278,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     await _saveObjectTransformations(objectId);
   }
 
+  // Rotate selected object
   Future<void> _rotateSelectedOrFirstObject(double deltaAngle) async {
     if (_selectedDesign == null || _selectedDesign!.objects.isEmpty) return;
 
@@ -278,13 +298,14 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     await _saveObjectTransformations(objectId);
   }
 
+  // Scale selected object
   Future<void> _scaleSelectedOrFirstObject(double deltaScale) async {
     if (_selectedDesign == null || _selectedDesign!.objects.isEmpty) return;
 
     final String objectId = _selectedObjectId ??
         _selectedDesign!.objects.first.itemId;
 
-    // Update local scale with limits
+    // Update local scale with limits to prevent extreme scaling
     final currentScale = _objectScales[objectId] ?? Vector3.all(1.0);
     final newScaleValue = (currentScale.x + deltaScale).clamp(0.1, 3.0);
     final newScale = Vector3.all(newScaleValue);
@@ -298,6 +319,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     await _saveObjectTransformations(objectId);
   }
 
+  // Update object position/rotation/scale in AR scene
   Future<void> _updateObjectInAR(String objectId) async {
     if (_arObjectManager == null) return;
 
@@ -326,6 +348,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
 
       final scale = _objectScales[objectId] ?? oldNode.scale;
 
+      // Create new node with updated transformations
       final newNode = ARNode(
         type: oldNode.type,
         uri: oldNode.uri,
@@ -335,7 +358,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
         name: objectId,
       );
 
-      // Add new node
+      // Add new node to AR scene
       final bool? didAdd = await _arObjectManager!.addNode(newNode);
       if (didAdd == true) {
         _arNodes[nodeIndex] = newNode;
@@ -346,6 +369,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Save object transformations to Firestore
   Future<void> _saveObjectTransformations(String objectId) async {
     if (_selectedDesign == null) return;
 
@@ -371,6 +395,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Add new furniture object to the design
   Future<void> _addNewObject() async {
     if (_selectedDesign == null || _arObjectManager == null) return;
 
@@ -379,10 +404,11 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     final roomieLabViewModel = Provider.of<RoomieLabViewModel>(
         context, listen: false);
 
-    // Show furniture selector
+    // Show furniture selector dialog
     final selectedFurniture = await _showFurnitureSelector(cameraViewModel);
     if (selectedFurniture == null) return;
 
+    // Create new design object with default transformations
     final newObject = DesignObject(
       itemId: selectedFurniture.id,
       position: Position(x: 0, y: 0, z: -1.5),
@@ -390,7 +416,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
       scale: Scale(x: 0.3, y: 0.3, z: 0.3),
     );
 
-    // Add to design
+    // Add to design in Firestore
     final success = await roomieLabViewModel.addDesignObject(
       designId: _selectedDesign!.id,
       designObject: newObject,
@@ -412,11 +438,12 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
 
       // Place in AR scene
       await _placeDesignObject(newObject);
-      // Refresh designs
+      // Refresh designs to get updated list
       await _loadProjectAndDesigns();
     }
   }
 
+  // Show furniture selection dialog
   Future<FurnitureItem?> _showFurnitureSelector(
       CameraViewModel cameraViewModel) async {
     await cameraViewModel.loadFurnitureItems();
@@ -454,6 +481,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Remove selected object from design
   Future<void> _removeSelectedObject() async {
     if (_selectedObjectId == null || _selectedDesign == null) return;
 
@@ -483,6 +511,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Capture screenshot of AR scene
   Future<void> _captureScreenshot() async {
     if (_arSessionManager == null) {
       print('AR Session Manager is null');
@@ -546,6 +575,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Show dialog with screenshot options (save to RoomieLab or gallery)
   void _showScreenshotOptions(CameraViewModel cameraViewModel) {
     showDialog(
       context: context,
@@ -682,6 +712,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Save screenshot to RoomieLab design
   Future<void> _saveToRoomieLab(CameraViewModel cameraViewModel) async {
     setState(() {
       _isCapturingScreenshot = true;
@@ -740,6 +771,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Save screenshot to device gallery
   Future<void> _saveToGallery(CameraViewModel cameraViewModel) async {
     setState(() {
       _isCapturingScreenshot = true;
@@ -800,6 +832,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Upload image to Cloudinary storage
   Future<String> _uploadImageToCloudinary(File imageFile) async {
     try {
       final designId = _selectedDesign?.id ?? 'design_${DateTime
@@ -832,7 +865,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
         ),
         centerTitle: true,
         actions: [
-          // Screenshot button
+          // Screenshot button with loading indicator
           Stack(
             children: [
               IconButton(
@@ -871,6 +904,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Build main content based on state
   Widget _buildContent() {
     if (_designs.isEmpty) {
       return Center(
@@ -895,7 +929,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
 
     return Stack(
       children: [
-        // AR View
+        // AR View - main AR scene
         ARView(
           onARViewCreated: _onARViewCreated,
         ),
@@ -903,14 +937,14 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
         // Design info banner
         if (_selectedDesign != null) _buildDesignInfoPanel(),
 
-        // Object controls panel
+        // Object controls panel for movement/rotation/scale
         if (_selectedDesign != null && _selectedDesign!.objects.isNotEmpty)
           _buildObjectControlsPanel(),
 
         // Selected object indicator
         if (_selectedObjectId != null) _buildSelectedObjectIndicator(),
 
-        // Loading overlay for AR
+        // Loading overlay for AR initialization
         if (!_arInitialized)
           Container(
             color: Colors.black54,
@@ -953,6 +987,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Design information panel showing current design details
   Widget _buildDesignInfoPanel() {
     return Positioned(
       top: MediaQuery
@@ -1032,6 +1067,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Object controls panel for movement, rotation and scaling
   Widget _buildObjectControlsPanel() {
     return Positioned(
       bottom: 100,
@@ -1090,6 +1126,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Movement controls with directional buttons
   Widget _buildMovementControls() {
     return Container(
       padding: EdgeInsets.all(8),
@@ -1150,6 +1187,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Rotation and scale controls
   Widget _buildRotationScaleControls() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1215,6 +1253,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Directional button for movement controls
   Widget _buildDirectionalButton({
     required IconData icon,
     required VoidCallback onPressed,
@@ -1243,6 +1282,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Control button for rotation and scaling
   Widget _buildControlButton({
     required IconData icon,
     required VoidCallback onPressed,
@@ -1267,6 +1307,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Selected object indicator with remove option
   Widget _buildSelectedObjectIndicator() {
     return Positioned(
       bottom: 200,
@@ -1324,6 +1365,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Floating Action Buttons for adding objects and switching designs
   Widget _buildFAB() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1351,6 +1393,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     );
   }
 
+  // Show design selector dialog
   Future<void> _showDesignSelector() async {
     final selectedDesign = await showDialog<Design>(
       context: context,
@@ -1406,6 +1449,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Create new design for the project
   Future<void> _createNewDesign() async {
     try {
       final designName = await _showDesignNameDialog();
@@ -1451,6 +1495,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     }
   }
 
+  // Show dialog for entering new design name
   Future<String?> _showDesignNameDialog() async {
     String designName = '';
 
