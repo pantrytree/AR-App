@@ -78,18 +78,18 @@ class CameraViewModel extends ChangeNotifier {
 
 
 
-  // ===========================================================
+ 
   // INITIALIZATION
-  // ===========================================================
+
   Future<void> initializeCamera() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      print('🔄 Starting camera initialization...');
+      print(' Starting camera initialization...');
 
-      // 1️⃣ Request camera permission
+      //  Request camera permission
       final status = await Permission.camera.request();
       if (!status.isGranted) {
         _error = 'Camera permission denied';
@@ -98,7 +98,7 @@ class CameraViewModel extends ChangeNotifier {
         return;
       }
 
-      // 2️⃣ Initialize available cameras
+      //  Initialize available cameras
       _cameras = await availableCameras();
       if (_cameras == null || _cameras!.isEmpty) {
         _error = 'No cameras available';
@@ -107,9 +107,9 @@ class CameraViewModel extends ChangeNotifier {
         return;
       }
 
-      print('📸 Cameras found: ${_cameras!.length}');
+      print(' Cameras found: ${_cameras!.length}');
 
-      // 3️⃣ Initialize CameraController
+      //  Initialize CameraController
       _controller = CameraController(
         _cameras!.first,
         ResolutionPreset.medium,
@@ -118,13 +118,13 @@ class CameraViewModel extends ChangeNotifier {
 
       await _controller!.initialize();
       _isCameraReady = true;
-      print('✅ Camera initialized successfully');
+      print(' Camera initialized successfully');
 
-      // 4️⃣ Load furniture items after camera is ready
+      // Load furniture items after camera is ready
       await loadFurnitureItems();
 
     } catch (e) {
-      print('❌ Camera initialization failed: $e');
+      print(' Camera initialization failed: $e');
       _error = 'Failed to initialize camera: $e';
       _isCameraReady = false;
     } finally {
@@ -136,7 +136,7 @@ class CameraViewModel extends ChangeNotifier {
   Future<void> loadFurnitureItems() async {
     try {
       final items = await _furnitureService.getFurnitureItems();
-      _availableFurnitureItems = items; // ✅ assign to backing list
+      _availableFurnitureItems = items; // assign to backing list
       // If no selected object yet, pick first
       if (_selectedFurnitureItem == null && items.isNotEmpty) {
         _selectedFurnitureItem = items.first;
@@ -153,7 +153,7 @@ class CameraViewModel extends ChangeNotifier {
       ARObjectManager arObjectManager,
       ) {
     try {
-      print('🔄 AR View Created - Initializing...');
+      print(' AR View Created - Initializing...');
 
       _arSessionManager = arSessionManager;
       _arObjectManager = arObjectManager;
@@ -170,19 +170,16 @@ class CameraViewModel extends ChangeNotifier {
       // Initialize object manager
       _arObjectManager!.onInitialize();
 
-      print('✅ AR Session initialized successfully');
+      print(' AR Session initialized successfully');
 
     } catch (e) {
-      print('❌ AR initialization failed: $e');
+      print(' AR initialization failed: $e');
       _error = 'AR initialization failed: $e';
     }
 
     notifyListeners();
   }
-
-  // ===========================================================
   // AR OBJECT MANAGEMENT
-  // ===========================================================
   void selectObject(String objectName) {
     _selectedObject = objectName;
     _selectedFurnitureItem = _availableFurnitureItems.firstWhere(
@@ -224,17 +221,17 @@ class CameraViewModel extends ChangeNotifier {
 
   Future<void> placeARObject(FurnitureItem item, vmath.Vector3 position, double scale, double rotation) async {
     if (_arObjectManager == null) {
-      print('❌ AR Object Manager is null');
+      print(' AR Object Manager is null');
       return;
     }
 
     if (item.arModelUrl == null || item.arModelUrl!.isEmpty) {
-      print('❌ No AR model URL for item: ${item.name}');
+      print(' No AR model URL for item: ${item.name}');
       return;
     }
 
     try {
-      print('🔄 Placing AR object: ${item.name}');
+      print(' Placing AR object: ${item.name}');
 
       // Create AR node
       final node = ARNode(
@@ -259,11 +256,11 @@ class CameraViewModel extends ChangeNotifier {
       );
 
       _isObjectPlaced = true;
-      print('✅ AR object placed successfully');
+      print(' AR object placed successfully');
       notifyListeners();
 
     } catch (e) {
-      print('❌ Failed to place AR object: $e');
+      print(' Failed to place AR object: $e');
       _error = 'Failed to place object: $e';
       notifyListeners();
     }
@@ -312,12 +309,12 @@ class CameraViewModel extends ChangeNotifier {
       scale: oldNode.scale,
     );
 
-    final success = await _arObjectManager!.addNode(newNode) ?? false; // ✅ null-safe fallback
+    final success = await _arObjectManager!.addNode(newNode) ?? false; // null-safe fallback
 
     if (success) {
       _currentNode = newNode;
 
-      // ✅ Update last placed DesignObject position
+      //  Update last placed DesignObject position
       if (_placedObjects.isNotEmpty) {
         final lastIndex = _placedObjects.length - 1;
         final lastObject = _placedObjects[lastIndex];
@@ -334,11 +331,6 @@ class CameraViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-
-
-
-
 
   Future<void> rotateARObject(double rotationDegrees) async {
     if (_currentNode != null && _arObjectManager != null) {
@@ -388,9 +380,7 @@ class CameraViewModel extends ChangeNotifier {
   }
 
 
-  // ===========================================================
   // CAPTURE & SAVE TO BACKEND
-  // ===========================================================
   Future<void> captureImage(BuildContext context) async {
     if (_controller == null || !_controller!.value.isInitialized) {
       _error = 'Camera not ready';
@@ -476,7 +466,7 @@ Future<void> captureARScene() async {
       final filePath =
           '${directory.path}/ar_capture_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = File(filePath);
-      await file.writeAsBytes(bytes); // ✅ safe now
+      await file.writeAsBytes(bytes); // safe now
       _capturedImagePath = file.path;
 
       print('AR Scene captured at: $_capturedImagePath');
@@ -577,10 +567,7 @@ Future<void> captureARScene() async {
     }
     notifyListeners();
   }
-
-  // ===========================================================
   // SWITCH CAMERA
-  // ===========================================================
   Future<void> switchCamera() async {
     if (_cameras == null || _cameras!.length < 2) return;
 
