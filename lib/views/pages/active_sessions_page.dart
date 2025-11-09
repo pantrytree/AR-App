@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import '../../services/session_service.dart';
 import '../../utils/colors.dart';
 
+// Page displaying active user sessions across different devices
+// Allows users to monitor and manage their logged-in sessions
 class ActiveSessionsPage extends StatefulWidget {
   const ActiveSessionsPage({super.key});
 
@@ -18,31 +20,33 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  List<Session> _sessions = [];
-  bool _isLoading = true;
-  String? _error;
-  StreamSubscription? _sessionsSubscription;
-  String? _currentSessionId;
+  List<Session> _sessions = [];           // List of active user sessions
+  bool _isLoading = true;                 // Loading state indicator
+  String? _error;                         // Error message storage
+  StreamSubscription? _sessionsSubscription; // Firestore listener subscription
+  String? _currentSessionId;              // ID of current device session
 
   @override
   void initState() {
     super.initState();
     _getCurrentSessionId().then((_) {
-      _subscribeToSessions();
+      _subscribeToSessions(); // Start listening to session updates
     });
   }
 
   @override
   void dispose() {
-    _sessionsSubscription?.cancel();
+    _sessionsSubscription?.cancel(); // Clean up subscription
     super.dispose();
   }
 
+  // Generates and stores the current device's session ID
   Future<void> _getCurrentSessionId() async {
     final sessionService = SessionService();
     _currentSessionId = await sessionService.generateSessionId();
   }
 
+  // Subscribes to real-time updates of user's active sessions
   void _subscribeToSessions() {
     final user = _auth.currentUser;
     if (user == null) {
@@ -57,8 +61,8 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
         .collection('users')
         .doc(user.uid)
         .collection('sessions')
-        .where('isActive', isEqualTo: true)
-        .orderBy('lastActive', descending: true)
+        .where('isActive', isEqualTo: true) // Only active sessions
+        .orderBy('lastActive', descending: true) // Most recent first
         .snapshots()
         .listen((snapshot) {
       _processSessions(snapshot.docs);
@@ -70,6 +74,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     });
   }
 
+  // Converts Firestore documents into Session objects
   void _processSessions(List<DocumentSnapshot> docs) {
     _sessions = docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
@@ -80,7 +85,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
         manufacturer: data['manufacturer'] as String? ?? 'Unknown',
         location: data['location'] as String? ?? 'Unknown Location',
         lastActive: _formatLastActive(data['lastActive'] as Timestamp?),
-        isCurrent: doc.id == _currentSessionId,
+        isCurrent: doc.id == _currentSessionId, // Mark current device session
         platform: data['platform'] as String? ?? 'Unknown',
         ipAddress: data['ipAddress'] as String? ?? 'Unknown',
         userAgent: data['userAgent'] as String? ?? '',
@@ -95,6 +100,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     });
   }
 
+  // Formats timestamp 
   String _formatLastActive(Timestamp? timestamp) {
     if (timestamp == null) return 'Unknown';
 
@@ -110,8 +116,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     return '${lastActive.day}/${lastActive.month}/${lastActive.year}';
   }
 
-  // ADD THE MISSING METHODS BELOW:
-
+  // Shows confirmation dialog for logging out all other sessions
   Future<void> _logoutAllOtherSessions() async {
     try {
       final user = _auth.currentUser;
@@ -170,6 +175,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     }
   }
 
+  // Performs the actual logout of all sessions except current one
   Future<void> _performLogoutAllOtherSessions() async {
     try {
       final user = _auth.currentUser;
@@ -190,13 +196,13 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
       for (final doc in sessionsSnapshot.docs) {
         if (doc.id != currentSessionId) {
           batch.update(doc.reference, {
-            'isActive': false,
-            'endedAt': FieldValue.serverTimestamp(),
+            'isActive': false, // Mark as inactive
+            'endedAt': FieldValue.serverTimestamp(), // Record end time
           });
         }
       }
 
-      await batch.commit();
+      await batch.commit(); // Execute all updates in single batch
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -214,6 +220,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     }
   }
 
+  // Logs out a specific session
   Future<void> _logoutSession(Session session) async {
     try {
       final user = _auth.currentUser;
@@ -245,6 +252,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     }
   }
 
+  // Manually refreshes the sessions list
   Future<void> _refreshSessions() async {
     setState(() {
       _isLoading = true;
@@ -300,14 +308,14 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
               Icons.refresh,
               color: AppColors.getAppBarForeground(context),
             ),
-            onPressed: _refreshSessions,
+            onPressed: _refreshSessions, // Manual refresh button
           ),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // Logout All Button
+            // Logout All Button - Only show if multiple sessions exist
             if (_sessions.length > 1)
               Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -417,6 +425,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     );
   }
 
+  // Builds individual session list item with device information
   Widget _buildSessionItem(Session session) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -425,7 +434,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
         color: AppColors.getCardBackground(context),
         borderRadius: BorderRadius.circular(12),
         border: session.isCurrent
-            ? Border.all(color: AppColors.primaryPurple, width: 2)
+            ? Border.all(color: AppColors.primaryPurple, width: 2) // Highlight current session
             : null,
       ),
       child: Column(
@@ -534,6 +543,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     );
   }
 
+  // Returns appropriate icon based on device platform
   IconData _getDeviceIcon(String platform) {
     switch (platform.toLowerCase()) {
       case 'android':
@@ -552,6 +562,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
   }
 }
 
+// Data model representing a user session on a specific device
 class Session {
   final String id;
   final String device;
