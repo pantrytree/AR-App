@@ -13,7 +13,6 @@ class HelpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      // Initialize ViewModel and load JSON data
       create: (_) => HelpPageViewModel()..loadHelpData(),
       child: Consumer<HelpPageViewModel>(
         builder: (context, viewModel, child) {
@@ -39,25 +38,25 @@ class HelpPage extends StatelessWidget {
             body: viewModel.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : viewModel.errorMessage != null
-                ? Center(
-              child: Text(
-                viewModel.errorMessage!,
-                style: const TextStyle(color: Colors.red),
-              ),
-            )
-                : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSearchBar(viewModel),
-                  const SizedBox(height: 24),
-                  _buildMainOptions(viewModel, context),
-                  const SizedBox(height: 32),
-                  _buildDynamicSections(viewModel),
-                ],
-              ),
-            ),
+                    ? Center(
+                        child: Text(
+                          viewModel.errorMessage!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSearchBar(viewModel),
+                            const SizedBox(height: 24),
+                            _buildMainOptions(viewModel, context),
+                            const SizedBox(height: 32),
+                            _buildDynamicSections(viewModel),
+                          ],
+                        ),
+                      ),
             bottomNavigationBar: BottomNavBar(
               currentIndex: 4,
               onTap: (index) => _handleBottomNavTap(context, index),
@@ -68,48 +67,28 @@ class HelpPage extends StatelessWidget {
     );
   }
 
-  // Complete bottom navigation handler
+  // Handles navigation between main app sections.
   void _handleBottomNavTap(BuildContext context, int index) {
     switch (index) {
-      case 0: // Home
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home',
-              (route) => false,
-        );
+      case 0:
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         break;
-      case 1: // Likes
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/my-likes',
-              (route) => false,
-        );
+      case 1:
+        Navigator.pushNamedAndRemoveUntil(context, '/my-likes', (route) => false);
         break;
-      case 2: // AR View
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/camera-page',
-              (route) => false,
-        );
+      case 2:
+        Navigator.pushNamedAndRemoveUntil(context, '/camera-page', (route) => false);
         break;
-      case 3: // Catalogue
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/catalogue',
-              (route) => false,
-        );
+      case 3:
+        Navigator.pushNamedAndRemoveUntil(context, '/catalogue', (route) => false);
         break;
-      case 4: // Profile (Account Hub)
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/account-hub',
-              (route) => false,
-        );
+      case 4:
+        Navigator.pushNamedAndRemoveUntil(context, '/account-hub', (route) => false);
         break;
     }
   }
 
-  // Search Bar
+  // Search bar with focus-based animation.
   Widget _buildSearchBar(HelpPageViewModel viewModel) {
     return StatefulBuilder(
       builder: (context, setState) {
@@ -158,7 +137,7 @@ class HelpPage extends StatelessWidget {
               filled: true,
               fillColor: AppColors.white,
               contentPadding:
-              const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
             ),
           ),
         );
@@ -166,7 +145,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 
-  // Guides & FAQ cards
+  // Displays cards for Guides and FAQ pages.
   Widget _buildMainOptions(HelpPageViewModel viewModel, BuildContext context) {
     return Row(
       children: [
@@ -177,7 +156,7 @@ class HelpPage extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => GuidesPage()),
+                MaterialPageRoute(builder: (_) => const GuidesPage()),
               );
             },
           ),
@@ -199,6 +178,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 
+  // Small reusable card widget.
   Widget _buildHelpCard({
     required IconData icon,
     required String label,
@@ -239,7 +219,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 
-  // List of topics
+  // Builds a list of expandable help topics.
   Widget _buildDynamicSections(HelpPageViewModel viewModel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +246,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 
-  // Individual expandable item
+  // Single expandable card for a help topic.
   Widget _buildExpandableItem({
     required String title,
     required bool isExpanded,
