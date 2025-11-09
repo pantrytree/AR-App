@@ -6,6 +6,7 @@ import '../../utils/colors.dart';
 import '../../theme/theme.dart';
 import 'change_passwords_page.dart';
 
+// Page for users to edit their profile information including name, email, and profile picture
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
 
@@ -17,7 +18,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late EditProfileViewModel _viewModel;
   late TextEditingController _nameController;
   late TextEditingController _emailController;
-  // REMOVED: _passwordController - replaced with Change Password button
 
   @override
   void initState() {
@@ -28,7 +28,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController = TextEditingController();
     _emailController = TextEditingController();
 
-    // Load profile data
+    // Load profile data after widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _viewModel.loadUserProfile();
 
@@ -72,21 +72,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   leading: IconButton(
                     icon: const Icon(Icons.arrow_back),
                     color: AppColors.getAppBarForeground(context),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(context), // Return to previous screen
                   ),
                 ),
                 body: viewModel.isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularProgressIndicator()) // Loading state
                     : SingleChildScrollView(
                   padding: const EdgeInsets.all(20.0),
                   child: Form(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildProfileAvatar(context, viewModel),
+                        _buildProfileAvatar(context, viewModel), // Profile picture section
                         const SizedBox(height: 30),
 
-                        // Success message
+                        // Success message banner
                         if (viewModel.successMessage != null)
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -110,7 +110,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             ),
                           ),
 
-                        // Error message
+                        // Error message banner
                         if (viewModel.errorMessage != null)
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -134,6 +134,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             ),
                           ),
 
+                        // Name input field
                         _buildTextField(
                           context,
                           label: 'Name',
@@ -142,6 +143,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           isRequired: true,
                         ),
                         const SizedBox(height: 20),
+                        
+                        // Email input field
                         _buildTextField(
                           context,
                           label: 'E-mail Address',
@@ -152,13 +155,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 20),
 
-                        // CHANGED: Password field replaced with Change Password button
+                        // Change password navigation button
                         _buildChangePasswordButton(context),
-                        // ORIGINAL: _buildPasswordField(...)
-
+                      
                         const SizedBox(height: 40),
 
-                        // CHANGED: Smaller, centered save button
+                        // Save profile button
                         _buildSaveButton(context, viewModel),
                       ],
                     ),
@@ -172,10 +174,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  // Builds profile avatar section with image picker functionality
   Widget _buildProfileAvatar(BuildContext context, EditProfileViewModel viewModel) {
     return Center(
       child: GestureDetector(
-        onTap: () => _showImagePickerDialog(context, viewModel),
+        onTap: () => _showImagePickerDialog(context, viewModel), // Open image picker options
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -193,6 +196,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     offset: const Offset(0, 4),
                   ),
                 ],
+                // Show selected image, existing photo, or default icon
                 image: viewModel.profileImage != null
                     ? DecorationImage(
                   image: FileImage(viewModel.profileImage!),
@@ -208,12 +212,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
+                  // Show default person icon if no image is set
                   if (viewModel.profileImage == null && viewModel.photoUrl == null)
                     Icon(
                       Icons.person,
                       size: 50,
                       color: AppColors.getPrimaryColor(context),
                     ),
+                  // Camera icon overlay for changing photo
                   Positioned(
                     right: 8,
                     bottom: 8,
@@ -253,6 +259,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  // Shows bottom sheet dialog for image selection options
   void _showImagePickerDialog(BuildContext context, EditProfileViewModel viewModel) {
     showModalBottomSheet(
       context: context,
@@ -263,6 +270,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         return SafeArea(
           child: Wrap(
             children: [
+              // Gallery option
               ListTile(
                 leading: Icon(Icons.photo_library, color: AppColors.getPrimaryColor(context)),
                 title: const Text('Choose from Gallery'),
@@ -271,6 +279,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   viewModel.pickImageFromGallery();
                 },
               ),
+              // Camera option
               ListTile(
                 leading: Icon(Icons.camera_alt, color: AppColors.getPrimaryColor(context)),
                 title: const Text('Take a Photo'),
@@ -279,6 +288,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   viewModel.pickImageFromCamera();
                 },
               ),
+              // Remove photo option (only show if photo exists)
               if (viewModel.photoUrl != null || viewModel.profileImage != null)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
@@ -288,6 +298,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     viewModel.deleteProfileImage();
                   },
                 ),
+              // Cancel option
               ListTile(
                 leading: const Icon(Icons.close),
                 title: const Text('Cancel'),
@@ -300,6 +311,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  // Builds reusable text input field with consistent styling
   Widget _buildTextField(
       BuildContext context, {
         required String label,
@@ -355,6 +367,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  // Builds change password navigation button
   Widget _buildChangePasswordButton(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,6 +386,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           height: 50,
           child: ElevatedButton(
             onPressed: () {
+              // Navigate to password change page
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ChangePasswordPage()),
@@ -413,15 +427,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  // CHANGED: Smaller, centered save button (120px width instead of full width)
+  // Builds save profile button with loading state
   Widget _buildSaveButton(BuildContext context, EditProfileViewModel viewModel) {
     return Center(
       child: SizedBox(
-        width: 120, // CHANGED: Smaller width
+        width: 120, 
         height: 50,
         child: ElevatedButton(
           onPressed: viewModel.isLoading
-              ? null
+              ? null // Disable button during loading
               : () async {
             viewModel.clearError();
             viewModel.clearSuccess();
@@ -462,14 +476,4 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
     );
   }
-// ORIGINAL:
-// Widget _buildSaveButton(BuildContext context, EditProfileViewModel viewModel) {
-//   return SizedBox(
-//     width: double.infinity, // Full width
-//     height: 50,
-//     child: ElevatedButton(
-//       ...
-//     ),
-//   );
-// }
 }
