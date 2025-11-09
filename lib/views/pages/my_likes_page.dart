@@ -49,11 +49,13 @@ class _MyLikesPageState extends State<MyLikesPage>
     });
   }
 
+  // Load initial data from viewmodel
   Future<void> _loadInitialData() async {
     final viewModel = Provider.of<MyLikesViewModel>(context, listen: false);
     await viewModel.loadLikedItems();
   }
 
+  // Navigate to item details page
   void _navigateToItemDetails(BuildContext context, FurnitureItem item) {
     Navigator.push(
       context,
@@ -85,6 +87,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Build app bar with back button and refresh
   AppBar _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: AppColors.getAppBarBackground(context),
@@ -130,6 +133,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Main body content
   Widget _buildBody() {
     return Consumer<MyLikesViewModel>(
       builder: (context, viewModel, child) {
@@ -152,6 +156,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Loading spinner
   Widget _buildLoadingState() {
     return Center(
       child: Column(
@@ -172,6 +177,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Error state display
   Widget _buildErrorState(BuildContext context, MyLikesViewModel viewModel) {
     return Center(
       child: Padding(
@@ -218,6 +224,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Main content area
   Widget _buildContent(BuildContext context, MyLikesViewModel viewModel) {
     return Column(
       children: [
@@ -231,6 +238,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Grid of liked items
   Widget _buildLikedItemsGrid(BuildContext context, MyLikesViewModel viewModel) {
     final filteredItems = viewModel.getFilteredItems();
 
@@ -249,6 +257,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Category filter tabs
   Widget _buildCategoryTabs(BuildContext context, MyLikesViewModel viewModel) {
     return Container(
       color: AppColors.getBackgroundColor(context),
@@ -264,6 +273,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Individual category tab
   Widget _buildCategoryTab(
       BuildContext context,
       String category,
@@ -294,6 +304,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Items count display
   Widget _buildItemsCount(BuildContext context, MyLikesViewModel viewModel) {
     final filteredCount = viewModel.getFilteredItems().length;
     final totalCount = viewModel.likedItems.length;
@@ -327,6 +338,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Empty state when no liked items
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
@@ -366,6 +378,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // No items in selected category
   Widget _buildNoItemsInCategory(BuildContext context, MyLikesViewModel viewModel) {
     return Center(
       child: Padding(
@@ -404,6 +417,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Grid view of furniture items
   Widget _buildFurnitureGrid(
       BuildContext context,
       MyLikesViewModel viewModel,
@@ -426,6 +440,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Individual furniture card
   Widget _buildFurnitureCard(
       BuildContext context,
       FurnitureItem item,
@@ -464,6 +479,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Item image display
   Widget _buildItemImage(FurnitureItem item) {
     return Container(
       height: 120,
@@ -491,6 +507,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Placeholder icon when no image
   Widget _buildPlaceholderIcon(FurnitureItem item) {
     return Center(
       child: Icon(
@@ -501,6 +518,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Item details text
   Widget _buildItemDetails(FurnitureItem item) {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -560,6 +578,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Favorite button to remove item
   Widget _buildFavoriteButton(
       BuildContext context,
       FurnitureItem item,
@@ -593,6 +612,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Show confirmation dialog before removing
   void _showRemoveConfirmation(
       BuildContext context,
       FurnitureItem item,
@@ -639,6 +659,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Remove item from favorites
   Future<void> _removeItem(
       BuildContext context,
       FurnitureItem item,
@@ -674,6 +695,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     }
   }
 
+  // Explore more button at bottom
   Widget _buildExploreMoreButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -681,6 +703,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Pulsing explore button with animation
   Widget _buildPulsingExploreButton(BuildContext context, String text) {
     return ScaleTransition(
       scale: _pulseAnimation,
@@ -711,6 +734,7 @@ class _MyLikesPageState extends State<MyLikesPage>
     );
   }
 
+  // Get icon based on category
   IconData _getCategoryIcon(String category) {
     final lowerCategory = category.toLowerCase();
     if (lowerCategory.contains('chair')) return Icons.chair_rounded;
