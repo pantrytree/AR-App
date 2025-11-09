@@ -71,7 +71,7 @@ class _CameraPageState extends State<CameraPage> {
                   },
                 ),
 
-                // Selected furniture info banner - UPDATED
+                // Selected furniture info banner 
                 if (viewModel.selectedFurnitureItem != null)
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 60,
@@ -184,7 +184,7 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
 
-                // Bottom controls - UPDATED LAYOUT
+                // Bottom controls 
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -293,7 +293,7 @@ class _CameraPageState extends State<CameraPage> {
                           SizedBox(height: 16),
                         ],
 
-                        // Main action buttons - FIXED LAYOUT
+                        // Main action buttons
                         _buildActionButtons(viewModel),
                       ],
                     ),
@@ -326,7 +326,7 @@ class _CameraPageState extends State<CameraPage> {
     );
   }
 
-  // NEW: Separate method for action buttons to handle layout properly
+  // Separate method for action buttons to handle layout properly
   Widget _buildActionButtons(CameraViewModel viewModel) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -544,7 +544,6 @@ class _CameraPageState extends State<CameraPage> {
     );
   }
 
-  // ... keep the rest of your methods (_showFurnitureSelectionBottomSheet, _showScreenshotPreview, _showDesignNameDialog) the same ...
   void _showFurnitureSelectionBottomSheet(BuildContext context, CameraViewModel viewModel) {
     showModalBottomSheet(
       context: context,
