@@ -45,6 +45,7 @@ class PrivacyPolicyPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
+              // Section 1: Information We Collect
               _buildSectionTitle(context, '1. Information We Collect'),
               _buildSectionContent(context,
                 'We collect information you provide directly to us when you use our app, '
@@ -60,6 +61,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 2: How We Use Your Information
               _buildSectionTitle(context, '2. How We Use Your Information'),
               _buildSectionContent(context,
                 'We use the information we collect to:\n\n'
@@ -73,6 +75,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 3: Information Sharing
               _buildSectionTitle(context, '3. Information Sharing'),
               _buildSectionContent(context,
                 'We do not sell your personal information. We may share your information in '
@@ -86,6 +89,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 4: Data Security
               _buildSectionTitle(context, '4. Data Security'),
               _buildSectionContent(context,
                 'We implement appropriate security measures to protect your personal '
@@ -96,6 +100,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 5: Your Rights
               _buildSectionTitle(context, '5. Your Rights'),
               _buildSectionContent(context,
                 'You have the right to:\n\n'
@@ -109,6 +114,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 6: Contact Us
               _buildSectionTitle(context, '6. Contact Us'),
               _buildSectionContent(context,
                 'If you have any questions about this Privacy Policy or our data practices, '
@@ -119,6 +125,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
               const SizedBox(height: 32),
 
+              // User Acknowledgement Container
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -141,6 +148,7 @@ class PrivacyPolicyPage extends StatelessWidget {
     );
   }
 
+  // Helper: Build section headers with consistent style
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
@@ -152,6 +160,7 @@ class PrivacyPolicyPage extends StatelessWidget {
     );
   }
 
+  // Helper: Build section content paragraphs with consistent spacing/style
   Widget _buildSectionContent(BuildContext context, String content) {
     return Text(
       content,
