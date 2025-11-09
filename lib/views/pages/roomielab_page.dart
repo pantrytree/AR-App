@@ -26,6 +26,7 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
   @override
   void initState() {
     super.initState();
+    // Load projects after widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<RoomieLabViewModel>(context, listen: false);
       viewModel.loadProjects();
@@ -51,6 +52,7 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
         foregroundColor: AppColors.getAppBarForeground(context),
         elevation: 0,
         actions: [
+          // Refresh button to reload projects
           Consumer<RoomieLabViewModel>(
             builder: (context, viewModel, child) {
               return IconButton(
@@ -61,6 +63,7 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
           ),
         ],
       ),
+      // Floating action button to create new project
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.pushNamed(context, '/camera-page');
@@ -83,8 +86,9 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
     );
   }
 
+  // Main body content based on viewmodel state
   Widget _buildBody(BuildContext context, RoomieLabViewModel viewModel) {
-    // Show error messages
+    // Show error messages from viewmodel
     if (viewModel.errorMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -104,6 +108,7 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
       });
     }
 
+    // Show success messages from viewmodel
     if (viewModel.successMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -118,17 +123,21 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
       });
     }
 
+    // Show loading state only on initial load
     if (viewModel.isLoading && viewModel.projects.isEmpty) {
       return _buildLoadingState(context);
     }
 
+    // Show empty state when no projects exist
     if (viewModel.projects.isEmpty) {
       return _buildEmptyState(context);
     }
 
+    // Show projects list
     return _buildProjectsList(context, viewModel);
   }
 
+  // Loading state with progress indicator
   Widget _buildLoadingState(BuildContext context) {
     return Center(
       child: Column(
@@ -149,6 +158,7 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
     );
   }
 
+  // Empty state when no projects exist
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       key: const ValueKey('emptyState'),
@@ -204,6 +214,7 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
     );
   }
 
+  // Projects list view
   Widget _buildProjectsList(BuildContext context, RoomieLabViewModel viewModel) {
     return ListView.builder(
       key: const ValueKey('projectList'),
@@ -222,6 +233,7 @@ class _RoomieLabPageState extends State<RoomieLabPage> {
   }
 }
 
+// Animated project card with scale and fade animations
 class _AnimatedProjectCard extends StatefulWidget {
   final Project project;
   final RoomieLabViewModel viewModel;
@@ -248,6 +260,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
   void initState() {
     super.initState();
 
+    // Animation controller for entrance animations
     _controller = AnimationController(
       duration: const Duration(milliseconds: 450),
       vsync: this,
@@ -263,6 +276,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
       curve: Curves.easeIn,
     );
 
+    // Initialize like state from project data
     _isLiked = widget.project.isLiked ?? false;
     _likeCount = widget.project.likeCount ?? 0;
 
@@ -275,6 +289,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     super.dispose();
   }
 
+  // Toggle like status for project
   void _toggleLike() async {
     setState(() {
       if (_isLiked) {
@@ -299,6 +314,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     }
   }
 
+  // Show collaborators management dialog
   void _showCollaboratorsDialog() {
     showDialog(
       context: context,
@@ -309,6 +325,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Show project name editing dialog
   void _showEditNameDialog() {
     TextEditingController nameController = TextEditingController(text: widget.project.name);
 
@@ -407,12 +424,13 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Project Image
+                      // Project Image section
                       AspectRatio(
                         aspectRatio: 16 / 9,
                         child: _buildProjectImage(context, project),
                       ),
 
+                      // Project info and action buttons
                       _buildProjectInfoAndActions(context, project),
                     ],
                   ),
@@ -439,6 +457,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Build project image with network loading and fallback
   Widget _buildProjectImage(BuildContext context, Project project) {
     if (project.imageUrl != null && project.imageUrl!.isNotEmpty) {
       return ClipRRect(
@@ -467,6 +486,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
               },
             ),
 
+            // Gradient overlay for better text readability
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -487,6 +507,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     return _buildPlaceholderImage();
   }
 
+  // Placeholder image when no project image is available
   Widget _buildPlaceholderImage() {
     return Container(
       color: Colors.grey[200],
@@ -500,13 +521,14 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Project information and action buttons section
   Widget _buildProjectInfoAndActions(BuildContext context, Project project) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Project Name and Date
+          // Project Name and Date section
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -537,6 +559,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
 
           const SizedBox(height: 16),
 
+          // Action buttons row
           Container(
             height: 70,
             child: _buildActionButtons(context),
@@ -546,6 +569,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Action buttons row (like, collaborators, share, edit)
   Widget _buildActionButtons(BuildContext context) {
     final project = widget.project;
 
@@ -587,6 +611,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Individual action button widget
   Widget _buildActionButton({
     required IconData icon,
     required String label,
@@ -601,7 +626,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon container
+            // Icon container with circular background
             Container(
               width: 44,
               height: 44,
@@ -636,6 +661,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Navigate to full screen project view
   void _navigateToFullScreen(BuildContext context, Project project) {
     Navigator.push(
       context,
@@ -647,6 +673,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Navigate to project edit page
   void _navigateToEditProject(BuildContext context, Project project) {
     Navigator.push(
       context,
@@ -662,6 +689,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Share project dialog
   void _shareProject(BuildContext context, Project project) {
     showDialog(
       context: context,
@@ -708,6 +736,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Confirm project deletion dialog
   void _confirmDelete(BuildContext context, Project project) {
     showDialog(
       context: context,
@@ -740,7 +769,7 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
             onPressed: () async {
               Navigator.pop(dialogContext);
 
-              // Show loading
+              // Show loading dialog
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -779,11 +808,13 @@ class _AnimatedProjectCardState extends State<_AnimatedProjectCard>
     );
   }
 
+  // Format date for display
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
 }
 
+// Collaborators management dialog
 class _CollaboratorsDialog extends StatefulWidget {
   final Project project;
   final RoomieLabViewModel viewModel;
@@ -807,6 +838,7 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
     collaborators = widget.project.collaborators ?? [];
   }
 
+  // Add collaborator by email
   void _addCollaborator() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) return;
@@ -824,6 +856,7 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
     }
   }
 
+  // Remove collaborator
   void _removeCollaborator(String email) async {
     final success = await widget.viewModel.removeCollaborator(
       widget.project.id,
@@ -862,7 +895,7 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Add collaborator input
+              // Add collaborator input field
               Row(
                 children: [
                   Expanded(
@@ -929,6 +962,7 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
                   ),
                 ),
               ] else ...[
+                // Empty state for collaborators
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Text(
