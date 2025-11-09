@@ -41,6 +41,8 @@ class Design {
     this.metadata,
   });
 
+ // Creates a Design instance from a Firestore document snapshot
+ // Handles type conversion and provides default values for missing fields
   factory Design.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return Design(
@@ -51,22 +53,29 @@ class Design {
       description: data['description'] as String?,
       thumbnailUrl: data['thumbnailUrl'] as String?,
       roomType: data['roomType'] as String?,
+      // Convert room dimensions map with type safety
       roomDimensions: data['roomDimensions'] != null
           ? Map<String, dynamic>.from(data['roomDimensions'] as Map)
           : null,
       floorPlanUrl: data['floorPlanUrl'] as String?,
       referencePhotoUrl: data['referencePhotoUrl'] as String?,
+      // Convert design object IDs with empty list fallback
       designObjectIds: (data['designObjectIds'] as List<dynamic>?)?.cast<String>() ?? [],
+      // Convert Firestore Timestamps to DateTime objects
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       isPublic: data['isPublic'] as bool? ?? false,
+      // Convert tags with empty list fallback
       tags: (data['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+      // Convert metadata map with type safety
       metadata: data['metadata'] != null
           ? Map<String, dynamic>.from(data['metadata'] as Map)
           : null,
     );
   }
 
+  // Converts the Design instance to a Map for Firestore storage
+  // Handles DateTime to Timestamp conversion and maintains data structure
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
@@ -79,6 +88,7 @@ class Design {
       'floorPlanUrl': floorPlanUrl,
       'referencePhotoUrl': referencePhotoUrl,
       'designObjectIds': designObjectIds,
+      // Convert DateTime to Firestore Timestamp for storage
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isPublic': isPublic,
@@ -87,6 +97,7 @@ class Design {
     };
   }
 
+  // Creates a new Design instance with updated fields
   Design copyWith({
     String? id,
     String? name,
