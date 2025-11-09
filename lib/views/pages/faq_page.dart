@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// FAQPage is a stateful widget that displays frequently asked questions
 class FAQPage extends StatefulWidget {
   const FAQPage({super.key});
 
@@ -9,6 +10,7 @@ class FAQPage extends StatefulWidget {
 }
 
 class _FAQPageState extends State<FAQPage> {
+  // Constant list of FAQ categories with their questions and answers
   final List<Map<String, dynamic>> faqCategories = const [
     {
       'category': 'Projects & Designs',
@@ -44,24 +46,34 @@ class _FAQPageState extends State<FAQPage> {
     },
   ];
 
+  // Controller for the search text field
   final TextEditingController _searchController = TextEditingController();
+  
+  // Filtered list of categories based on search query
   List<Map<String, dynamic>> _filteredCategories = [];
 
   @override
   void initState() {
     super.initState();
+    // Initialize filtered categories with all categories
     _filteredCategories = List.from(faqCategories);
+    
+    // Add listener to search controller to filter FAQs when text changes
     _searchController.addListener(_filterFAQs);
   }
 
   @override
   void dispose() {
+    // Clean up the controller when the widget is disposed
     _searchController.dispose();
     super.dispose();
   }
 
+  // Method to filter FAQs based on search query
   void _filterFAQs() {
     final query = _searchController.text.toLowerCase();
+    
+    // If search query is empty, show all categories
     if (query.isEmpty) {
       setState(() {
         _filteredCategories = List.from(faqCategories);
@@ -69,12 +81,16 @@ class _FAQPageState extends State<FAQPage> {
       return;
     }
 
+    // Filter categories and FAQs based on search query
     final filtered = <Map<String, dynamic>>[];
     for (final category in faqCategories) {
+      // Filter FAQs within this category that match the search query
       final filteredFAQs = (category['faqs'] as List<Map<String, String>>).where((faq) {
-        return faq['question']!.toLowerCase().contains(query) || faq['answer']!.toLowerCase().contains(query);
+        return faq['question']!.toLowerCase().contains(query) || 
+               faq['answer']!.toLowerCase().contains(query);
       }).toList();
 
+      // Only add category if it has matching FAQs
       if (filteredFAQs.isNotEmpty) {
         filtered.add({
           'category': category['category'],
@@ -83,6 +99,7 @@ class _FAQPageState extends State<FAQPage> {
       }
     }
 
+    // Update UI with filtered results
     setState(() {
       _filteredCategories = filtered;
     });
@@ -93,10 +110,10 @@ class _FAQPageState extends State<FAQPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 0, // Remove shadow
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context), // Navigate back
         ),
         title: Text(
           'FAQ',
@@ -115,6 +132,8 @@ class _FAQPageState extends State<FAQPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8), // Small top padding after AppBar
+            
+            // Search text field
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -123,13 +142,16 @@ class _FAQPageState extends State<FAQPage> {
                 prefixIcon: const Icon(Icons.search, color: Colors.black54),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide.none, // Remove border
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Colors.white, // White background for search field
               ),
             ),
-            const SizedBox(height: 16),
+            
+            const SizedBox(height: 16), // Spacing between search and list
+            
+            // Expand to take available space for the FAQ list
             Expanded(
               child: ListView.builder(
                 itemCount: _filteredCategories.length,
@@ -138,6 +160,7 @@ class _FAQPageState extends State<FAQPage> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Category title
                       Text(
                         category['category'],
                         style: GoogleFonts.inter(
@@ -146,10 +169,12 @@ class _FAQPageState extends State<FAQPage> {
                           color: Colors.black87,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 12), // Spacing after category title
+                      
+                      // List of FAQ items for this category
                       ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true, // Important for nested ListView
+                        physics: const NeverScrollableScrollPhysics(), // Disable scrolling for nested list
                         itemCount: (category['faqs'] as List).length,
                         itemBuilder: (context, index) {
                           final faq = category['faqs'][index] as Map<String, String>;
@@ -159,17 +184,20 @@ class _FAQPageState extends State<FAQPage> {
                           );
                         },
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 24), // Spacing between categories
                     ],
                   );
                 },
               ),
             ),
-            const SizedBox(height: 16),
+            
+            const SizedBox(height: 16), // Spacing before contact support button
+            
+            // Contact support button
             Center(
               child: TextButton(
                 onPressed: () {
-                  // Navigate to contact support or open email
+                  // TODO: Navigate to contact support or open email
                 },
                 child: Text(
                   'Still need help? Contact Support',
@@ -188,6 +216,7 @@ class _FAQPageState extends State<FAQPage> {
   }
 }
 
+// Individual FAQ item widget that can expand/collapse
 class FAQItem extends StatefulWidget {
   final String question;
   final String answer;
@@ -204,12 +233,13 @@ class FAQItem extends StatefulWidget {
 
 class _FAQItemState extends State<FAQItem> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  bool _isHelpful = false;
-  bool _isNotHelpful = false;
+  bool _isHelpful = false; // Track if user found this helpful
+  bool _isNotHelpful = false; // Track if user didn't find this helpful
 
   @override
   void initState() {
     super.initState();
+    // Animation controller for the expand/collapse arrow rotation
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -223,11 +253,14 @@ class _FAQItemState extends State<FAQItem> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
+  // Method to handle helpful/not helpful feedback
   void _toggleHelpful(bool helpful) {
     setState(() {
       _isHelpful = helpful;
       _isNotHelpful = !helpful;
     });
+    
+    // Show feedback to user
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(helpful ? 'Thanks! Glad it helped.' : 'Sorry to hear that. We\'ll improve it.')),
     );
@@ -252,7 +285,7 @@ class _FAQItemState extends State<FAQItem> with SingleTickerProviderStateMixin {
         borderRadius: BorderRadius.circular(12),
         child: Theme(
           data: Theme.of(context).copyWith(
-            dividerColor: Colors.transparent,
+            dividerColor: Colors.transparent, // Remove default divider
           ),
           child: ExpansionTile(
             tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -264,11 +297,13 @@ class _FAQItemState extends State<FAQItem> with SingleTickerProviderStateMixin {
                 color: Colors.black87,
               ),
             ),
+            // Animated arrow that rotates when expanded/collapsed
             trailing: RotationTransition(
               turns: Tween(begin: 0.0, end: 0.5).animate(_controller),
               child: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF6B7280), size: 24),
             ),
             onExpansionChanged: (expanded) {
+              // Animate arrow when expanding/collapsing
               if (expanded) {
                 _controller.forward();
               } else {
@@ -283,6 +318,7 @@ class _FAQItemState extends State<FAQItem> with SingleTickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // FAQ answer text
                     Text(
                       widget.answer,
                       style: GoogleFonts.inter(
@@ -290,7 +326,9 @@ class _FAQItemState extends State<FAQItem> with SingleTickerProviderStateMixin {
                         color: Colors.black54,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 12), // Spacing before feedback buttons
+                    
+                    // Helpful/Not helpful feedback buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -310,7 +348,7 @@ class _FAQItemState extends State<FAQItem> with SingleTickerProviderStateMixin {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 16), // Spacing between buttons
                         Expanded(
                           child: TextButton.icon(
                             onPressed: () => _toggleHelpful(false),
