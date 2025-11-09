@@ -11,10 +11,12 @@ import '../../utils/colors.dart';
 import '/views/pages/roomielab_screen.dart';
 import 'catalogue_item_page.dart';
 
+// FurnitureCataloguePage displays a filterable grid of furniture items
+// Supports filtering by room, category, color, and search
 class FurnitureCataloguePage extends StatefulWidget {
-  final String? initialRoom;
-  final String? initialType;
-  final String? itemToShowDetails;
+  final String? initialRoom; // Pre-selected room filter
+  final String? initialType; // Pre-selected category filter
+  final String? itemToShowDetails; // Specific item to show details for on load
 
   const FurnitureCataloguePage({
     super.key,
@@ -30,56 +32,44 @@ class FurnitureCataloguePage extends StatefulWidget {
 class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
   final TextEditingController _searchController = TextEditingController();
 
+  // Service instances for data operations
   final FavoritesService _favoritesService = FavoritesService();
   final FurnitureService _furnitureService = FurnitureService();
 
-  // Filter states
+  // Filter states with default values
   String _selectedRoom = 'All';
   String _selectedType = 'All';
   String _selectedStyle = 'All';
   String _selectedColor = 'All';
   String _searchQuery = '';
 
-  List<String> _likedItems = [];
-  List<FurnitureItem> _filteredItems = [];
-  List<FurnitureItem> _allFurnitureItems = [];
-  bool _isLoading = true;
-  bool _hasShownInitialPopup = false;
+  List<String> _likedItems = []; // IDs of favorited items
+  List<FurnitureItem> _filteredItems = []; // Items after applying filters
+  List<FurnitureItem> _allFurnitureItems = []; // All items from service
+  bool _isLoading = true; // Loading state
+  bool _hasShownInitialPopup = false; // Track if initial popup was shown
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize filters
+    // Initialize filters with provided values or defaults
     _selectedRoom = widget.initialRoom ?? 'All';
     _selectedType = widget.initialType ?? 'All';
 
+    // Debug logging for initialization
     print('FurnitureCataloguePage initialized');
     print('Initial room: ${widget.initialRoom}');
     print('Initial type: ${widget.initialType}');
     print('Selected room: $_selectedRoom');
     print('Selected type: "$_selectedType"');
 
+    // Load data on initialization
     _loadFurnitureItems();
     _loadFavorites();
-
-    // if (widget.initialRoom != null && widget.initialRoom != 'All') {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     if (mounted) {
-    //       setState(() {
-    //         _selectedRoom = widget.initialRoom!;
-    //       });
-    //       // Re-apply filters after data is loaded
-    //       Future.delayed(const Duration(milliseconds: 500), () {
-    //         if (mounted) {
-    //           _applyFilters();
-    //         }
-    //       });
-    //     }
-    //   });
-    // }
   }
 
+  // Load furniture items from the service
   Future<void> _loadFurnitureItems() async {
     try {
       setState(() {
@@ -88,13 +78,14 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
 
       print('Loading furniture items...');
 
+      // Fetch furniture items from Firestore
       List<FurnitureItem> furnitureItems = await _furnitureService.getFurnitureItems(
         useFirestore: true,
       );
 
       print('DEBUG: Found ${furnitureItems.length} total items in Firestore');
 
-      // Debug information
+      // Debug information about available data
       if (furnitureItems.isNotEmpty) {
         final uniqueRooms = furnitureItems.map((item) => item.roomType).toSet().toList();
         final uniqueCategories = furnitureItems.map((item) => item.category).toSet().toList();
@@ -105,10 +96,10 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
       setState(() {
         _allFurnitureItems = furnitureItems;
         _isLoading = false;
-        _applyFilters();
+        _applyFilters(); // Apply initial filters after loading
       });
 
-      // Show details for specific item if requested
+      // Show details for specific item if requested (only once)
       if (widget.itemToShowDetails != null && !_hasShownInitialPopup) {
         _hasShownInitialPopup = true;
         _showDetailsForItem(widget.itemToShowDetails!);
@@ -124,6 +115,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     }
   }
 
+  // Show details for a specific item by name
   void _showDetailsForItem(String itemName) {
     final matchingItems = _allFurnitureItems.where(
           (furniture) => furniture.name.toLowerCase().contains(itemName.toLowerCase()),
@@ -135,6 +127,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     }
   }
 
+  // Apply all active filters to the furniture list
   void _applyFilters() {
     print('Applying filters...');
     print('All items count: ${_allFurnitureItems.length}');
@@ -143,18 +136,18 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
 
     setState(() {
       _filteredItems = _allFurnitureItems.where((item) {
-        // Room filter
+        // Room filter logic
         bool roomMatch = _selectedRoom == 'All';
         if (!roomMatch) {
           final selectedRoomLower = _selectedRoom.toLowerCase();
           final itemRoomLower = item.roomType.toLowerCase();
 
-          // Handle different room type formats
+          // Flexible room matching for different naming conventions
           roomMatch = itemRoomLower == selectedRoomLower ||
               itemRoomLower.contains(selectedRoomLower) ||
               selectedRoomLower.contains(itemRoomLower);
 
-          // Special cases for room type matching
+          // Special cases for common room type variations
           if (selectedRoomLower == 'living_room' && itemRoomLower.contains('living')) {
             roomMatch = true;
           }
@@ -166,7 +159,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
           }
         }
 
-        // Type filter - handle category filtering
+        // Category/Type filter logic
         bool typeMatch = _selectedType == 'All';
         if (!typeMatch) {
           final selectedTypeLower = _selectedType.toLowerCase();
@@ -177,11 +170,11 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
               selectedTypeLower.contains(itemCategoryLower);
         }
 
-        // Color filter
+        // Color filter logic
         bool colorMatch = _selectedColor == 'All' ||
             (item.color != null && item.color!.toLowerCase() == _selectedColor.toLowerCase());
 
-        // Search filter
+        // Search filter logic (name and description)
         bool searchMatch = _searchQuery.isEmpty ||
             item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             (item.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
@@ -195,13 +188,15 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     print('Filtered to ${_filteredItems.length} items');
   }
 
+  // Handle search query changes
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
-      _applyFilters();
+      _applyFilters(); // Re-apply filters with new search term
     });
   }
 
+  // Reset all filters to default values
   void _clearFilters() {
     setState(() {
       _selectedRoom = 'All';
@@ -210,30 +205,33 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
       _selectedColor = 'All';
       _searchQuery = '';
       _searchController.clear();
-      _applyFilters();
+      _applyFilters(); // Re-apply with cleared filters
     });
   }
 
+  // Load user's favorite items
   Future<void> _loadFavorites() async {
     try {
       final favorites = await _favoritesService.getFavorites();
       _likedItems = favorites.map((fav) => fav.id).toList();
-      if (mounted) setState(() {});
+      if (mounted) setState(() {}); // Update UI if widget is still mounted
     } catch (e) {
       print('Error loading favorites: $e');
     }
   }
 
+  // Toggle favorite status for an item
   Future<void> _toggleFavorite(FurnitureItem furniture) async {
     try {
       await _favoritesService.toggleFavorite(furniture.id);
-      await _loadFavorites(); // Reload favorites after toggling
+      await _loadFavorites(); // Reload favorites to reflect changes
     } catch (e) {
       print('Error toggling favorite: $e');
       _showErrorSnackbar('Failed to update favorites');
     }
   }
 
+  // Show error message to user
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -259,7 +257,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          _getAppBarTitle(),
+          _getAppBarTitle(), // Dynamic title based on filters
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -267,6 +265,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
           ),
         ),
         actions: [
+          // Clear filters button (only shown when filters are active)
           if (_hasActiveFilters())
             IconButton(
               icon: Icon(
@@ -276,6 +275,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
               onPressed: _clearFilters,
               tooltip: 'Clear All Filters',
             ),
+          // Refresh button
           IconButton(
             icon: Icon(
               Icons.refresh,
@@ -287,21 +287,21 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
         ],
       ),
       body: _isLoading
-          ? _buildLoadingState()
+          ? _buildLoadingState() // Show loading indicator
           : Column(
         children: [
-          _buildSearchBar(),
+          _buildSearchBar(), // Search input field
           SizedBox(
             height: 60,
-            child: _buildFilterChips(),
+            child: _buildFilterChips(), // Filter selection chips
           ),
-          _buildResultsCount(),
+          _buildResultsCount(), // Results count and clear filters
           Expanded(
             child: _filteredItems.isEmpty
-                ? _buildEmptyState()
-                : RefreshIndicator(
+                ? _buildEmptyState() // Empty state when no results
+                : RefreshIndicator( // Pull-to-refresh functionality
               onRefresh: _loadFurnitureItems,
-              child: _buildFurnitureGrid(),
+              child: _buildFurnitureGrid(), // Main content grid
             ),
           ),
         ],
@@ -309,6 +309,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Loading state widget
   Widget _buildLoadingState() {
     return const Center(
       child: Column(
@@ -322,6 +323,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Generate dynamic app bar title based on active filters
   String _getAppBarTitle() {
     if (_selectedRoom != 'All' && _selectedType != 'All') {
       return '$_selectedRoom $_selectedType';
@@ -338,6 +340,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     return 'Furniture Catalogue';
   }
 
+  // Check if any filters are active
   bool _hasActiveFilters() {
     return _selectedRoom != 'All' ||
         _selectedType != 'All' ||
@@ -346,6 +349,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
         _searchQuery.isNotEmpty;
   }
 
+  // Build search bar widget
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -376,7 +380,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
               icon: Icon(Icons.clear, color: AppColors.getSecondaryTextColor(context)),
               onPressed: () {
                 _searchController.clear();
-                _onSearchChanged('');
+                _onSearchChanged(''); // Clear search
               },
             )
                 : null,
@@ -386,12 +390,14 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Build horizontal filter chips
   Widget _buildFilterChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
+          // Room filter chip
           _buildFilterChip('Rooms', _selectedRoom, [
             _FilterOption('All', 'All Rooms'),
             _FilterOption('Living Room', 'Living Room'),
@@ -407,6 +413,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
             });
           }),
           const SizedBox(width: 8),
+          // Category filter chip
           _buildFilterChip('Category', _selectedType, [
             _FilterOption('All', 'All Categories'),
             _FilterOption('Chair', 'Chairs'),
@@ -422,6 +429,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
             });
           }),
           const SizedBox(width: 8),
+          // Color filter chip
           _buildFilterChip('Color', _selectedColor, [
             _FilterOption('All', 'All Colors'),
             _FilterOption('Brown', 'Brown'),
@@ -440,6 +448,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Build individual filter chip
   Widget _buildFilterChip(
       String title,
       String selectedValue,
@@ -450,7 +459,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
           (opt) => opt.value == selectedValue,
       orElse: () => options.first,
     );
-    final isSelected = selectedValue != 'All';
+    final isSelected = selectedValue != 'All'; // Check if filter is active
 
     return GestureDetector(
       onTap: () {
@@ -461,8 +470,8 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.getCategoryTabSelected(context)
-              : AppColors.getCategoryTabUnselected(context),
+              ? AppColors.getCategoryTabSelected(context) // Active color
+              : AppColors.getCategoryTabUnselected(context), // Inactive color
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
@@ -483,7 +492,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
             ),
             if (isSelected) ...[
               const SizedBox(width: 4),
-              const Icon(Icons.close, size: 16, color: AppColors.white),
+              const Icon(Icons.close, size: 16, color: AppColors.white), // Close icon for active filters
             ],
           ],
         ),
@@ -491,6 +500,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Show filter options in bottom sheet
   void _showFilterOptions(
       String title,
       List<_FilterOption> options,
@@ -532,11 +542,11 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                         ),
                       ),
                       trailing: selectedValue == option.value
-                          ? Icon(Icons.check, color: AppColors.primaryPurple)
+                          ? Icon(Icons.check, color: AppColors.primaryPurple) // Checkmark for selected
                           : null,
                       onTap: () {
                         Navigator.pop(context);
-                        onSelected(option.value);
+                        onSelected(option.value); // Apply selected filter
                       },
                     );
                   },
@@ -549,6 +559,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Build results count and clear filters widget
   Widget _buildResultsCount() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -563,6 +574,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
             ),
           ),
           const Spacer(),
+          // Clear filters option (only shown when filters are active)
           if (_hasActiveFilters())
             GestureDetector(
               onTap: _clearFilters,
@@ -586,14 +598,15 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Build the main furniture grid
   Widget _buildFurnitureGrid() {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+        crossAxisCount: 2, // 2 columns
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
-        childAspectRatio: 0.85,
+        childAspectRatio: 0.85, // Card aspect ratio
       ),
       itemCount: _filteredItems.length,
       itemBuilder: (context, index) {
@@ -604,6 +617,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Build empty state when no items match filters
   Widget _buildEmptyState() {
     return SingleChildScrollView(
       child: Padding(
@@ -637,6 +651,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                   fontSize: 14,
                 ),
               ),
+              // Clear filters button for empty state with active filters
               if (_hasActiveFilters()) ...[
                 const SizedBox(height: 16),
                 ElevatedButton(
@@ -649,6 +664,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                 ),
               ],
               const SizedBox(height: 16),
+              // Refresh button
               ElevatedButton(
                 onPressed: _loadFurnitureItems,
                 style: ElevatedButton.styleFrom(
@@ -664,10 +680,11 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Build individual furniture card
   Widget _buildFurnitureCard(FurnitureItem furniture, bool isLiked) {
     return GestureDetector(
       onTap: () {
-        _showFurnitureDetails(context, furniture);
+        _showFurnitureDetails(context, furniture); // Show details on tap
       },
       child: Container(
         decoration: BoxDecoration(
@@ -689,7 +706,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
               height: 100,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: AppColors.primaryLightPurple.withOpacity(0.1),
+                color: AppColors.primaryLightPurple.withOpacity(0.1), // Fallback color
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 image: furniture.imageUrl != null
                     ? DecorationImage(
@@ -700,6 +717,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
               ),
               child: Stack(
                 children: [
+                  // Fallback icon when no image
                   if (furniture.imageUrl == null)
                     Center(
                       child: Icon(
@@ -708,6 +726,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                         color: AppColors.primaryLightPurple,
                       ),
                     ),
+                  // Featured badge
                   if (furniture.featured)
                     Positioned(
                       top: 6,
@@ -728,6 +747,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                         ),
                       ),
                     ),
+                  // Favorite button
                   Positioned(
                     top: 6,
                     right: 6,
@@ -769,6 +789,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Furniture name
                         Text(
                           furniture.name,
                           style: GoogleFonts.inter(
@@ -780,6 +801,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
+                        // Room type and category
                         Text(
                           '${furniture.roomType} • ${furniture.category}',
                           style: GoogleFonts.inter(
@@ -795,6 +817,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Dimensions
                         if (furniture.dimensions != null)
                           Text(
                             furniture.dimensions!,
@@ -805,6 +828,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                        // Color tag
                         if (furniture.color != null)
                           Container(
                             margin: const EdgeInsets.only(top: 2),
@@ -835,6 +859,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Show furniture details in a dialog
   void _showFurnitureDetails(BuildContext context, FurnitureItem furniture) {
     showDialog(
       context: context,
@@ -852,6 +877,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Furniture image
               if (furniture.imageUrl != null)
                 Container(
                   height: 150,
@@ -865,6 +891,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                   ),
                 ),
               const SizedBox(height: 16),
+              // Description
               Text(
                 furniture.description ?? 'No description available',
                 style: GoogleFonts.inter(
@@ -872,6 +899,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Details section
               Text(
                 'Details:',
                 style: GoogleFonts.inter(
@@ -886,6 +914,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
               if (furniture.color != null) Text('• Color: ${furniture.color}'),
               if (furniture.arModelUrl != null) Text('• AR Model: Available'),
               const SizedBox(height: 8),
+              // Featured status
               Text(
                 furniture.featured ? 'Featured Item' : 'Standard Item',
                 style: TextStyle(
@@ -899,6 +928,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
           ),
         ),
         actions: [
+          // Close button
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
@@ -908,6 +938,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
               ),
             ),
           ),
+          // See more details button
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -924,6 +955,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Navigate to detailed item page
   void _navigateToItemDetails(BuildContext context, FurnitureItem furniture) {
     Navigator.push(
       context,
@@ -935,6 +967,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Navigate to AR view 
   void _navigateToARView(BuildContext context, FurnitureItem furniture) {
     Navigator.push(
       context,
@@ -944,6 +977,7 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
     );
   }
 
+  // Get appropriate icon for furniture category
   IconData _getFurnitureIcon(String furnitureType) {
     switch (furnitureType.toLowerCase()) {
       case 'bed':
@@ -967,15 +1001,15 @@ class _FurnitureCataloguePageState extends State<FurnitureCataloguePage> {
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchController.dispose(); // Clean up controller
     super.dispose();
   }
 }
 
+// Helper class for filter options
 class _FilterOption {
-  final String value;
-  final String label;
+  final String value; // Internal value
+  final String label; // Display label
 
   _FilterOption(this.value, this.label);
 }
-
