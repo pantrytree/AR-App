@@ -2,34 +2,33 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// EditProfileViewModel
-///
-/// Handles:
-/// - Name, Email, Username, Password
-/// - Profile image selection
-/// - Form validation
-/// - Loading & error states
-/// - Saving updates to SharedPreferences (for AccountHub)
-///
-/// TODO: Replace SharedPreferences logic with actual backend API calls:
-///
-/// 1. GET /user/profile
-///    - Fetch current user data (name, email, username, profile image)
-///    - Should replace loadUserProfile() logic
-///
-/// 2. PUT /user/profile
-///    - Update user details: name, email, username, password
-///    - Should replace saveProfile() logic for text fields
-///
-/// 3. POST /user/profile/image
-///    - Upload new profile picture and return URL
-///    - Should replace saveProfile() logic for profile image
-///
-/// Notes:
-/// - Current implementation uses SharedPreferences as a temporary placeholder
-/// - All setters call notifyListeners() to update UI
-/// - Password is never loaded from local storage
-/// - Once backend is ready, remove SharedPreferences logic entirely
+// EditProfileViewModel
+// Handles:
+// - Name, Email, Username, Password
+// - Profile image selection
+// - Form validation
+// - Loading & error states
+// - Saving updates to SharedPreferences (for AccountHub)
+//
+// TODO: Replace SharedPreferences logic with actual backend API calls:
+//
+// 1. GET /user/profile
+//    - Fetch current user data (name, email, username, profile image)
+//    - Should replace loadUserProfile() logic
+//
+// 2. PUT /user/profile
+//    - Update user details: name, email, username, password
+//    - Should replace saveProfile() logic for text fields
+//
+// 3. POST /user/profile/image
+//    - Upload new profile picture and return URL
+//    - Should replace saveProfile() logic for profile image
+//
+// Notes:
+// - Current implementation uses SharedPreferences as a temporary placeholder
+// - All setters call notifyListeners() to update UI
+// - Password is never loaded from local storage
+// - Once backend is ready, remove SharedPreferences logic entirely
 
 class EditProfileViewModel extends ChangeNotifier {
   // Form Fields
@@ -80,14 +79,14 @@ class EditProfileViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Set selected image (from camera or gallery)
-  /// TODO: Implement backend upload (POST /user/profile/image)
+  // Set selected image (from camera or gallery)
+  // TODO: Implement backend upload (POST /user/profile/image)
   void setProfileImage(File image) {
     _localImage = image;
     notifyListeners();
   }
 
-  /// Toggles password visibility in UI
+  // Toggles password visibility in UI
   void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
     notifyListeners();
