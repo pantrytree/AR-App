@@ -9,27 +9,30 @@ class TwoFactorAuthPage extends StatefulWidget {
 }
 
 class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
-  bool _is2FAEnabled = false;
-  bool _isLoading = false;
+  bool _is2FAEnabled = false; // Tracks whether 2FA is enabled or disabled
+  bool _isLoading = false; // Shows loading state during toggle operations
 
+  // Handles the toggle switch for enabling/disabling 2FA
   void _toggle2FA(bool value) async {
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // Show loading indicator
     });
 
-    // Simulate API call
+    // Simulate API call to backend for enabling/disabling 2FA
     await Future.delayed(const Duration(seconds: 1));
 
     setState(() {
-      _is2FAEnabled = value;
-      _isLoading = false;
+      _is2FAEnabled = value; // Update 2FA status
+      _isLoading = false; // Hide loading indicator
     });
 
+    // Show setup confirmation dialog when enabling 2FA
     if (value) {
       _showSetupDialog();
     }
   }
 
+  // Shows a confirmation dialog when 2FA is successfully enabled
   void _showSetupDialog() {
     showDialog(
       context: context,
@@ -50,7 +53,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context), // Close the dialog
             child: Text(
               'OK',
               style: TextStyle(
@@ -76,7 +79,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
             color: AppColors.getAppBarForeground(context),
           ),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pop(context); // Navigate back to previous screen
           },
         ),
         centerTitle: true,
@@ -93,7 +96,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              // 2FA Toggle
+              // Main 2FA Toggle Card
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -102,16 +105,18 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                 ),
                 child: Row(
                   children: [
+                    // Security icon
                     Icon(
                       Icons.security,
                       color: AppColors.getPrimaryColor(context),
                       size: 24,
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 16), // Spacing between icon and text
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Title
                           Text(
                             'Two-Factor Authentication',
                             style: TextStyle(
@@ -121,6 +126,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                             ),
                           ),
                           const SizedBox(height: 4),
+                          // Description
                           Text(
                             'Add an extra layer of security to your account',
                             style: TextStyle(
@@ -132,25 +138,26 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                       ),
                     ),
                     const SizedBox(width: 16),
+                    // Loading indicator or toggle switch
                     if (_isLoading)
                       const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2), // Show loading during API call
                       )
                     else
                       Switch(
                         value: _is2FAEnabled,
-                        onChanged: _toggle2FA,
-                        activeColor: AppColors.getPrimaryColor(context),
+                        onChanged: _toggle2FA, // Call toggle function when switch is changed
+                        activeColor: AppColors.getPrimaryColor(context), // Custom color for enabled state
                       ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 20), // Spacing between sections
 
-              // Info Section
+              // Information Section - How 2FA Works
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -160,6 +167,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Section title
                     Text(
                       'How it works:',
                       style: TextStyle(
@@ -169,6 +177,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    // Step-by-step instructions
                     _buildInfoItem('1. Download an authenticator app like Google Authenticator'),
                     _buildInfoItem('2. Scan the QR code when prompted'),
                     _buildInfoItem('3. Enter the 6-digit code from the app'),
@@ -177,32 +186,41 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                 ),
               ),
 
-              const Spacer(),
+              const Spacer(), // Pushes the status section to the bottom
 
-              // Status
+              // Status Display Section
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _is2FAEnabled ? AppColors.success.withOpacity(0.1) : AppColors.getCardBackground(context),
+                  color: _is2FAEnabled 
+                      ? AppColors.success.withOpacity(0.1) // Green background when enabled
+                      : AppColors.getCardBackground(context), // Normal background when disabled
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _is2FAEnabled ? AppColors.success : Colors.transparent,
+                    color: _is2FAEnabled 
+                        ? AppColors.success // Green border when enabled
+                        : Colors.transparent, // No border when disabled
                   ),
                 ),
                 child: Row(
                   children: [
+                    // Status icon
                     Icon(
                       _is2FAEnabled ? Icons.check_circle : Icons.info,
-                      color: _is2FAEnabled ? AppColors.success : AppColors.getSecondaryTextColor(context),
+                      color: _is2FAEnabled 
+                          ? AppColors.success // Green check when enabled
+                          : AppColors.getSecondaryTextColor(context), // Grey info when disabled
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _is2FAEnabled
-                            ? 'Two-factor authentication is enabled'
-                            : 'Two-factor authentication is disabled',
+                            ? 'Two-factor authentication is enabled' // Enabled message
+                            : 'Two-factor authentication is disabled', // Disabled message
                         style: TextStyle(
-                          color: _is2FAEnabled ? AppColors.success : AppColors.getSecondaryTextColor(context),
+                          color: _is2FAEnabled 
+                              ? AppColors.success // Green text when enabled
+                              : AppColors.getSecondaryTextColor(context), // Grey text when disabled
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -217,12 +235,14 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
     );
   }
 
+  // Helper method to build consistent info list items
   Widget _buildInfoItem(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Bullet point
           Text(
             '• ',
             style: TextStyle(
