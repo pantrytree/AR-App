@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/change_password_viewmodel.dart';
 import '../../utils/colors.dart';
 
+// Page for users to change their account password with security validation
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
 
@@ -12,14 +13,14 @@ class ChangePasswordPage extends StatefulWidget {
 }
 
 class _ChangePasswordPageState extends State<ChangePasswordPage> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>(); // Form validation key
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _obscureCurrentPassword = true;
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmPassword = true;
+  bool _obscureCurrentPassword = true; // Toggle current password visibility
+  bool _obscureNewPassword = true;     // Toggle new password visibility
+  bool _obscureConfirmPassword = true; // Toggle confirm password visibility
 
   @override
   void dispose() {
@@ -29,11 +30,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     super.dispose();
   }
 
+  // Handles password change process with validation and security checks
   void _changePassword() async {
     if (_formKey.currentState!.validate()) {
       final viewModel = Provider.of<ChangePasswordViewModel>(context, listen: false);
 
-      // Check if user can change password
+      // Check if user is allowed to change password (rate limiting, etc.)
       final canChange = await viewModel.canChangePassword();
       if (!canChange['canChange']) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -45,13 +47,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         return;
       }
 
+      // Attempt password change
       final success = await viewModel.changePassword(
         currentPassword: _currentPasswordController.text,
         newPassword: _newPasswordController.text,
       );
 
       if (success && mounted) {
-        // Send confirmation
+        // Send confirmation email/notification
         await viewModel.sendPasswordChangeConfirmation();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -60,7 +63,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             backgroundColor: AppColors.success,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context); // Return to previous screen
       }
     }
   }
@@ -96,7 +99,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         body: SafeArea(
           child: Consumer<ChangePasswordViewModel>(
             builder: (context, viewModel, child) {
-              // Show error message if any
+              // Show error message from ViewModel if any exists
               if (viewModel.errorMessage != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -105,11 +108,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       backgroundColor: AppColors.error,
                     ),
                   );
-                  viewModel.clearError();
+                  viewModel.clearError(); // Clear error after displaying
                 });
               }
 
-              // Show success message if any
+              // Show success message from ViewModel if any exists
               if (viewModel.successMessage != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -118,7 +121,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       backgroundColor: AppColors.success,
                     ),
                   );
-                  viewModel.clearSuccess();
+                  viewModel.clearSuccess(); // Clear success after displaying
                 });
               }
 
@@ -128,11 +131,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // Security Info
+                      // Security Information Banner
                       _buildSecurityInfo(context),
                       const SizedBox(height: 24),
 
-                      // Current Password
+                      // Current Password Input Field
                       _buildPasswordField(
                         context,
                         label: 'Current Password',
@@ -152,7 +155,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // New Password
+                      // New Password Input Field
                       _buildPasswordField(
                         context,
                         label: 'New Password',
@@ -167,16 +170,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter a new password';
                           }
-                          return _validatePasswordStrength(value);
+                          return _validatePasswordStrength(value); // Password strength validation
                         },
                       ),
                       const SizedBox(height: 8),
 
-                      // Password Strength Indicator
+                      // Visual Password Strength Indicator
                       _buildPasswordStrengthIndicator(_newPasswordController.text),
                       const SizedBox(height: 12),
 
-                      // Confirm New Password
+                      // Confirm New Password Input Field
                       _buildPasswordField(
                         context,
                         label: 'Confirm New Password',
@@ -192,21 +195,21 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             return 'Please confirm your new password';
                           }
                           if (value != _newPasswordController.text) {
-                            return 'Passwords do not match';
+                            return 'Passwords do not match'; // Match validation
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 32),
 
-                      // Change Password Button
+                      // Change Password Button with Loading State
                       viewModel.isLoading
                           ? _buildLoadingButton()
                           : _buildSaveButton(context),
 
                       const SizedBox(height: 20),
 
-                      // Password Requirements
+                      // Password Requirements Information
                       _buildPasswordRequirements(context),
                     ],
                   ),
@@ -219,6 +222,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
+  // Builds security information banner about password change consequences
   Widget _buildSecurityInfo(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -246,6 +250,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
+  // Builds visual password strength indicator with progress bar
   Widget _buildPasswordStrengthIndicator(String password) {
     final strength = _calculatePasswordStrength(password);
 
@@ -272,6 +277,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
+  // Calculates password strength based on multiple criteria
   Map<String, dynamic> _calculatePasswordStrength(String password) {
     if (password.isEmpty) {
       return {'label': 'None', 'value': 0.0, 'color': Colors.grey};
@@ -279,16 +285,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     double strength = 0.0;
 
-    // Length
+    // Length-based scoring
     if (password.length >= 8) strength += 0.2;
     if (password.length >= 12) strength += 0.1;
 
-    // Character variety
-    if (RegExp(r'[A-Z]').hasMatch(password)) strength += 0.2;
-    if (RegExp(r'[a-z]').hasMatch(password)) strength += 0.2;
-    if (RegExp(r'[0-9]').hasMatch(password)) strength += 0.2;
-    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength += 0.2;
+    // Character variety scoring
+    if (RegExp(r'[A-Z]').hasMatch(password)) strength += 0.2; // Uppercase
+    if (RegExp(r'[a-z]').hasMatch(password)) strength += 0.2; // Lowercase
+    if (RegExp(r'[0-9]').hasMatch(password)) strength += 0.2; // Numbers
+    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength += 0.2; // Special chars
 
+    // Determine strength level and corresponding color
     String label;
     Color color;
 
@@ -309,6 +316,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     return {'label': label, 'value': strength, 'color': color};
   }
 
+  // Validates password meets security requirements
   String? _validatePasswordStrength(String password) {
     if (password.length < 8) {
       return 'Password must be at least 8 characters';
@@ -328,6 +336,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     return null;
   }
 
+  // Builds reusable password input field with visibility toggle
   Widget _buildPasswordField(
       BuildContext context, {
         required String label,
@@ -365,7 +374,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             obscureText: obscureText,
             validator: validator,
             onChanged: (value) {
-              setState(() {});
+              setState(() {}); // Rebuild to update strength indicator
             },
             style: GoogleFonts.inter(
               fontSize: 16,
@@ -384,7 +393,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   obscureText ? Icons.visibility_off : Icons.visibility,
                   color: AppColors.getSecondaryTextColor(context),
                 ),
-                onPressed: onToggleVisibility,
+                onPressed: onToggleVisibility, // Toggle password visibility
               ),
             ),
           ),
@@ -393,12 +402,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
+  // Builds loading state button during password change process
   Widget _buildLoadingButton() {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: null,
+        onPressed: null, // Disabled during loading
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.getPrimaryColor(context).withOpacity(0.6),
           shape: RoundedRectangleBorder(
@@ -427,6 +437,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
+  // Builds active save button for password change
   Widget _buildSaveButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -449,6 +460,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
+  // Builds password requirements information card
   Widget _buildPasswordRequirements(BuildContext context) {
     return Container(
       width: double.infinity,
