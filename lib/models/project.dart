@@ -30,6 +30,8 @@ class Project {
     this.tags = const [],
   });
 
+  // Creates a Project instance from a Firestore document snapshot
+  // Handles type conversion and provides default values for missing fields
   factory Project.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return Project(
@@ -38,18 +40,25 @@ class Project {
       description: data['description'] as String?,
       ownerId: data['ownerId'] as String,
       thumbnailUrl: data['thumbnailUrl'] as String?,
+      // Convert design IDs list with empty list fallback
       designIds: (data['designIds'] as List<dynamic>?)?.cast<String>() ?? [],
+      // Convert collaborator IDs list with empty list fallback
       collaboratorIds: (data['collaboratorIds'] as List<dynamic>?)?.cast<String>() ?? [],
+      // Convert Firestore Timestamps to DateTime objects
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       isPublic: data['isPublic'] as bool? ?? false,
+      // Convert metadata map if present
       metadata: data['metadata'] != null
           ? Map<String, dynamic>.from(data['metadata'] as Map)
           : null,
+      // Convert tags list with empty list fallback
       tags: (data['tags'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 
+  // Converts the Project instance to a Map for Firestore storage
+  // Handles DateTime to Timestamp conversion and maintains data structure
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
@@ -58,6 +67,7 @@ class Project {
       'thumbnailUrl': thumbnailUrl,
       'designIds': designIds,
       'collaboratorIds': collaboratorIds,
+      // Convert DateTime to Firestore Timestamp for storage
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isPublic': isPublic,
@@ -66,6 +76,7 @@ class Project {
     };
   }
 
+  // Creates a new Project instance with updated fields
   Project copyWith({
     String? id,
     String? name,
