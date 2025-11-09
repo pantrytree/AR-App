@@ -36,6 +36,8 @@ class HelpPage extends StatelessWidget {
               ),
               centerTitle: true,
             ),
+
+            // Body: Show loader, error, or the main content depending on the ViewModel state
             body: viewModel.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : viewModel.errorMessage != null
@@ -116,6 +118,7 @@ class HelpPage extends StatelessWidget {
         bool isFocused = false;
         final focusNode = FocusNode();
 
+        // FocusNode listener tracks when the search is actively focused
         focusNode.addListener(() {
           setState(() => isFocused = focusNode.hasFocus);
         });
@@ -199,6 +202,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 
+  // Reusable help card for main options
   Widget _buildHelpCard({
     required IconData icon,
     required String label,
