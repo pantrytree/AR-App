@@ -7,6 +7,7 @@ class TermsOfServicePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Set dynamic background color based on theme (light/dark)
       backgroundColor: AppColors.getBackgroundColor(context),
       appBar: AppBar(
         backgroundColor: AppColors.getAppBarBackground(context),
@@ -17,7 +18,7 @@ class TermsOfServicePage extends StatelessWidget {
             color: AppColors.getAppBarForeground(context),
           ),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pop(context); // Navigate back to previous screen
           },
         ),
         centerTitle: true,
@@ -35,8 +36,9 @@ class TermsOfServicePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Display the current date as last updated date
               Text(
-                'Last Updated: ${DateTime.now().toString().split(' ')[0]}',
+                'Last Updated: ${DateTime.now().toString().split(' ')[0]}', // Extract just the date part
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.getSecondaryTextColor(context),
@@ -45,6 +47,7 @@ class TermsOfServicePage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
+              // Section 1: Acceptance of Terms
               _buildSectionTitle(context, '1. Acceptance of Terms'),
               _buildSectionContent(context,
                 'By accessing or using our application, you agree to be bound by these '
@@ -54,6 +57,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 2: User Accounts
               _buildSectionTitle(context, '2. User Accounts'),
               _buildSectionContent(context,
                 'To use certain features of our app, you must create an account. You agree to:\n\n'
@@ -66,6 +70,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 3: User Conduct
               _buildSectionTitle(context, '3. User Conduct'),
               _buildSectionContent(context,
                 'You agree not to:\n\n'
@@ -80,6 +85,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 4: Intellectual Property
               _buildSectionTitle(context, '4. Intellectual Property'),
               _buildSectionContent(context,
                 'All content, features, and functionality of our app are owned by us and '
@@ -90,6 +96,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 5: User Content
               _buildSectionTitle(context, '5. User Content'),
               _buildSectionContent(context,
                 'By submitting content to our app, you grant us a worldwide, non-exclusive, '
@@ -100,6 +107,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 6: Termination
               _buildSectionTitle(context, '6. Termination'),
               _buildSectionContent(context,
                 'We may suspend or terminate your account and access to our app at our '
@@ -110,6 +118,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 7: Disclaimer of Warranties
               _buildSectionTitle(context, '7. Disclaimer of Warranties'),
               _buildSectionContent(context,
                 'Our app is provided "as is" and "as available" without warranties of any '
@@ -119,6 +128,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 8: Limitation of Liability
               _buildSectionTitle(context, '8. Limitation of Liability'),
               _buildSectionContent(context,
                 'To the fullest extent permitted by law, we shall not be liable for any '
@@ -129,6 +139,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 9: Changes to Terms
               _buildSectionTitle(context, '9. Changes to Terms'),
               _buildSectionContent(context,
                 'We reserve the right to modify these terms at any time. We will notify '
@@ -138,6 +149,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 10: Governing Law
               _buildSectionTitle(context, '10. Governing Law'),
               _buildSectionContent(context,
                 'These Terms shall be governed by the laws of [Your Country/State] without '
@@ -147,6 +159,7 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section 11: Contact Information
               _buildSectionTitle(context, '11. Contact Information'),
               _buildSectionContent(context,
                 'If you have any questions about these Terms of Service, please contact us at:\n\n'
@@ -156,10 +169,11 @@ class TermsOfServicePage extends StatelessWidget {
 
               const SizedBox(height: 32),
 
+              // Final acknowledgement section
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.getCardBackground(context),
+                  color: AppColors.getCardBackground(context), // Card background for emphasis
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -190,6 +204,7 @@ class TermsOfServicePage extends StatelessWidget {
     );
   }
 
+  // Reusable widget for section titles
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
@@ -201,12 +216,13 @@ class TermsOfServicePage extends StatelessWidget {
     );
   }
 
+  // Reusable widget for section content/body text
   Widget _buildSectionContent(BuildContext context, String content) {
     return Text(
       content,
       style: TextStyle(
         fontSize: 14,
-        height: 1.5,
+        height: 1.5, // Line height for better readability
         color: AppColors.getTextColor(context),
       ),
     );
