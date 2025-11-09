@@ -4,6 +4,7 @@ import '/utils/colors.dart';
 import '../../theme/theme.dart';
 import 'package:Roomantics/viewmodels/home_viewmodel.dart';
 
+//Bottom Nav Bar Elements
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int)? onTap;
