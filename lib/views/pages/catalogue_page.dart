@@ -11,7 +11,8 @@ import '../../utils/text_components.dart';
 import '../../utils/theme.dart';
 import 'catalogue_item_page.dart';
 
-
+// Main catalogue page displaying furniture items in a grid layout
+// Supports search, category filtering, and theme-aware styling
 class CataloguePage extends StatelessWidget {
   const CataloguePage({super.key});
 
@@ -28,6 +29,8 @@ class CataloguePage extends StatelessWidget {
   }
 }
 
+// Private stateful widget body for the catalogue page
+// Handles search functionality and item navigation
 class _CataloguePageBody extends StatefulWidget {
   const _CataloguePageBody();
 
@@ -44,6 +47,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     super.dispose();
   }
 
+  // Navigates to the detailed item page when a product card is tapped
   void _openItem(BuildContext context, FurnitureItem item) {
     Navigator.push(
       context,
@@ -76,10 +80,11 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
       ),
       body: Column(
         children: [
-          _buildHeader(context, vm),
+          _buildHeader(context, vm), // Header with search and title
           const SizedBox(height: 10),
-          _buildCategoryChips(context, vm),
+          _buildCategoryChips(context, vm), // Category filter chips
           const SizedBox(height: 10),
+          // Item count display
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -95,6 +100,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             ),
           ),
           const SizedBox(height: 8),
+          // Main content grid
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -108,6 +114,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds the header section with title, subtitle, and search bar
   Widget _buildHeader(BuildContext context, CatalogueViewModel vm) {
     return Container(
       width: double.infinity,
@@ -139,6 +146,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             ),
           ),
           const SizedBox(height: 12),
+          // Search input field
           Container(
             height: 46,
             decoration: BoxDecoration(
@@ -147,7 +155,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: (v) => vm.setSearchQuery(v),
+              onChanged: (v) => vm.setSearchQuery(v), // Update search filter
               style: TextStyle(color: AppColors.getTextColor(context)),
               decoration: InputDecoration(
                 hintText: TextComponents.searchHint,
@@ -163,6 +171,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds horizontal scrollable category filter chips
   Widget _buildCategoryChips(BuildContext context, CatalogueViewModel vm) {
     return SizedBox(
       height: 52,
@@ -187,13 +196,14 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
             selectedColor: AppColors.getPrimaryColor(context),
             backgroundColor: AppColors.getCategoryTabUnselected(context),
             side: BorderSide(color: AppColors.getBorderColor(context)),
-            onSelected: (_) => vm.selectCategory(category),
+            onSelected: (_) => vm.selectCategory(category), // Update category filter
           );
         },
       ),
     );
   }
 
+  // Builds the main product grid or empty state message
   Widget _buildGrid(CatalogueViewModel vm) {
     final items = vm.filteredItems;
     if (items.isEmpty) {
@@ -222,6 +232,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
     );
   }
 
+  // Builds individual product card with image, details, and favorite button
   Widget _productCard(BuildContext context, FurnitureItem item) {
     return Card(
       elevation: 2,
@@ -235,6 +246,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Product image with loading and error states
             SizedBox(
               height: 100,
               width: double.infinity,
@@ -288,6 +300,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
                 ),
               ),
             ),
+            // Product details section
             Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
@@ -312,6 +325,7 @@ class _CataloguePageBodyState extends State<_CataloguePageBody> {
                     ),
                   ),
                   const SizedBox(height: 6),
+                  // Price and favorite button row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
