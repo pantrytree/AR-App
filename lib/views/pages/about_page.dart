@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/colors.dart';
 
+// About page displaying app information, version details, and legal information
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
 
@@ -9,7 +10,7 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  // Hardcoded app information
+  // Hardcoded app information 
   final String _appName = 'Roomantic';
   final String _appVersion = '0.0.1';
   final String _buildNumber = '#0001';
@@ -27,7 +28,7 @@ class _AboutPageState extends State<AboutPage> {
             Icons.arrow_back,
             color: AppColors.getAppBarForeground(context),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context), // Navigate back to previous screen
         ),
         title: Text(
           'About Application',
@@ -41,7 +42,7 @@ class _AboutPageState extends State<AboutPage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // App Icon and Name
+            // App Icon and Name Section
             Container(
               width: 100,
               height: 100,
@@ -50,7 +51,7 @@ class _AboutPageState extends State<AboutPage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
-                Icons.chair,
+                Icons.chair, // Furniture icon representing the app
                 color: Colors.white,
                 size: 50,
               ),
@@ -66,7 +67,7 @@ class _AboutPageState extends State<AboutPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Interior Design AR App',
+              'Interior Design AR App', // App tagline
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.getSecondaryTextColor(context),
@@ -75,7 +76,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 40),
 
-            // App Information
+            // App Version Information Card
             _buildInfoCard(
               title: 'Version Information',
               children: [
@@ -87,10 +88,11 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 20),
 
+            // Developer Information Card
             _buildInfoCard(
               title: 'Developer Information',
               children: [
-                _buildInfoRow('Developed By', 'S10 Technologies'),
+                _buildInfoRow('Developed By', 'S10 Technologies'), // Development team
                 _buildInfoRow('Contact', 's10tech@gmail.com'),
                 _buildInfoRow('Website', 'www.roomantic.com'),
               ],
@@ -98,6 +100,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 20),
 
+            // App Description Card
             _buildInfoCard(
               title: 'App Description',
               children: [
@@ -117,6 +120,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 20),
 
+            // Features List Card
             _buildInfoCard(
               title: 'Features',
               children: [
@@ -130,6 +134,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 20),
 
+            // Legal Information Card
             _buildInfoCard(
               title: 'Legal',
               children: [
@@ -186,7 +191,7 @@ class _AboutPageState extends State<AboutPage> {
 
             const SizedBox(height: 30),
 
-            // Copyright
+            // Copyright Footer
             Text(
               '© $_releaseDate Roomantic. All rights reserved.',
               style: TextStyle(
@@ -200,6 +205,7 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
+  // Builds a consistent info card with title and content
   Widget _buildInfoCard({
     required String title,
     required List<Widget> children,
@@ -220,13 +226,14 @@ class _AboutPageState extends State<AboutPage> {
               ),
             ),
             const SizedBox(height: 12),
-            ...children,
+            ...children, // Spread children widgets
           ],
         ),
       ),
     );
   }
 
+  // Builds a row with label-value pair for information display
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -252,6 +259,7 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
+  // Builds a feature list item with check icon
   Widget _buildFeatureItem(String feature) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -274,6 +282,7 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
+  // Shows a placeholder dialog for features not yet implemented
   void _showPlaceholderDialog(BuildContext context, String title) {
     showDialog(
       context: context,
