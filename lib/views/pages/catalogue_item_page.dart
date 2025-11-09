@@ -7,6 +7,8 @@ import '/services/furniture_service.dart';
 import '/services/favorites_service.dart';
 import '/models/furniture_item.dart';
 
+// Detailed product page for individual furniture items
+// Displays item information, images, and related products
 class CatalogueItemPage extends StatefulWidget {
   final String? productId;
 
@@ -23,17 +25,17 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
   final FurnitureService _furnitureService = FurnitureService();
   final FavoritesService _favoritesService = FavoritesService();
 
-  FurnitureItem? _furnitureItem;
-  List<FurnitureItem> _relatedItems = [];
-  bool _isFavorite = false;
-  bool _isLoading = true;
-  bool _isLoadingFavorite = false;
-  String? _errorMessage;
+  FurnitureItem? _furnitureItem;      // Current furniture item being displayed
+  List<FurnitureItem> _relatedItems = []; // Similar items for recommendations
+  bool _isFavorite = false;           
+  bool _isLoading = true;             
+  bool _isLoadingFavorite = false;    
+  String? _errorMessage;              
 
   @override
   void initState() {
     super.initState();
-    _loadFurnitureData();
+    _loadFurnitureData(); 
   }
 
   @override
@@ -44,11 +46,13 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final productId = widget.productId ?? args?['productId'];
 
+    // Reload if productId changes (e.g., from related items navigation)
     if (productId != null && _furnitureItem?.id != productId) {
       _loadFurnitureData();
     }
   }
 
+  // Loads furniture item data, favorite status, and related items
   Future<void> _loadFurnitureData() async {
     setState(() {
       _isLoading = true;
@@ -56,7 +60,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     });
 
     try {
-      // Get productId from arguments or widget
+      // Get productId from arguments or widget property
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       final productId = widget.productId ?? args?['productId'];
 
@@ -66,22 +70,22 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
 
       print('Loading furniture item: $productId');
 
-      // Load furniture item
+      // Load furniture item details
       final item = await _furnitureService.getFurnitureItem(productId);
 
-      // Check if it's a favorite
+      // Check if item is in user's favorites
       final isFav = await _favoritesService.isFavorite(productId);
 
-      // Track view
+      // Track user view for analytics
       await _furnitureService.trackItemView(productId);
 
-      // Load related items based on category or room type
+      // Load related items based on category
       final related = await _furnitureService.getFurnitureItems(
         category: item.category,
         useFirestore: true,
       );
 
-      // Remove current item from related items
+      // Remove current item and limit to 3 related items
       final filteredRelated = related.where((i) => i.id != productId).take(3).toList();
 
       if (mounted) {
@@ -106,6 +110,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     }
   }
 
+  // Toggles favorite status for the current furniture item
   Future<void> _toggleFavorite() async {
     if (_furnitureItem == null || _isLoadingFavorite) return;
 
@@ -124,6 +129,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
           _isLoadingFavorite = false;
         });
 
+        // Show success feedback
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -146,6 +152,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
           _isLoadingFavorite = false;
         });
 
+        // Show error feedback
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to update favorite'),
@@ -156,6 +163,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     }
   }
 
+  // Navigates to AR view to place furniture in real space
   void _openInAR() {
     if (_furnitureItem == null) return;
 
@@ -170,6 +178,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Navigates to a related furniture item page
   void _navigateToRelatedItem(String productId) {
     Navigator.pushReplacementNamed(
       context,
@@ -199,7 +208,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
               color: AppColors.getAppBarForeground(context),
             ),
             actions: [
-              // Refresh button
+              // Refresh button to reload item data
               IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: _loadFurnitureData,
@@ -212,6 +221,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Builds main content based on current state
   Widget _buildBody() {
     if (_isLoading) {
       return _buildLoadingState();
@@ -222,27 +232,28 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadFurnitureData,
+      onRefresh: _loadFurnitureData, // Pull to refresh functionality
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            _buildHeader(), // Item name and basic info
             const SizedBox(height: 20),
-            _buildImage(),
+            _buildImage(), // Main product image
             const SizedBox(height: 20),
-            _buildDescription(),
+            _buildDescription(), // Item description and details
             const SizedBox(height: 30),
-            _buildActionButtons(),
+            _buildActionButtons(), // AR and favorite buttons
             const SizedBox(height: 30),
-            _buildRelatedItemsSection(),
+            _buildRelatedItemsSection(), // Similar items recommendations
           ],
         ),
       ),
     );
   }
 
+  /// Loading state with progress indicator
   Widget _buildLoadingState() {
     return Center(
       child: Column(
@@ -263,6 +274,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Error state with retry option
   Widget _buildErrorState() {
     return Center(
       child: Padding(
@@ -308,6 +320,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Header section with item name, dimensions, and category
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,6 +352,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
               ),
             ],
             const SizedBox(width: 16),
+            // Category badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -360,6 +374,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Main product image with loading and error states
   Widget _buildImage() {
     return Container(
       height: 250,
@@ -394,14 +409,15 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
             );
           },
           errorBuilder: (context, error, stackTrace) {
-            return _buildPlaceholderImage();
+            return _buildPlaceholderImage(); // Fallback for failed image load
           },
         ),
       )
-          : _buildPlaceholderImage(),
+          : _buildPlaceholderImage(), // Fallback for missing image URL
     );
   }
 
+  // Placeholder icon when image is unavailable
   Widget _buildPlaceholderImage() {
     return Center(
       child: Icon(
@@ -412,6 +428,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Item description and additional details
   Widget _buildDescription() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,9 +474,11 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Action buttons for AR viewing and favoriting
   Widget _buildActionButtons() {
     return Row(
       children: [
+        // AR View button
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _openInAR,
@@ -476,6 +495,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
           ),
         ),
         const SizedBox(width: 12),
+        // Favorite button with loading state
         Container(
           decoration: BoxDecoration(
             color: AppColors.getCardBackground(context),
@@ -515,9 +535,10 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Related/similar items section
   Widget _buildRelatedItemsSection() {
     if (_relatedItems.isEmpty) {
-      return const SizedBox.shrink();
+      return const SizedBox.shrink(); // Hide section if no related items
     }
 
     return Column(
@@ -537,6 +558,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Individual related item widget
   Widget _buildRelatedItem(BuildContext context, FurnitureItem item) {
     return GestureDetector(
       onTap: () => _navigateToRelatedItem(item.id),
@@ -616,6 +638,7 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     );
   }
 
+  // Returns appropriate icon based on furniture category
   IconData _getCategoryIcon(String category) {
     final lowerCategory = category.toLowerCase();
     if (lowerCategory.contains('chair')) return Icons.chair_rounded;
@@ -628,6 +651,6 @@ class _CatalogueItemPageState extends State<CatalogueItemPage> {
     if (lowerCategory.contains('cabinet') || lowerCategory.contains('storage')) {
       return Icons.kitchen_rounded;
     }
-    return Icons.chair_rounded;
+    return Icons.chair_rounded; // Default icon
   }
 }
