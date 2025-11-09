@@ -274,6 +274,96 @@ class CloudinaryService {
     }
   }
 
+   // Upload a profile image to Cloudinary using unsigned upload (no authentication required)
+  // Uses the upload preset configured in Cloudinary dashboard
+  Future<String> uploadProfileImageUnsigned(File imageFile, String userId) async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniquePublicId = 'profile_${userId}_$timestamp';
+
+      final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+
+      final request = http.MultipartRequest('POST', url)
+        ..fields['upload_preset'] = uploadPreset
+        ..fields['folder'] = 'profile_images'
+        ..fields['public_id'] = uniquePublicId
+        ..fields['timestamp'] = timestamp.toString()
+        ..files.add(await http.MultipartFile.fromPath(
+          'file',
+          imageFile.path,
+        ));
+
+      print('Uploading to Cloudinary with public_id: $uniquePublicId');
+      final response = await request.send();
+      final responseData = await response.stream.toBytes();
+      final responseString = String.fromCharCodes(responseData);
+      final jsonResponse = json.decode(responseString);
+
+      if (response.statusCode == 200) {
+        final imageUrl = jsonResponse['secure_url'];
+        print('Upload successful: $imageUrl');
+
+        // Add cache busting parameter to prevent browser caching
+        final cacheBustedUrl = '$imageUrl?t=$timestamp';
+        return cacheBustedUrl;
+      } else {
+        throw Exception('Upload failed: ${jsonResponse['error']['message']}');
+      }
+    } catch (e) {
+      print('Upload error: $e');
+      throw Exception('Failed to upload: $e');
+    }
+  }
+
+  // Upload a screenshot from memory to Cloudinary
+  // Used for capturing and saving AR scene screenshots
+  Future<String> uploadScreenshot(Uint8List imageBytes, String fileName) async {
+    print('=== UPLOADING SCREENSHOT TO CLOUDINARY ===');
+    print('File name: $fileName');
+    print('Image size: ${imageBytes.length} bytes');
+
+    try {
+      final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+
+      // Convert bytes to base64 for data URI upload
+      final base64Image = base64Encode(imageBytes);
+      final imageData = 'data:image/png;base64,$base64Image';
+
+      // Create multipart request
+      final request = http.MultipartRequest('POST', url);
+
+      request.fields['file'] = imageData;
+      request.fields['upload_preset'] = uploadPreset;
+      request.fields['folder'] = 'roomilab/screenshots';
+      request.fields['public_id'] = fileName;
+
+      print('Sending upload request...');
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+
+      print('Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(responseData);
+        final secureUrl = jsonResponse['secure_url'] as String;
+
+        print('✓ Upload successful!');
+        print('URL: $secureUrl');
+
+        return secureUrl;
+      } else {
+        print('✗ Upload failed');
+        print('Response: $responseData');
+        throw Exception('Failed to upload to Cloudinary: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('✗ Error uploading to Cloudinary: $e');
+      rethrow;
+    }
+  }
+
+  // Upload a project cover image to Cloudinary
+  // Organizes images in the 'project_images' folder
   Future<String> uploadProjectImage(File imageFile, String projectId) async {
     try {
       _validateImage(imageFile);
@@ -311,6 +401,8 @@ class CloudinaryService {
     }
   }
 
+  // Upload a design image to Cloudinary
+  // Organizes images in the 'design_images' folder
   Future<String> uploadDesignImage(File imageFile, String designId) async {
     try {
       _validateImage(imageFile);
@@ -348,6 +440,8 @@ class CloudinaryService {
     }
   }
 
+  // Upload a furniture item image to Cloudinary
+  // Organizes images in the 'furniture_items' folder
   Future<String> uploadFurnitureImage(File imageFile, String furnitureId) async {
     try {
       _validateImage(imageFile);
@@ -385,6 +479,8 @@ class CloudinaryService {
     }
   }
 
+  // Image upload method with customizable folder and public ID
+  // Returns null if upload fails, allowing for graceful error handling
   Future<String?> uploadImage({
     required String filePath,
     required String folder,
@@ -428,6 +524,8 @@ class CloudinaryService {
     }
   }
 
+  // Delete an image from Cloudinary using signed API request
+  // Requires authentication with API key and signature
   Future<void> deleteImage(String publicId) async {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -459,6 +557,8 @@ class CloudinaryService {
     }
   }
 
+  // Generate optimized image URL with specific dimensions and quality settings
+  // Uses Cloudinary's transformation API for responsive images
   String getOptimizedImageUrl(String originalUrl, {int width = 300, int height = 300}) {
     if (!originalUrl.contains('cloudinary.com')) {
       return '$originalUrl?t=${DateTime.now().millisecondsSinceEpoch}';
@@ -466,6 +566,7 @@ class CloudinaryService {
 
     final cleanUrl = originalUrl.split('?').first;
 
+    // Apply Cloudinary transformations: width, height, fill crop, auto quality/format
     final transformedUrl = cleanUrl.replaceFirst(
       '/upload/',
       '/upload/w_$width,h_$height,c_fill,q_auto,f_auto/',
@@ -474,6 +575,7 @@ class CloudinaryService {
     return '$transformedUrl?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 
+  // Generate thumbnail URL with square dimensions
   String getThumbnailUrl(String originalUrl, {int size = 150}) {
     if (!originalUrl.contains('cloudinary.com')) {
       return '$originalUrl?t=${DateTime.now().millisecondsSinceEpoch}';
@@ -489,6 +591,7 @@ class CloudinaryService {
     return '$thumbnailUrl?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 
+  // Generate SHA1 signature for authenticated Cloudinary API requests
   String _generateSignature({
     required int timestamp,
     String? publicId,
@@ -500,6 +603,7 @@ class CloudinaryService {
       if (folder != null) 'folder': folder,
     };
 
+    // Sort parameters alphabetically for consistent signature generation
     final sortedParams = params.keys.toList()..sort();
     final paramString = sortedParams
         .map((key) => '$key=${params[key]}')
@@ -512,6 +616,8 @@ class CloudinaryService {
     return digest.toString();
   }
 
+  // Validate image file before upload
+  // Checks file existence, type, and size constraints
   void _validateImage(File file) {
     if (!file.existsSync()) throw Exception('File does not exist');
 
@@ -522,15 +628,18 @@ class CloudinaryService {
     }
 
     final fileSize = file.lengthSync();
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024; // 10MB max for images
     if (fileSize > maxSize) throw Exception('File too large (max 10MB)');
     if (fileSize == 0) throw Exception('File is empty');
   }
 
+  // Extract public ID from Cloudinary URL for management operations
   String? extractPublicId(String imageUrl) {
     return extractPublicIdFromUrl(imageUrl);
   }
 
+  // Upload multiple images in sequence
+  // Returns list of successful upload URLs, continues on individual failures
   Future<List<String>> uploadMultipleImages({
     required List<String> filePaths,
     required String folder,
@@ -560,6 +669,7 @@ class CloudinaryService {
     return uploadedUrls;
   }
 
+  // Add cache busting parameter to URL to prevent browser caching
   String addCacheBusting(String url) {
     if (url.contains('?')) {
       return '$url&t=${DateTime.now().millisecondsSinceEpoch}';
@@ -568,6 +678,8 @@ class CloudinaryService {
     }
   }
 
+  // Replace existing profile image by deleting old one and uploading new
+  // Falls back to regular upload if delete operation fails
   Future<String> overrideProfileImage(File imageFile, String userId) async {
     try {
       final basePublicId = 'profile_$userId';
@@ -585,7 +697,7 @@ class CloudinaryService {
     }
   }
 
+  // Helper method to find existing public ID for a user's profile image
   Future<String?> _findExistingPublicId(String basePublicId) async {
     return basePublicId;
   }
-}
