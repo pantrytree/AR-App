@@ -10,9 +10,7 @@ class SideMenuViewModel extends ChangeNotifier {
     _fetchUserProfile(); // Load user data on initialization
   }
 
-  // ======================
   // BACKEND INTEGRATION POINTS
-  // ======================
 
   // TODO: Backend - Implement fetchUserProfile()
   // Description: Pulls user data (name, email, profile picture) from users table
@@ -65,9 +63,7 @@ class SideMenuViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ======================
   //PUBLIC METHODS & GETTERS
-  // ======================
 
   // Getters
   String? get navigateToRoute => _navigateToRoute;
