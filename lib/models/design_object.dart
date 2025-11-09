@@ -36,6 +36,9 @@ class DesignObject {
     this.metadata,
   });
 
+ 
+  // Creates a DesignObject instance from a Firestore document snapshot
+  // Handles type conversion for spatial data and provides null safety
   factory DesignObject.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return DesignObject(
@@ -43,25 +46,33 @@ class DesignObject {
       designId: data['designId'] as String,
       userId: data['userId'] as String,
       furnitureItemId: data['furnitureItemId'] as String,
+      // Convert position map with type safety 
       position: Map<String, dynamic>.from(data['position'] as Map),
+      // Convert rotation map with type safety 
       rotation: Map<String, dynamic>.from(data['rotation'] as Map),
+      // Convert scale map if present 
       scale: data['scale'] != null
           ? Map<String, dynamic>.from(data['scale'] as Map)
           : null,
       selectedColor: data['selectedColor'] as String?,
       screenshotUrl: data['screenshotUrl'] as String?,
       arSessionId: data['arSessionId'] as String?,
+      // Convert AR session data map if present
       arSessionData: data['arSessionData'] != null
           ? Map<String, dynamic>.from(data['arSessionData'] as Map)
           : null,
+      // Convert Firestore Timestamps to DateTime objects
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      // Convert metadata map if present
       metadata: data['metadata'] != null
           ? Map<String, dynamic>.from(data['metadata'] as Map)
           : null,
     );
   }
 
+  // Converts the DesignObject instance to a Map for Firestore storage
+  // Handles DateTime to Timestamp conversion and maintains spatial data structure
   Map<String, dynamic> toFirestore() {
     return {
       'designId': designId,
@@ -74,12 +85,15 @@ class DesignObject {
       'screenshotUrl': screenshotUrl,
       'arSessionId': arSessionId,
       'arSessionData': arSessionData,
+      // Convert DateTime to Firestore Timestamp for storage
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'metadata': metadata,
     };
   }
 
+  // Creates a new DesignObject instance with updated fields
+  // Maintains immutability while allowing partial updates for spatial editing
   DesignObject copyWith({
     String? id,
     String? designId,
@@ -114,8 +128,9 @@ class DesignObject {
     );
   }
 
+  // Returns true if this object was created during an AR session
   bool get isFromArSession => arSessionId != null;
-
+  
   // Helper to create from AR session
   factory DesignObject.fromArSession({
     required String id,
