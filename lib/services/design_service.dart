@@ -17,7 +17,7 @@ class DesignService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 1. Get User's Designs
+  //  Get User's Designs
   Future<List<Design>> getDesigns({bool useFirestore = true}) async {
   try {
   if (useFirestore) {
@@ -63,7 +63,7 @@ class DesignService {
   });
   }
 
-  // 2. Get Single Design
+  //  Get Single Design
   Future<Design> getDesign(String designId, {bool useFirestore = true}) async {
   try {
   if (useFirestore) {
@@ -95,7 +95,7 @@ class DesignService {
   });
   }
 
-  // 3. Create Design (Save AR Layout)
+  //  Create Design (Save AR Layout)
   Future<String> createDesign({
   required String name,
   required String projectId,
@@ -144,7 +144,7 @@ class DesignService {
   }
   }
 
-  // 4. Update Design
+  // Update Design
   Future<void> updateDesign(
   String designId, {
   String? name,
@@ -184,7 +184,7 @@ class DesignService {
   }
   }
 
-  // 5. Delete Design
+  // Delete Design
   Future<void> deleteDesign(String designId, {bool useFirestore = true}) async {
   try {
   if (useFirestore) {
@@ -197,7 +197,7 @@ class DesignService {
   }
   }
 
-  // 6. Get Designs by Project
+  //  Get Designs by Project
   Future<List<Design>> getDesignsByProject(String projectId, {bool useFirestore = true}) async {
   try {
   if (useFirestore) {
@@ -238,7 +238,7 @@ class DesignService {
   });
   }
 
-  // 7. Add object to design
+  // Add object to design
   Future<void> addObjectToDesign(String designId, DesignObject object) async {
   try {
   final design = await getDesign(designId);
@@ -250,7 +250,7 @@ class DesignService {
   }
   }
 
-  // 8. Remove object from design
+  // Remove object from design
   Future<void> removeObjectFromDesign(String designId, String itemId) async {
   try {
   final design = await getDesign(designId);
@@ -264,7 +264,7 @@ class DesignService {
   }
   }
 
-  // 9. Update object in design
+  //  Update object in design
   Future<void> updateObjectInDesign(String designId, DesignObject updatedObject) async {
   try {
   final design = await getDesign(designId);
@@ -278,7 +278,7 @@ class DesignService {
   }
   }
 
-  // 10. Duplicate design
+  // Duplicate design
   Future<String> duplicateDesign(String designId) async {
   try {
   final design = await getDesign(designId);
@@ -294,7 +294,7 @@ class DesignService {
   }
   }
 
-  // 11. Get design count
+  // Get design count
   Future<int> getDesignCount() async {
   try {
   final userId = _auth.currentUser?.uid;
@@ -312,7 +312,7 @@ class DesignService {
   }
   }
 
-  // 12. Create Image Design (RoomieLab)
+  // Create Image Design (RoomieLab)
   Future<String> createImageDesign({
   required String name,
   required String projectId,
@@ -335,7 +335,7 @@ class DesignService {
   }
   }
 
-  // 13. Cloudinary upload helper
+  // Cloudinary upload helper
   Future<String> _uploadToCloudinary(File imageFile) async {
   try {
   final response = await _apiService.post(
@@ -353,7 +353,7 @@ class DesignService {
   }
   }
 
-  // 14. Get designs by type (using imageUrl as indicator)
+  //  Get designs by type (using imageUrl as indicator)
   Future<List<Design>> getImageDesigns({String? projectId}) async {
   final allDesigns = await getDesigns();
 
@@ -379,7 +379,7 @@ class DesignService {
   }).toList();
   }
 
-  // 15. Enhanced Get Designs with filtering
+  // Enhanced Get Designs with filtering
   Future<List<Design>> getDesignsWithFilter({
   String? projectId,
   bool? isImageDesign,
@@ -404,7 +404,7 @@ class DesignService {
   }).toList();
   }
 
-  // 16. Enhanced Streams with filtering
+  //  Enhanced Streams with filtering
   Stream<List<Design>> streamDesignsWithFilter({
   String? projectId,
   bool? isImageDesign,
@@ -429,7 +429,7 @@ class DesignService {
   });
   }
 
-  // 17. Update image design (RoomieLab specific)
+  //  Update image design (RoomieLab specific)
   Future<void> updateImageDesign(
   String designId, {
   String? name,
@@ -446,7 +446,7 @@ class DesignService {
   }
   }
 
-  // 18. Get design statistics
+  //  Get design statistics
   Future<Map<String, int>> getDesignStats() async {
   final designs = await getDesigns();
 
@@ -463,14 +463,14 @@ class DesignService {
   };
   }
 
-  // 19. Check if design is RoomieLab image design
+  // Check if design is RoomieLab image design
   bool isImageDesign(Design design) {
   return design.imageUrl != null &&
   design.imageUrl!.isNotEmpty &&
   design.objects.isEmpty;
   }
 
-  // 20. Check if design is AR design
+  //  Check if design is AR design
   bool isARDesign(Design design) {
   return design.objects.isNotEmpty;
   }
