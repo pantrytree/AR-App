@@ -6,29 +6,33 @@ import '/utils/text_components.dart';
 import '/viewmodels/side_menu_viewmodel.dart';
 import '/viewmodels/home_viewmodel.dart';
 
+// SideMenu is a navigation drawer that provides main app navigation
+// It displays user profile information and menu options
 class SideMenu extends StatelessWidget {
   const SideMenu({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Get user name from HomeViewModel if available
+    // Access HomeViewModel to get user data (name, email, etc.)
     final homeViewModel = context.watch<HomeViewModel>();
 
     return ChangeNotifierProvider(
+      // Create SideMenuViewModel with user data from HomeViewModel
       create: (_) => SideMenuViewModel(userName: homeViewModel.userName),
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
           return Consumer<SideMenuViewModel>(
             builder: (context, viewModel, child) {
-              // Handle navigation
+              // Handle navigation when viewModel triggers route change
               if (viewModel.navigateToRoute != null) {
+                // Use postFrameCallback to ensure navigation happens after build
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.pop(context); // Close drawer
+                  Navigator.pop(context); // Close drawer first
                   Navigator.pushNamed(
                     context,
                     viewModel.navigateToRoute!,
                     arguments: viewModel.navigationArguments,
-                  ).then((_) => viewModel.clearNavigation());
+                  ).then((_) => viewModel.clearNavigation()); // Reset navigation state
                 });
               }
 
@@ -37,9 +41,9 @@ class SideMenu extends StatelessWidget {
                   color: AppColors.getSideMenuBackground(context),
                   child: Column(
                     children: [
-                      _buildHeaderSection(context, viewModel),
-                      _buildHeaderDivider(context),
-                      _buildMenuItems(context, viewModel),
+                      _buildHeaderSection(context, viewModel), // User profile section
+                      _buildHeaderDivider(context), // Divider below header
+                      _buildMenuItems(context, viewModel), // Navigation menu items
                     ],
                   ),
                 ),
@@ -51,9 +55,10 @@ class SideMenu extends StatelessWidget {
     );
   }
 
+  // Builds the header section with user profile information
   Widget _buildHeaderSection(BuildContext context, SideMenuViewModel viewModel) {
     return Container(
-      height: 180,
+      height: 180, // Fixed height for header section
       decoration: BoxDecoration(
         color: AppColors.getSideMenuBackground(context),
         borderRadius: const BorderRadius.only(
@@ -62,16 +67,16 @@ class SideMenu extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+        padding: const EdgeInsets.fromLTRB(20, 50, 20, 20), // Ample top padding for status bar
         child: Row(
           children: [
-            // Profile image or icon
+            // Profile avatar container
             Container(
               width: 60,
               height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primaryLightPurple.withOpacity(0.2),
+                color: AppColors.primaryLightPurple.withOpacity(0.2), // Subtle purple background
               ),
               child: viewModel.photoUrl != null
                   ? ClipOval(
@@ -82,21 +87,22 @@ class SideMenu extends StatelessWidget {
                     Icons.person,
                     color: AppColors.getSideMenuIcon(context),
                     size: 40,
-                  ),
+                  ), // Fallback icon if image fails to load
                 ),
               )
                   : Icon(
-                Icons.person,
+                Icons.person, // Default person icon
                 color: AppColors.getSideMenuIcon(context),
                 size: 40,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 12), // Spacing between avatar and text
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // User greeting with name
                   Text(
                     TextComponents.userGreeting(viewModel.userNameDisplay),
                     style: TextStyle(
@@ -105,15 +111,16 @@ class SideMenu extends StatelessWidget {
                       color: AppColors.getSideMenuItemText(context),
                     ),
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    overflow: TextOverflow.ellipsis, // Prevent text overflow
                   ),
+                  // User email 
                   if (viewModel.userEmail != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       viewModel.userEmail!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.getSideMenuItemText(context).withOpacity(0.7),
+                        color: AppColors.getSideMenuItemText(context).withOpacity(0.7), // Subtle color
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -124,10 +131,10 @@ class SideMenu extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.getPrimaryColor(context),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(20), // Pill-shaped button
                     ),
                     child: Material(
-                      color: Colors.transparent,
+                      color: Colors.transparent, 
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
                         onTap: () => viewModel.onEditProfileTapped(),
@@ -157,6 +164,7 @@ class SideMenu extends StatelessWidget {
     );
   }
 
+  // Builds the divider below the header section
   Widget _buildHeaderDivider(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -168,12 +176,13 @@ class SideMenu extends StatelessWidget {
     );
   }
 
+  // Builds the scrollable list of menu items
   Widget _buildMenuItems(BuildContext context, SideMenuViewModel viewModel) {
     return Expanded(
       child: ListView(
         padding: const EdgeInsets.only(top: 20),
         children: [
-          // Dynamic menu items from viewModel
+          // Generate menu items dynamically from viewModel
           ...viewModel.menuItems.map((item) => _buildMenuItem(
             context: context,
             viewModel: viewModel,
@@ -182,10 +191,10 @@ class SideMenu extends StatelessWidget {
             route: item['route'],
           )),
 
-          const SizedBox(height: 20),
-          _buildDivider(context),
+          const SizedBox(height: 20), // Spacing before divider
+          _buildDivider(context), // Divider between main menu and logout
 
-          // Logout button
+          // Logout button 
           _buildMenuItem(
             context: context,
             viewModel: viewModel,
@@ -194,7 +203,7 @@ class SideMenu extends StatelessWidget {
             route: '/logout',
             onTap: () async {
               Navigator.pop(context); // Close drawer first
-              Navigator.pushNamed(context, '/logout');
+              Navigator.pushNamed(context, '/logout'); // Navigate to logout flow
             },
           ),
         ],
@@ -202,6 +211,7 @@ class SideMenu extends StatelessWidget {
     );
   }
 
+  // Builds a divider line for menu sections
   Widget _buildDivider(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -213,16 +223,17 @@ class SideMenu extends StatelessWidget {
     );
   }
 
+  // Builds an individual menu item with icon and text
   Widget _buildMenuItem({
     required BuildContext context,
     required SideMenuViewModel viewModel,
     required String text,
     required IconData icon,
     String? route,
-    VoidCallback? onTap,
+    VoidCallback? onTap, // Custom tap handler for special cases like logout
   }) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Outer spacing
       child: ListTile(
         leading: Icon(
           icon,
@@ -238,13 +249,14 @@ class SideMenu extends StatelessWidget {
           ),
         ),
         onTap: onTap ?? () {
+          // Use custom onTap if provided, otherwise use default route navigation
           if (route != null) {
             viewModel.onMenuItemTapped(route);
           }
         },
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8), // Inner padding
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(8), // Rounded corners for tap area
         ),
       ),
     );
