@@ -36,7 +36,7 @@ Roomantics is a cutting-edge mobile application that allows users to visualize f
 - **Sceneform** - AR rendering (Android)
 - **glTF/GLB** - 3D model format
 
-### Prerequisites
+## Prerequisites
 - Flutter SDK 3.16.0 or higher
 - Android Studio
 - Firebase project setup
@@ -57,7 +57,7 @@ Place in appropriate directories
 4. Run the application
 *flutter run*
 
-### Contributing
+## Contributing
 We welcome contributions! 
 
 **Development Workflow**
